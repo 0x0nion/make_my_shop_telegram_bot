@@ -84,3 +84,35 @@ class AdminOrdersMixin:
         await self.session.refresh(updated_order)
 
         return updated_order
+
+    async def append_order_chat_history(self, order_id: int, message_record: dict) -> Order | None:
+        """
+        Добавляет новое сообщение в историю чата заказа.
+        """
+        order = await self.get_order_by_id(order_id)
+        if not order:
+            return None
+
+        # Инициализируем список, если он пуст/None
+        if order.chat_history is None:
+            order.chat_history = []
+
+        # Создаем копию списка для корректного отслеживания изменений в SQLAlchemy JSON
+        history = list(order.chat_history)
+        history.append(message_record)
+        order.chat_history = history
+
+        return await self.update_order(order)
+
+    async def clear_order_chat_history(self, order_id: int) -> Order | None:
+        """
+        Полностью очищает историю переписки по заказу.
+        """
+        order = await self.get_order_by_id(order_id)
+        if not order:
+            return None
+
+        order.chat_history = []
+        return await self.update_order(order)
+
+

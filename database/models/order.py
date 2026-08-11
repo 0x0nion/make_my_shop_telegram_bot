@@ -1,6 +1,5 @@
-# database/models/order.py
 from datetime import datetime
-from sqlalchemy import ForeignKey, String, Text, Numeric, DateTime, func
+from sqlalchemy import ForeignKey, String, Text, Numeric, DateTime, func, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.models.base import Base
@@ -13,7 +12,7 @@ class Order(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey(column="users.id", ondelete="CASCADE"))
 
     # Флаг оплаты и текстовый статус логистики
-    is_paid: Mapped[bool] = mapped_column(default=False)  # <--- ДОБАВЛЯЕМ ФЛАГ
+    is_paid: Mapped[bool] = mapped_column(default=False)
     status: Mapped[str] = mapped_column(String(50), default="pending")
 
     delivery_address: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -26,6 +25,9 @@ class Order(Base):
     # Поля подтверждения оплаты
     payment_proof_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
     payment_proof: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Хранение истории переписки по заказу (список словарей с отправителем, текстом и временем)
+    chat_history: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
