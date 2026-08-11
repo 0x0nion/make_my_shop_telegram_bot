@@ -584,3 +584,53 @@ class AdminInlineKb:
 
         builder.adjust(1)
         return builder.as_markup()
+
+    def get_order_status_kb(
+            self,
+            order_id: int,
+            status: str = "all",
+            page: int = 1,
+    ) -> Optional[InlineKeyboardMarkup]:
+        """Клавиатура для выбора нового статуса заказа (processing, delivering, cancelled)."""
+        if self.template is None:
+            logger.critical("[ADMIN KB] Keyboards template is missing!")
+            return None
+
+        data = self.template.get("admin_order_status_menu")
+        if data is None:
+            logger.critical("[ADMIN KB] Keyboard with key 'admin_order_status_menu' not found!")
+            return None
+
+        buttons = data.get("buttons")
+        sizes = data.get("sizes")
+
+        if not buttons or not sizes:
+            logger.critical("[ADMIN KB] Invalid structure for 'admin_order_status_menu'!")
+            return None
+
+        # Маппинг ключей кнопок на реальные значения статусов из OrderStatus
+        status_value_map = {
+            "processing": OrderStatus.PROCESSING.value,
+            "delivering": OrderStatus.DELIVERING.value,
+            "cancelled": OrderStatus.CANCELLED.value,
+        }
+
+        builder = InlineKeyboardBuilder()
+
+        for callback_key, translations in buttons.items():
+            button_text = translations.get(self.lang) or translations.get("en") or "XXX"
+
+            if callback_key == "back":
+                # Кнопка возврата в детальный просмотр заказа
+                actual_callback = f"admin_order_view:{order_id}:{status}:{page}"
+            elif callback_key in status_value_map:
+                # Кнопка установки конкретного статуса
+                target_status = status_value_map[callback_key]
+                actual_callback = f"admin_order_set_status:{order_id}:{target_status}:{status}:{page}"
+            else:
+                continue
+
+            builder.button(text=button_text, callback_data=actual_callback)
+
+        builder.adjust(*sizes)
+        return builder.as_markup()

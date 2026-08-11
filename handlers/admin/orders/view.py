@@ -1,3 +1,4 @@
+# handlers/admin/orders/view.py
 import logging
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
@@ -90,8 +91,3 @@ async def process_contact_client(
     )
 
 
-@order_view_router.callback_query(F.data.startswith("admin_order_change_status:"))
-async def process_change_status(
-    callback: CallbackQuery,
-):
-    await callback.answer("🔄 Выбор статусов заказа в разработке...", show_alert=True)
