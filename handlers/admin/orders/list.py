@@ -8,6 +8,7 @@ from database.models.user import User
 from database.repositories.admin_repo import AdminRepository
 from handlers.admin.utils import get_user_lang
 from keyboards.admin_inline import AdminInlineKb
+from src.core.constants import OrderStatus
 from src.core.ui import UIManager
 
 logger = logging.getLogger(__name__)
@@ -18,11 +19,10 @@ PAGE_SIZE = 10
 
 CALLBACK_TO_STATUS = {
     "admin_order_all": "all",
-    "admin_order_new": "pending",
-    "admin_order_processing": "processing",
-    "admin_order_shipped": "shipped",
-    "admin_order_completed": "completed",
-    "admin_order_cancelled": "cancelled",
+    "admin_order_pending": OrderStatus.PENDING.value,
+    "admin_order_awaiting": OrderStatus.AWAITING_CONFIRMATION.value,
+    "admin_order_processing": OrderStatus.PROCESSING.value,
+    "admin_order_delivering": OrderStatus.DELIVERING.value,
 }
 
 

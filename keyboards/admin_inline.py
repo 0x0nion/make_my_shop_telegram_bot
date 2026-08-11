@@ -6,6 +6,7 @@ from typing import Optional, Any
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from locales.units import ProductUnit, UNIT_LABELS
+from src.core.constants import OrderStatus
 
 logger = logging.getLogger(__name__)
 
@@ -307,11 +308,12 @@ class AdminInlineKb:
             logger.critical("[ADMIN KB] Invalid structure for 'admin_orders_menu'!")
             return None
 
-        # Маппинг callback_data на ключи статусов из БД
+        # Актуальный маппинг callback_data на ключи статусов из БД через OrderStatus
         status_map = {
-            "admin_order_new": "pending",
-            "admin_order_processing": "processing",
-            "admin_order_shipped": "shipped",
+            "admin_order_pending": OrderStatus.PENDING.value,
+            "admin_order_awaiting": OrderStatus.AWAITING_CONFIRMATION.value,
+            "admin_order_processing": OrderStatus.PROCESSING.value,
+            "admin_order_delivering": OrderStatus.DELIVERING.value,
         }
 
         builder = InlineKeyboardBuilder()
