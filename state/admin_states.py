@@ -18,3 +18,13 @@ class EditProduct(StatesGroup):
 class EditWelcome(StatesGroup):
     text = State()
     photo = State()
+
+
+class AdminOrderState(StatesGroup):
+    edit_address = State()
+    edit_shipping_cost = State()
+    edit_admin_comment = State()
+
+
+class EditPaymentDetails(StatesGroup):
+    text = State()
