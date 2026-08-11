@@ -72,22 +72,5 @@ async def process_accept_order(
     )
 
 
-@order_view_router.callback_query(F.data.startswith("admin_order_contact_client:"))
-async def process_contact_client(
-    callback: CallbackQuery,
-    admin_repo: AdminRepository,
-):
-    parts = callback.data.split(":")
-    order_id = int(parts[1])
-
-    order = await admin_repo.get_order_by_id(order_id)
-    if not order or not order.user:
-        await callback.answer("❌ Данные пользователя недоступны", show_alert=True)
-        return
-
-    await callback.answer(
-        f"💬 Чат с пользователем ID {order.user.id} в разработке...",
-        show_alert=True,
-    )
 
 

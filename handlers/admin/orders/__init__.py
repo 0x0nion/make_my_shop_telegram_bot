@@ -1,5 +1,6 @@
 from aiogram import Router
 
+from handlers.admin.orders.contact import order_contact_router
 from handlers.admin.orders.list import orders_list_router
 from handlers.admin.orders.order_payment_request import admin_payment_request_router
 from handlers.admin.orders.select_product import order_catalog_router
@@ -18,5 +19,6 @@ admin_orders_group_router.include_routers(
     order_edits_router,
     order_catalog_router,
     order_status_router,
-    admin_payment_request_router
+    admin_payment_request_router,
+    order_contact_router
 )
