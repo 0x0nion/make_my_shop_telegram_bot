@@ -2,7 +2,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from locales.units import ProductUnit, UNIT_LABELS
@@ -284,4 +284,301 @@ class AdminInlineKb:
 
         builder.row(InlineKeyboardButton(text=back_label, callback_data="admin_shop_settings"))
 
+        return builder.as_markup()
+
+    def get_orders_menu_kb(
+            self,
+            status_counts: dict[str, int] | None = None
+    ) -> Optional[InlineKeyboardMarkup]:
+        """Клавиатура для подменю 'Заказы' с отображением количества заказов и корректным возвратом."""
+        if self.template is None:
+            logger.critical("[ADMIN KB] Keyboards template is missing!")
+            return None
+
+        data = self.template.get("admin_orders_menu")
+        if data is None:
+            logger.critical("[ADMIN KB] Keyboard with key 'admin_orders_menu' not found!")
+            return None
+
+        buttons = data.get("buttons")
+        sizes = data.get("sizes")
+
+        if not buttons or not sizes:
+            logger.critical("[ADMIN KB] Invalid structure for 'admin_orders_menu'!")
+            return None
+
+        # Маппинг callback_data на ключи статусов из БД
+        status_map = {
+            "admin_order_new": "pending",
+            "admin_order_processing": "processing",
+            "admin_order_shipped": "shipped",
+        }
+
+        builder = InlineKeyboardBuilder()
+
+        for callback_data, translations in buttons.items():
+            button_text = translations.get(self.lang) or translations.get("en") or "XXX"
+
+            # 1. Если это кнопка "Все заказы", считаем сумму всех статусов
+            if callback_data == "admin_order_all" and status_counts:
+                total_count = sum(status_counts.values())
+                button_text = f"{button_text} ({total_count})"
+
+            # 2. Если это кнопка конкретного статуса, берем значение по ключу
+            elif callback_data in status_map and status_counts:
+                st_key = status_map[callback_data]
+                count = status_counts.get(st_key, 0)
+                button_text = f"{button_text} ({count})"
+
+            # Подменяем callback для кнопки "back"
+            actual_callback = "admin_mainmenu" if callback_data == "back" else callback_data
+
+            builder.button(text=button_text, callback_data=actual_callback)
+
+        builder.adjust(*sizes)
+        return builder.as_markup()
+
+    def get_orders_list_kb(
+            self,
+            orders: list,
+            current_page: int,
+            total_pages: int,
+            status: str,
+    ) -> InlineKeyboardMarkup:
+        """
+        Клавиатура списка заказов с круговой пагинацией.
+        Каждая кнопка заказа занимает отдельную строку (1 в ряд).
+        """
+        builder = InlineKeyboardBuilder()
+
+        # 1. Кнопки заказов (строго по 1 в ряд через builder.row)
+        for order in orders:
+            btn_text = f"#{order.id}: {order.total_price} $ - {order.status}"
+            builder.row(
+                InlineKeyboardButton(
+                    text=btn_text,
+                    callback_data=f"admin_order_view:{order.id}"
+                )
+            )
+
+        # 2. Блок круговой пагинации (3 кнопки в 1 ряд)
+        if orders and total_pages > 0:
+            prev_page = total_pages if current_page == 1 else current_page - 1
+            next_page = 1 if current_page == total_pages else current_page + 1
+
+            pagination_buttons = [
+                InlineKeyboardButton(
+                    text="⬅️",
+                    callback_data=f"admin_orders_page:{status}:{prev_page}"
+                ),
+                InlineKeyboardButton(
+                    text=f"{current_page}/{total_pages}",
+                    callback_data="noop"
+                ),
+                InlineKeyboardButton(
+                    text="➡️",
+                    callback_data=f"admin_orders_page:{status}:{next_page}"
+                )
+            ]
+            builder.row(*pagination_buttons)
+
+        # 3. Кнопка возврата (1 кнопка в ряд)
+        back_text = "⬅️ Назад"
+        if self.template:
+            cfg = self.template.get("admin_orders_menu", {}).get("buttons", {}).get("back", {})
+            back_text = cfg.get(self.lang) or cfg.get("en") or "⬅️ Назад"
+
+        builder.row(
+            InlineKeyboardButton(text=back_text, callback_data="admin_orders")
+        )
+
+        return builder.as_markup()
+
+    def get_order_detail_kb(
+            self,
+            order: Any,
+            status: str = "all",
+            page: int = 1,
+    ) -> Optional[InlineKeyboardMarkup]:
+        """
+        Клавиатура карточки заказа:
+        - ✅ Принять заказ (появляется вверху, если статус pending)
+        - 💬 Написать покупателю (прямая связь через бота)
+        - ✏️ Редактировать заказ
+        - 📍 Редактировать адрес
+        - 🚚 Редактировать стоимость доставки
+        - 💬 Добавить комментарий от админа
+        - 💳 Запросить оплату
+        - 🔄 Изменить статус
+        - ⬅️ Назад (с сохранением пагинации)
+        """
+        if self.template is None:
+            logger.critical("[ADMIN KB] Keyboards template is missing!")
+            return None
+
+        data = self.template.get("admin_order_detail")
+        if data is None:
+            logger.critical("[ADMIN KB] Keyboard template 'admin_order_detail' not found!")
+            return None
+
+        buttons = data.get("buttons", {})
+        builder = InlineKeyboardBuilder()
+
+        def get_btn_text(key: str, default: str) -> str:
+            trans = buttons.get(key, {})
+            return trans.get(self.lang) or trans.get("en") or default
+
+        # 1. Если статус заказа "pending" — добавляем главное действие "Принять заказ"
+        if getattr(order, "status", None) == "pending":
+            builder.row(
+                InlineKeyboardButton(
+                    text=get_btn_text("admin_order_accept", "✅ Принять заказ"),
+                    callback_data=f"admin_order_accept:{order.id}:{status}:{page}"
+                )
+            )
+
+        # 2. Кнопка прямого контакта с клиентом через бота
+        builder.row(
+            InlineKeyboardButton(
+                text=get_btn_text("admin_order_contact_client", "💬 Написать покупателю"),
+                callback_data=f"admin_order_contact_client:{order.id}:{status}:{page}"
+            )
+        )
+
+        # 3. Основные кнопки редактирования заказа
+        builder.row(
+            InlineKeyboardButton(
+                text=get_btn_text("admin_order_edit_items", "✏️ Редактировать заказ"),
+                callback_data=f"admin_order_edit_items:{order.id}:{status}:{page}"
+            )
+        )
+        builder.row(
+            InlineKeyboardButton(
+                text=get_btn_text("admin_order_edit_addr", "📍 Редактировать адрес"),
+                callback_data=f"admin_order_edit_addr:{order.id}:{status}:{page}"
+            )
+        )
+        builder.row(
+            InlineKeyboardButton(
+                text=get_btn_text("admin_order_edit_shipping", "🚚 Редактировать стоимость доставки"),
+                callback_data=f"admin_order_edit_shipping:{order.id}:{status}:{page}"
+            )
+        )
+        builder.row(
+            InlineKeyboardButton(
+                text=get_btn_text("admin_order_edit_comment", "💬 Добавить комментарий от админа"),
+                callback_data=f"admin_order_edit_comment:{order.id}:{status}:{page}"
+            )
+        )
+
+        # 4. Нижний блок: Запрос оплаты и Смена статуса
+        builder.row(
+            InlineKeyboardButton(
+                text=get_btn_text("admin_order_request_payment", "💳 Запросить оплату"),
+                callback_data=f"admin_order_request_payment:{order.id}:{status}:{page}"
+            )
+        )
+        builder.row(
+            InlineKeyboardButton(
+                text=get_btn_text("admin_order_change_status", "🔄 Изменить статус"),
+                callback_data=f"admin_order_change_status:{order.id}:{status}:{page}"
+            )
+        )
+
+        # 5. Возврат на ту же страницу пагинации
+        builder.row(
+            InlineKeyboardButton(
+                text=get_btn_text("back", "⬅️ Назад"),
+                callback_data=f"admin_orders_page:{status}:{page}"
+            )
+        )
+
+        return builder.as_markup()
+
+    def get_order_items_editor_kb(
+            self,
+            order,
+            status: str = "all",
+            page: int = 1,
+    ) -> InlineKeyboardMarkup:
+        """
+        Клавиатура редактирования состава заказа для админа.
+        Позволяет изменять количество товаров (➕/➖) и добавлять новые.
+        """
+        builder = InlineKeyboardBuilder()
+
+        # 1. Позиции заказа (Список товаров с кнопками управления)
+        if order.items:
+            for item in order.items:
+                prod_name = item.product.name if item.product else f"Товар #{item.product_id}"
+                # Название товара ведет на просмотр или заглушку
+                builder.row(
+                    InlineKeyboardButton(
+                        text=f"{prod_name} ({item.quantity} шт.)",
+                        callback_data=f"admin_order_noop:{order.id}"
+                    ),
+                    InlineKeyboardButton(
+                        text="➖",
+                        callback_data=f"admin_order_dec_item:{order.id}:{item.id}:{status}:{page}"
+                    ),
+                    InlineKeyboardButton(
+                        text="➕",
+                        callback_data=f"admin_order_inc_item:{order.id}:{item.id}:{status}:{page}"
+                    )
+                )
+
+        # 2. Кнопка добавления нового товара в заказ
+        add_product_text = self.get_text("admin_order_buttons.add_product", "➕ Добавить товар")
+        builder.row(
+            InlineKeyboardButton(
+                text=add_product_text,
+                callback_data=f"admin_order_add_item_start:{order.id}:{status}:{page}"
+            )
+        )
+
+        # 3. Кнопка "Назад" в карточку заказа
+        back_text = self.get_text("common.back", "⬅️ Назад")
+        builder.row(
+            InlineKeyboardButton(
+                text=back_text,
+                callback_data=f"admin_order_view:{order.id}:{status}:{page}"
+            )
+        )
+
+        return builder.as_markup()
+
+    def get_payment_details_editor_kb(self, has_text: bool) -> InlineKeyboardMarkup:
+        """
+        Клавиатура редактора платежных данных.
+        Если текст уже установлен -> кнопка Изменить.
+        Если текста нет -> кнопка Добавить.
+        """
+        builder = InlineKeyboardBuilder()
+
+        if has_text:
+            edit_btn_text = self.get_text(
+                "admin_payment_editor.buttons.edit",
+                "✏️ Изменить платежные данные"
+            )
+        else:
+            edit_btn_text = self.get_text(
+                "admin_payment_editor.buttons.add",
+                "➕ Добавить платежные данные"
+            )
+
+        back_btn_text = self.get_text(
+            "admin_payment_editor.buttons.back",
+            "⬅️ Назад"
+        )
+
+        builder.button(
+            text=edit_btn_text,
+            callback_data="admin_edit_payment_text"
+        )
+        builder.button(
+            text=back_btn_text,
+            callback_data="admin_shop_settings"  # Имя вашего callback для возврата в настройки магазина
+        )
+
+        builder.adjust(1)
         return builder.as_markup()

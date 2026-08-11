@@ -4,6 +4,7 @@ from sqlalchemy.orm import selectinload, joinedload
 from database.models import OrderItem, Order
 from database.models.cart import CartItem
 from database.repositories.base_repo import BaseRepository
+from src.core.constants import OrderStatus, PaymentProofType
 from utils.logger import logger
 
 
@@ -18,10 +19,10 @@ class UserOrderMixin:
         return BaseRepository(CartItem, self.session)
 
     async def create_order_from_cart(
-        self,
-        user_id: int,
-        delivery_address: str | None = None,
-        user_comment: str | None = None
+            self,
+            user_id: int,
+            delivery_address: str | None = None,
+            user_comment: str | None = None
     ) -> Order | None:
         logger.info(f"Creating order from cart for user id={user_id}")
         user = await self.get_cart_with_products(user_id)
@@ -44,39 +45,40 @@ class UserOrderMixin:
                 )
             )
 
-        # 1. Создаем заказ без коммита
+        # 1. Создаем заказ с флагом is_paid=False и статусом PENDING
         new_order = await self._order_repo.create_without_commit(
             user_id=user_id,
             total_price=total_price,
             delivery_address=delivery_address,
             user_comment=user_comment,
-            status="pending",
+            is_paid=False,
+            status=OrderStatus.PENDING.value,
             items=order_items
         )
 
         # 2. Очищаем элементы корзины через ORM-удаление объектов
-        # Это гарантирует, что SQLAlchemy применит изменения к объекту user.cart в памяти
         for item in list(user.cart):
             await self.session.delete(item)
 
-        # 3. Фиксируем транзакцию (заказ создан, корзина в БД и памяти очищена)
+        # 3. Фиксируем транзакцию
         await self.session.commit()
 
-        # 4. Инвалидируем состояние юзера в сессии, чтобы при следующем запросе
-        # сессия гарантированно подгрузила пустую корзину из БД
+        # 4. Инвалидируем состояние юзера в сессии
         self.session.expire(user)
 
-        # 5. Возвращаем созданный заказ со всеми объектами
+        # 5. Возвращаем созданный заказ со всеми деталями
         return await self._order_repo.get_by_id(
             new_order.id,
             options=[selectinload(Order.items).joinedload(OrderItem.product)]
         )
 
     async def get_pending_orders(self, user_id: int) -> list[Order]:
+        """Возвращает неоплаченные активные заказы пользователя."""
         return await self._order_repo.get_all(
             and_(
                 Order.user_id == user_id,
-                Order.status == "pending"
+                Order.is_paid == False,
+                Order.status.notin_([OrderStatus.COMPLETED.value, OrderStatus.CANCELLED.value])
             ),
             options=[selectinload(Order.items).joinedload(OrderItem.product)],
             order_by=Order.created_at.desc()
@@ -91,3 +93,28 @@ class UserOrderMixin:
             ),
             options=options
         )
+
+    async def attach_payment_proof(
+            self,
+            order_id: int,
+            user_id: int,
+            proof_type: str,
+            proof_content: str
+    ) -> Order | None:
+        """
+        Прикрепляет подтверждение оплаты к заказу.
+        Разрешает прикрепление/переотправку чека, если заказ еще НЕ оплачен (is_paid=False)
+        и НЕ отменен/завершен.
+        """
+        order = await self.get_order_with_items(order_id, user_id)
+
+        # Если заказ не найден, УЖЕ ОПЛАЧЕН или завершен/отменен — отклоняем
+        if not order or order.is_paid or OrderStatus.is_final(order.status):
+            return None
+
+        order.payment_proof_type = proof_type
+        order.payment_proof = proof_content
+        order.status = OrderStatus.AWAITING_CONFIRMATION.value
+
+        await self.session.commit()
+        return order

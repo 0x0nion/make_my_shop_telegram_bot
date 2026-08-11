@@ -6,6 +6,11 @@
         "es": "⚙️ Configuración de Tienda",
         "ru": "⚙️ Настройка магазина"
       },
+      "admin_orders": {
+        "en": "📋 Orders",
+        "es": "📋 Pedidos",
+        "ru": "📋 Заказы"
+      },
       "admin_warehouse": {
         "en": "📦 Warehouse",
         "es": "📦 Almacén",
@@ -34,6 +39,85 @@
     },
     "sizes": [1, 1, 1, 1, 1, 1]
   },
+  "admin_orders_menu": {
+    "buttons": {
+      "admin_order_all": {
+        "en": "📋 All Orders",
+        "es": "📋 Todos los Pedidos",
+        "ru": "📋 Все заказы"
+      },
+      "admin_order_new": {
+        "en": "🆕 New / Pending",
+        "es": "🆕 Nuevos / Pendientes",
+        "ru": "🆕 Новые / Ожидают"
+      },
+      "admin_order_processing": {
+        "en": "⚙️ In Processing",
+        "es": "⚙️ En Proceso",
+        "ru": "⚙️ В обработке"
+      },
+      "admin_order_shipped": {
+        "en": "🚚 Shipped",
+        "es": "🚚 Enviados",
+        "ru": "🚚 В пути"
+      },
+      "back": {
+        "en": "⬅️ Back",
+        "es": "⬅️ Volver",
+        "ru": "⬅️ Назад"
+      }
+    },
+    "sizes": [1, 1, 1, 1, 1, 1]
+  },
+  "admin_order_detail": {
+    "buttons": {
+      "admin_order_accept": {
+        "en": "✅ Accept Order",
+        "es": "✅ Aceptar Pedido",
+        "ru": "✅ Принять заказ"
+      },
+      "admin_order_contact_client": {
+        "en": "💬 Write to Customer",
+        "es": "💬 Escribir al Cliente",
+        "ru": "💬 Написать покупателю"
+      },
+      "admin_order_edit_items": {
+        "en": "✏️ Edit Order Items",
+        "es": "✏️ Editar Pedido",
+        "ru": "✏️ Редактировать заказ"
+      },
+      "admin_order_edit_addr": {
+        "en": "📍 Edit Address",
+        "es": "📍 Editar Dirección",
+        "ru": "📍 Редактировать адрес"
+      },
+      "admin_order_edit_shipping": {
+        "en": "🚚 Edit Shipping Cost",
+        "es": "🚚 Editar Costo de Envío",
+        "ru": "🚚 Редактировать стоимость доставки"
+      },
+      "admin_order_edit_comment": {
+        "en": "💬 Add Admin Comment",
+        "es": "💬 Agregar Comentario",
+        "ru": "💬 Добавить комментарий от админа"
+      },
+      "admin_order_request_payment": {
+        "en": "💳 Request Payment",
+        "es": "💳 Solicitar Pago",
+        "ru": "💳 Запросить оплату"
+      },
+      "admin_order_change_status": {
+        "en": "🔄 Change Status",
+        "es": "🔄 Cambiar Estado",
+        "ru": "🔄 Изменить статус"
+      },
+      "back": {
+        "en": "⬅️ Back",
+        "es": "⬅️ Volver",
+        "ru": "⬅️ Назад"
+      }
+    }
+  },
   "admin_shop_settings_menu": {
     "buttons": {
       "admin_shop_start": {
@@ -46,6 +130,11 @@
         "es": "💬 Saludo (/start)",
         "ru": "💬 Приветствие (/start)"
       },
+      "admin_payment_details": {
+        "en": "💳 Payment Details",
+        "es": "💳 Datos de Pago",
+        "ru": "💳 Платежные данные"
+      },
       "back": {
         "en": "⬅️ Back",
         "es": "⬅️ Volver",
@@ -53,6 +142,25 @@
       }
     },
     "sizes": [1, 1, 1]
+  },
+  "admin_payment_editor": {
+    "buttons": {
+      "add": {
+        "en": "➕ Add Payment Details",
+        "es": "➕ Agregar Datos de Pago",
+        "ru": "➕ Добавить платежные данные"
+      },
+      "edit": {
+        "en": "✏️ Edit Payment Details",
+        "es": "✏️ Editar Datos de Pago",
+        "ru": "✏️ Изменить платежные данные"
+      },
+      "back": {
+        "en": "⬅️ Back",
+        "es": "⬅️ Volver",
+        "ru": "⬅️ Назад"
+      }
+    }
   },
   "admin_welcome_editor": {
     "buttons": {
@@ -171,6 +279,38 @@
       }
     }
   },
+  "admin_order_messages": {
+    "detail_card": {
+      "ru": "📦 <b>Заказ #{order_id}</b>\n📅 <b>Дата:</b> {created_at}\nСтатус: <b>{status}</b> ({is_paid_status})\n\n👤 <b>Покупатель:</b> {buyer_info}\n📍 <b>Адрес доставки:</b> {delivery_address}\n🚚 <b>Стоимость доставки:</b> {delivery_price} $\n\n🛒 <b>Состав заказа:</b>\n{items_block}\n\n💬 <b>Комментарий пользователя:</b>\n{user_comment}\n\n💰 <b>Итого к оплате:</b> <b>{total_price} $</b>\n💳 <b>Подтверждение оплаты:</b> {payment_proof_info}\n\n💬 <b>Комментарий менеджера:</b>\n{manager_comment}",
+      "en": "📦 <b>Order #{order_id}</b>\n📅 <b>Date:</b> {created_at}\nStatus: <b>{status}</b> ({is_paid_status})\n\n👤 <b>Customer:</b> {buyer_info}\n📍 <b>Delivery Address:</b> {delivery_address}\n🚚 <b>Shipping Cost:</b> {delivery_price} $\n\n🛒 <b>Order Items:</b>\n{items_block}\n\n💬 <b>User Comment:</b>\n{user_comment}\n\n💰 <b>Total to Pay:</b> <b>{total_price} $</b>\n💳 <b>Payment Proof:</b> {payment_proof_info}\n\n💬 <b>Manager Comment:</b>\n{manager_comment}",
+      "es": "📦 <b>Pedido #{order_id}</b>\n📅 <b>Fecha:</b> {created_at}\nEstado: <b>{status}</b> ({is_paid_status})\n\n👤 <b>Cliente:</b> {buyer_info}\n📍 <b>Dirección de Envío:</b> {delivery_address}\n🚚 <b>Costo de Envío:</b> {delivery_price} $\n\n🛒 <b>Artículos del Pedido:</b>\n{items_block}\n\n💬 <b>Comentario del Usuario:</b>\n{user_comment}\n\n💰 <b>Total a Pagar:</b> <b>{total_price} $</b>\n💳 <b>Comprobante de Pago:</b> {payment_proof_info}\n\n💬 <b>Comentario del Gerente:</b>\n{manager_comment}"
+    },
+    "no_items": {
+      "ru": "<i>Список товаров пуст.</i>",
+      "en": "<i>Item list is empty.</i>",
+      "es": "<i>La lista de productos está vacía.</i>"
+    },
+    "no_address": {
+      "ru": "<i>Не указан</i>",
+      "en": "<i>Not specified</i>",
+      "es": "<i>No especificado</i>"
+    },
+    "no_comment": {
+      "ru": "<i>Отсутствует</i>",
+      "en": "<i>None</i>",
+      "es": "<i>Ninguno</i>"
+    },
+    "no_payment_proof": {
+      "ru": "<i>Не предоставлено</i>",
+      "en": "<i>Not provided</i>",
+      "es": "<i>No proporcionado</i>"
+    },
+    "not_found": {
+      "ru": "❌ <b>Заказ не найден.</b>",
+      "en": "❌ <b>Order not found.</b>",
+      "es": "❌ <b>Pedido no encontrado.</b>"
+    }
+  },
   "admin_messages": {
     "welcome_title": {
       "en": "🔑 Admin panel is open:",
@@ -181,6 +321,11 @@
       "en": "\n\n✅ Shop updated!",
       "es": "\n\n✅ ¡Tienda actualizada!",
       "ru": "\n\n✅ Магазин обновлен!"
+    },
+    "orders_menu_title": {
+      "en": "📋 <b>Order Management</b>\n\nSelect a category or filter to view:",
+      "es": "📋 <b>Gestión de Pedidos</b>\n\nSeleccione una categoría o filtro para ver:",
+      "ru": "📋 <b>Управление заказами</b>\n\nВыберите категорию или фильтр для просмотра:"
     },
     "enter_category_name": {
       "en": "✍️ Enter **name** for the new category:",
@@ -204,7 +349,7 @@
     },
     "no_products": {
       "en": "\nThere are no products here yet.",
-      "es": "\nNo hay productos aquí todavía.",
+      "es": "\nNo hay productos здесь todavía.",
       "ru": "\nЗдесь пока нет товаров."
     },
     "product_card_template": {
@@ -224,7 +369,7 @@
     },
     "default_product_desc": {
       "en": "No description",
-      "es": "Sin descripción",
+      "es": "Sin описание",
       "ru": "Описание отсутствует"
     },
     "default_unit": {
@@ -331,6 +476,25 @@
         "en": "Section under development...",
         "es": "Sección en desarrollo...",
         "ru": "Раздел в разработке..."
+      }
+    }
+  },
+  "order_payment_request": {
+    "text": {
+      "ru": "💳 <b>Запрос оплаты заказа #{order_id}</b>\n\n{payment_details}\n\nПожалуйста, выберите способ оплаты:",
+      "en": "💳 <b>Payment Request for Order #{order_id}</b>\n\n{payment_details}\n\nPlease select a payment method:",
+      "es": "💳 <b>Solicitud de Pago para el Pedido #{order_id}</b>\n\n{payment_details}\n\nPor favor, seleccione un метод de pago:"
+    },
+    "buttons": {
+      "cash": {
+        "ru": "💵 Наличными (курьеру)",
+        "en": "💵 Cash on Delivery",
+        "es": "💵 Efectivo (al repartidor)"
+      },
+      "paid": {
+        "ru": "✅ Я оплатил",
+        "en": "✅ I Paid",
+        "es": "✅ Ya pagué"
       }
     }
   }

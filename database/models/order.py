@@ -11,6 +11,9 @@ class Order(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey(column="users.id", ondelete="CASCADE"))
+
+    # Флаг оплаты и текстовый статус логистики
+    is_paid: Mapped[bool] = mapped_column(default=False)  # <--- ДОБАВЛЯЕМ ФЛАГ
     status: Mapped[str] = mapped_column(String(50), default="pending")
 
     delivery_address: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -19,10 +22,19 @@ class Order(Base):
     delivery_price: Mapped[float] = mapped_column(Numeric(10, 2), default=0.0)
 
     total_price: Mapped[float] = mapped_column(Numeric(10, 2))
+
+    # Поля подтверждения оплаты
+    payment_proof_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    payment_proof: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     user: Mapped["User"] = relationship("User", back_populates="orders")
-    items: Mapped[list["OrderItem"]] = relationship("OrderItem", back_populates="order")
+    items: Mapped[list["OrderItem"]] = relationship(
+        "OrderItem",
+        back_populates="order",
+        cascade="all, delete-orphan",
+    )
 
 
 class OrderItem(Base):
@@ -36,4 +48,3 @@ class OrderItem(Base):
 
     order: Mapped["Order"] = relationship("Order", back_populates="items")
     product: Mapped["Product"] = relationship("Product")
-
