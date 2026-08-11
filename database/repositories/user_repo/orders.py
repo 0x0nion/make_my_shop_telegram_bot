@@ -118,3 +118,28 @@ class UserOrderMixin:
 
         await self.session.commit()
         return order
+
+    async def append_order_chat_history(self, order_id: int, user_id: int, message_record: dict) -> Order | None:
+        """
+        Добавляет новое сообщение в историю чата заказа от имени клиента.
+        Проверяет принадлежность заказа конкретному пользователю для безопасности.
+        """
+        order = await self.get_order_with_items(order_id, user_id)
+        if not order:
+            return None
+
+        # Инициализируем список, если он пуст/None
+        if order.chat_history is None:
+            order.chat_history = []
+
+        # Создаем копию списка для корректного отслеживания изменений в SQLAlchemy JSON
+        history = list(order.chat_history)
+        history.append(message_record)
+        order.chat_history = history
+
+        await self.session.commit()
+        await self.session.refresh(order)
+        return order
+
+
+    

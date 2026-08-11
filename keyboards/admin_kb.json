@@ -41,32 +41,37 @@
   },
   "admin_orders_menu": {
     "buttons": {
-      "admin_order_all": {
-        "en": "📋 All Orders",
-        "es": "📋 Todos los Pedidos",
-        "ru": "📋 Все заказы"
+        "admin_order_all": {
+          "en": "📋 All Orders",
+          "es": "📋 Todos los Pedidos",
+          "ru": "📋 Все заказы"
+        },
+        "admin_order_pending": {
+          "en": "🆕 Pending",
+          "es": "🆕 Pendientes",
+          "ru": "🆕 Создан / Ожидает"
+        },
+        "admin_order_awaiting": {
+          "en": "⏳ Awaiting Proof",
+          "es": "⏳ Esperando Pago",
+          "ru": "⏳ Ждет проверки чека"
+        },
+        "admin_order_processing": {
+          "en": "⚙️ Processing",
+          "es": "⚙️ En Proceso",
+          "ru": "⚙️ В обработке"
+        },
+        "admin_order_delivering": {
+          "en": "🚚 Delivering",
+          "es": "🚚 En Camino",
+          "ru": "🚚 В пути"
+        },
+        "back": {
+          "en": "⬅️ Back",
+          "es": "⬅️ Volver",
+          "ru": "⬅️ Назад"
+        }
       },
-      "admin_order_new": {
-        "en": "🆕 New / Pending",
-        "es": "🆕 Nuevos / Pendientes",
-        "ru": "🆕 Новые / Ожидают"
-      },
-      "admin_order_processing": {
-        "en": "⚙️ In Processing",
-        "es": "⚙️ En Proceso",
-        "ru": "⚙️ В обработке"
-      },
-      "admin_order_shipped": {
-        "en": "🚚 Shipped",
-        "es": "🚚 Enviados",
-        "ru": "🚚 В пути"
-      },
-      "back": {
-        "en": "⬅️ Back",
-        "es": "⬅️ Volver",
-        "ru": "⬅️ Назад"
-      }
-    },
     "sizes": [1, 1, 1, 1, 1, 1]
   },
   "admin_order_detail": {
@@ -117,6 +122,31 @@
         "ru": "⬅️ Назад"
       }
     }
+  },
+  "admin_order_status_menu": {
+    "buttons": {
+      "processing": {
+        "en": "⚙️ Processing",
+        "es": "⚙️ En Proceso",
+        "ru": "⚙️ В обработке"
+      },
+      "delivering": {
+        "en": "🚚 Delivering",
+        "es": "🚚 En Camino",
+        "ru": "🚚 В пути"
+      },
+      "cancelled": {
+        "en": "❌ Cancelled",
+        "es": "❌ Cancelado",
+        "ru": "❌ Отменен"
+      },
+      "back": {
+        "en": "⬅️ Back to Order",
+        "es": "⬅️ Volver al Pedido",
+        "ru": "⬅️ Назад к заказу"
+      }
+    },
+    "sizes": [1, 1, 1, 1]
   },
   "admin_shop_settings_menu": {
     "buttons": {
