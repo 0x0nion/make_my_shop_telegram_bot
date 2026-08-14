@@ -26,7 +26,6 @@ async def show_client_main_menu(
     lang = user.language if user and user.language else "ru"
     locale = Locale(lang)
 
-    # Загрузка кастомной приветственной карточки из БД
     text, photo_id = await user_repo.get_welcome_card(lang_code=lang)
 
     if not text:

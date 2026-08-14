@@ -59,6 +59,9 @@ async def process_address(
         await message.delete()
 
     address = None
+
+    #TODO: поменять форматирование
+
     if message.location:
         latitude = message.location.latitude
         longitude = message.location.longitude
@@ -91,9 +94,8 @@ async def ask_comment(
     state: FSMContext,
     user: User,
 ):
-    lang = user.language if user and user.language else "ru"
-    locale = Locale(lang)
-    kb = ClientInlineKb(lang=lang)
+    locale = Locale(user.language)
+    kb = ClientInlineKb(lang=user.language)
 
     await state.set_state(UserState.waiting_for_comment)
     await state.update_data(cart_message_id=callback.message.message_id)
@@ -179,19 +181,10 @@ async def checkout_order(
 
     success_text = locale.format_order(order)
 
-    # Заново запрашиваем пользователя из базы, чтобы подтянуть пустую корзину и новый заказ
-    updated_user = await user_repo.get_user_with_cart(user_id=user.id)
+    updated_user = await user_repo.get_user_with_cart(user_id=callback.from_user.id)
 
-    orders_count = (
-        len(updated_user.orders)
-        if updated_user and getattr(updated_user, "orders", None)
-        else 0
-    )
-    cart_count = (
-        len(updated_user.cart)
-        if updated_user and getattr(updated_user, "cart", None)
-        else 0
-    )
+    orders_count = len(updated_user.orders) if updated_user else 0
+    cart_count = len(updated_user.cart) if updated_user else 0
 
     await UIManager.show(
         event=callback,

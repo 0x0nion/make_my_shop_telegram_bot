@@ -75,7 +75,7 @@ async def route_product_card(
         )
         return
 
-    cart_count = len(user.cart) if user and user.cart else 0
+    cart_count = len(user.cart)
 
     await show_product_card(
         chat_id=callback.message.chat.id,
@@ -103,22 +103,19 @@ async def order_product(
         )
         return
 
-    # Добавление товара
     await user_repo.add_to_cart(
         user_id=callback.from_user.id, product_id=product_id
     )
 
     user = await user_repo.get_user_with_cart(user_id=callback.from_user.id)
 
-    cart_count = len(user.cart) if user and user.cart else 0
+    cart_count = len(user.cart)
 
-    # Уведомление пользователю о добавлении товара в корзину через локали
     locale = Locale(user.language)
     added_msg = locale.get_text("product_added_to_cart")
 
     await callback.answer(text=added_msg, show_alert=False)
 
-    # Перерисовка карточки
     await show_product_card(
         chat_id=callback.message.chat.id,
         product_id=product_id,
