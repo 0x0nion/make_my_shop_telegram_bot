@@ -122,11 +122,6 @@
       "sizes": [2, 1]
   },
 "order_payment_request": {
-    "text": {
-      "ru": "💳 <b>Запрос оплаты заказа #{order_id}</b>\n\n{payment_details}\n\nПожалуйста, выберите способ оплаты:",
-      "en": "💳 <b>Payment request for order #{order_id}</b>\n\n{payment_details}\n\nPlease choose a payment method:",
-      "es": "💳 <b>Solicitud de pago para el pedido #{order_id}</b>\n\n{payment_details}\n\nPor favor, elija un método de pago:"
-    },
     "buttons": {
       "cash": {
         "ru": "💵 Наличными (курьеру)",
@@ -137,6 +132,36 @@
         "ru": "✅ Я оплатил",
         "en": "✅ I have paid",
         "es": "✅ Ya he pagado"
+      }
+    }
+  },
+  "language_selection": {
+    "sizes": [1],
+    "buttons": {
+      "lang_ru": {
+        "ru": "Русский 🇷🇺",
+        "en": "Russian 🇷🇺",
+        "es": "Ruso 🇷🇺"
+      },
+      "lang_en": {
+        "ru": "Английский 🇺🇸",
+        "en": "English 🇺🇸",
+        "es": "Inglés 🇺🇸"
+      },
+      "lang_es": {
+        "ru": "Испанский 🇪🇸",
+        "en": "Spanish 🇪🇸",
+        "es": "Español 🇪🇸"
+      }
+    }
+  },
+  "cancel_reply": {
+    "sizes": [1],
+    "buttons": {
+      "client_cancel_reply": {
+        "ru": "❌ Отмена",
+        "en": "❌ Cancel",
+        "es": "❌ Cancelar"
       }
     }
   }

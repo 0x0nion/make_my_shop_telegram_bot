@@ -1,3 +1,5 @@
+import logging
+
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
@@ -38,7 +40,9 @@ async def shop_main(
         try:
             current_cat_id = int(data_parts[2])
         except ValueError:
-            logger.warning(f"[SHOP HANDLER] Invalid category ID format in {callback.data}")
+            logger.warning(
+                f"[SHOP HANDLER] Invalid category ID format in {callback.data}"
+            )
             current_cat_id = None
 
     await render_shop_menu(
@@ -50,7 +54,11 @@ async def shop_main(
     )
 
 
-@user_shop_router.callback_query(F.data.startswith("prev_") | F.data.startswith("next_") | F.data.startswith("client_item_"))
+@user_shop_router.callback_query(
+    F.data.startswith("prev_")
+    | F.data.startswith("next_")
+    | F.data.startswith("client_item_")
+)
 async def route_product_card(
     callback: CallbackQuery,
     shop_repo: ShopRepository,
@@ -60,7 +68,9 @@ async def route_product_card(
     await callback.answer()
     product_id = _parse_entity_id(callback.data)
     if product_id is None:
-        logger.warning(f"[SHOP HANDLER] Failed to parse product_id from {callback.data}")
+        logger.warning(
+            f"[SHOP HANDLER] Failed to parse product_id from {callback.data}"
+        )
         return
 
     user = await user_repo.get_user_with_cart(user_id=callback.from_user.id)
@@ -88,21 +98,23 @@ async def order_product(
     product_id = _parse_entity_id(callback.data)
     if product_id is None:
         await callback.answer()
-        logger.warning(f"[SHOP HANDLER] Invalid order callback payload: {callback.data}")
+        logger.warning(
+            f"[SHOP HANDLER] Invalid order callback payload: {callback.data}"
+        )
         return
 
     # Добавление товара
-    await user_repo.add_to_cart(user_id=callback.from_user.id, product_id=product_id)
+    await user_repo.add_to_cart(
+        user_id=callback.from_user.id, product_id=product_id
+    )
     user = await user_repo.get_user_with_cart(user_id=callback.from_user.id)
 
     lang = user.language if user and user.language else "ru"
     cart_count = len(user.cart) if user and user.cart else 0
 
-    # Уведомление пользователю о добавлении товара в корзину
+    # Уведомление пользователю о добавлении товара в корзину через локали
     locale = Locale(lang)
     added_msg = locale.get_text("product_added_to_cart")
-    if added_msg in ("product_added_to_cart", "XXX"):
-        added_msg = "🛒 Товар добавлен в корзину"
 
     await callback.answer(text=added_msg, show_alert=False)
 

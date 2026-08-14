@@ -5,7 +5,7 @@ from aiogram.types import CallbackQuery
 
 from database.models import User
 from database.repositories.user_repo import UserRepository
-from keyboards.inline import InlineKb
+from keyboards.client_inline import ClientInlineKb
 from locales.locales import Locale
 from src.core.ui import UIManager
 
@@ -19,11 +19,12 @@ async def show_pending_orders(
     user_repo: UserRepository,
     user: User,
 ):
+    """Отображает список активных/незавершенных заказов пользователя."""
     user_id = callback.from_user.id
     lang = user.language if user and user.language else "ru"
 
     locale = Locale(lang)
-    kb_manager = InlineKb(lang)
+    kb_manager = ClientInlineKb(lang=lang)
 
     orders = await user_repo.get_pending_orders(user_id)
 
@@ -51,19 +52,17 @@ async def view_order_details(
     user_repo: UserRepository,
     user: User,
 ):
+    """Отображает подробную информацию по конкретному заказу."""
     user_id = callback.from_user.id
     lang = user.language if user and user.language else "ru"
 
     locale = Locale(lang)
-    kb_manager = InlineKb(lang)
+    kb_manager = ClientInlineKb(lang=lang)
 
     order_id = int(callback.data.split("_")[-1])
-
     order = await user_repo.get_order_with_items(order_id, user_id)
 
     if not order:
-        # Для всплывающих уведомлений (show_alert) напрямую вызываем answer(),
-        # так как UIManager управляет отрисовкой сообщений в чате
         await callback.answer(
             text=locale.get_text("user_order_not_found"),
             show_alert=True,

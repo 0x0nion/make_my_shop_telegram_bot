@@ -3,18 +3,18 @@ from aiogram.types import CallbackQuery, Message
 
 from database.repositories.shop_repo import ShopRepository
 from database.repositories.user_repo import UserRepository
-from keyboards.inline import InlineKb
+from keyboards.client_inline import ClientInlineKb
 from locales.locales import Locale
 from src.core.ui import UIManager
 from utils.logger import logger
 
 
 async def render_shop_menu(
-        event: CallbackQuery | Message,
-        shop_repo: ShopRepository,
-        user_repo: UserRepository,
-        current_cat_id: int | None = None,
-        message_id_to_edit: int | None = None,
+    event: CallbackQuery | Message,
+    shop_repo: ShopRepository,
+    user_repo: UserRepository,
+    current_cat_id: int | None = None,
+    message_id_to_edit: int | None = None,
 ) -> None:
     """Универсальная и безопасная функция отрисовки интерфейса магазина для клиента."""
     user_id = event.from_user.id
@@ -22,7 +22,7 @@ async def render_shop_menu(
     lang = user.language if user and user.language else "ru"
 
     locale = Locale(lang)
-    kb_manager = InlineKb(lang)
+    kb_manager = ClientInlineKb(lang=lang)
 
     current_cat = None
     parent_id = None
@@ -35,31 +35,42 @@ async def render_shop_menu(
             parent_id = current_cat.parent_id
 
             # Локализованное название категории
-            cat_name = await user_repo.get_locale_text(
-                entity_type="category_name",
-                entity_id=current_cat_id,
-                lang_code=lang,
-            ) or current_cat.name
+            cat_name = (
+                await user_repo.get_locale_text(
+                    entity_type="category_name",
+                    entity_id=current_cat_id,
+                    lang_code=lang,
+                )
+                or current_cat.name
+            )
 
             # Локализованное описание категории
-            category_text = await user_repo.get_locale_text(
-                entity_type="category_description",
-                entity_id=current_cat_id,
-                lang_code=lang,
-            ) or ""
+            category_text = (
+                await user_repo.get_locale_text(
+                    entity_type="category_description",
+                    entity_id=current_cat_id,
+                    lang_code=lang,
+                )
+                or ""
+            )
 
-            shop_caption = locale.get_text("shop_category_title", cat_name=cat_name)
+            shop_caption = locale.get_text(
+                "shop_category_title", cat_name=cat_name
+            )
         else:
             logger.warning(f"[SHOP] Category id={current_cat_id} not found.")
             shop_caption = locale.get_text("shop_category_not_found")
     else:
         # Корневое меню магазина (entity_id = 0)
         shop_caption = locale.get_text("shop_main_menu_title")
-        category_text = await user_repo.get_locale_text(
-            entity_type="category_description",
-            entity_id=0,
-            lang_code=lang,
-        ) or ""
+        category_text = (
+            await user_repo.get_locale_text(
+                entity_type="category_description",
+                entity_id=0,
+                lang_code=lang,
+            )
+            or ""
+        )
 
     # 2. Параллельное получение дочерних категорий и товаров
     db_categories, db_products = await asyncio.gather(
@@ -70,14 +81,16 @@ async def render_shop_menu(
     # 3. Параллельная подгрузка локализованных имен для кнопок подкатегорий (устранение N+1)
     category_names: dict[int, str] = {}
     if db_categories:
-        loc_names = await asyncio.gather(*[
-            user_repo.get_locale_text(
-                entity_type="category_name",
-                entity_id=cat.id,
-                lang_code=lang,
-            )
-            for cat in db_categories
-        ])
+        loc_names = await asyncio.gather(
+            *[
+                user_repo.get_locale_text(
+                    entity_type="category_name",
+                    entity_id=cat.id,
+                    lang_code=lang,
+                )
+                for cat in db_categories
+            ]
+        )
         for cat, loc_name in zip(db_categories, loc_names):
             category_names[cat.id] = loc_name or cat.name
 
@@ -91,7 +104,9 @@ async def render_shop_menu(
     if db_products:
         products_lines = []
         for product in db_products:
-            raw_price = float(product.price) if product.price is not None else 0.0
+            raw_price = (
+                float(product.price) if product.price is not None else 0.0
+            )
 
             # Символ валюты берем из объекта товара или используем фоллбэк дефолтной валюты
             prod_currency_code = getattr(product, "currency", None)
@@ -106,10 +121,6 @@ async def render_shop_menu(
                 currency=currency_sym,
             )
 
-            # Фоллбэк, если ключа shop_product_line нет в локали
-            if line == "XXX" or line == "shop_product_line":
-                line = f"• {product.name} — {raw_price:.2f} {currency_sym}"
-
             products_lines.append(line)
 
         products_text = "\n".join(products_lines)
@@ -117,7 +128,7 @@ async def render_shop_menu(
     else:
         text = base_text
 
-    # 5. Сборка клавиатуры
+    # 5. Сборка клавиатуры через ClientInlineKb
     reply_markup = kb_manager.get_shop_keyboard(
         categories=db_categories,
         products=db_products,

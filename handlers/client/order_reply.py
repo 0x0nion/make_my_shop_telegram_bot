@@ -16,6 +16,7 @@ from aiogram.types import (
 from config import config
 from database.models import User
 from database.repositories.user_repo import UserRepository
+from keyboards.client_inline import ClientInlineKb
 from locales.locales import Locale
 from src.core.ui import UIManager
 
@@ -41,18 +42,11 @@ async def client_start_reply(
     lang = user.language if user and user.language else "ru"
     locale = Locale(lang)
 
-    # Клавиатуры остаются без изменений
-    cancel_kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="❌ Отмена", callback_data="client_cancel_reply"
-                )
-            ]
-        ]
-    )
+    # Загружаем клавиатуру отмены напрямую из kb.json по ключу "cancel_reply"
+    kb = ClientInlineKb(lang=lang)
+    cancel_kb = kb.get_kb("cancel_reply")
 
-    # 1. Рендерим меню ввода (get_text сам подставит order_id)
+    # 1. Рендерим меню ввода
     msg = await UIManager.show(
         event=callback,
         text=locale.get_text("client_reply_prompt", order_id=order_id),
@@ -148,7 +142,7 @@ async def client_send_reply(
         message_id_to_edit=main_message_id,
     )
 
-    # Создаем кнопку для перехода прямо в карточку заказа (оставляем оригинал)
+    # Админскую клавиатуру не трогаем (оставляем оригинал)
     admin_kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [

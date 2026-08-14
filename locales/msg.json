@@ -298,5 +298,10 @@
     "ru": "💬 <b>Новое сообщение в заказе #{order_id}</b>\n\nКлиент написал ответ по заказу.",
     "en": "💬 <b>New message in order #{order_id}</b>\n\nThe client wrote a reply to the order.",
     "es": "💬 <b>Nuevo mensaje en el pedido #{order_id}</b>\n\nEl cliente escribió una respuesta al pedido."
+  },
+  "order_payment_request": {
+    "ru": "💳 <b>Запрос оплаты заказа #{order_id}</b>\n\n{payment_details}\n\nПожалуйста, выберите способ оплаты:",
+    "en": "💳 <b>Payment request for order #{order_id}</b>\n\n{payment_details}\n\nPlease choose a payment method:",
+    "es": "💳 <b>Solicitud de pago para el pedido #{order_id}</b>\n\n{payment_details}\n\nPor favor, elija un метод de pago:"
   }
 }

@@ -7,7 +7,7 @@ from aiogram.types import CallbackQuery, Message
 from database.models import User
 from database.repositories.user_repo import UserRepository
 from handlers.client.cart.render_cart import render_cart
-from keyboards.inline import InlineKb
+from keyboards.client_inline import ClientInlineKb
 from locales.locales import Locale
 from src.core.ui import UIManager
 from state.user_states import UserState
@@ -34,6 +34,7 @@ async def get_address(
 ):
     lang = user.language if user and user.language else "ru"
     locale = Locale(lang)
+    kb = ClientInlineKb(lang=lang)
 
     await state.set_state(UserState.waiting_for_address)
     await state.update_data(cart_message_id=callback.message.message_id)
@@ -41,7 +42,7 @@ async def get_address(
     await UIManager.show(
         event=callback,
         text=locale.get_text("user_set_address"),
-        reply_markup=InlineKb(lang).get_kb("cancel"),
+        reply_markup=kb.get_kb("cancel_input"),
     )
 
 
@@ -54,6 +55,7 @@ async def process_address(
 ):
     lang = user.language if user and user.language else "ru"
     locale = Locale(lang)
+    kb = ClientInlineKb(lang=lang)
 
     with suppress(TelegramBadRequest):
         await message.delete()
@@ -62,7 +64,9 @@ async def process_address(
     if message.location:
         latitude = message.location.latitude
         longitude = message.location.longitude
-        maps_url = f"https://www.google.com/maps/search/?api=1&query={latitude},{longitude}"
+        maps_url = (
+            f"https://www.google.com/maps/search/?api=1&query={latitude},{longitude}"
+        )
         address = locale.format_address(maps_url)
     elif message.text:
         address = message.text.strip()
@@ -78,7 +82,7 @@ async def process_address(
         await UIManager.show(
             event=message,
             text=f"{locale.get_text('user_set_address')}\n\n{locale.get_text('user_set_address_error')}",
-            reply_markup=InlineKb(lang).get_kb("cancel"),
+            reply_markup=kb.get_kb("cancel_input"),
             message_id_to_edit=cart_msg_id,
         )
 
@@ -91,6 +95,7 @@ async def ask_comment(
 ):
     lang = user.language if user and user.language else "ru"
     locale = Locale(lang)
+    kb = ClientInlineKb(lang=lang)
 
     await state.set_state(UserState.waiting_for_comment)
     await state.update_data(cart_message_id=callback.message.message_id)
@@ -98,7 +103,7 @@ async def ask_comment(
     await UIManager.show(
         event=callback,
         text=locale.get_text("user_set_comment"),
-        reply_markup=InlineKb(lang).get_kb("cancel"),
+        reply_markup=kb.get_kb("cancel_input"),
     )
 
 
@@ -155,6 +160,7 @@ async def checkout_order(
     user_id = callback.from_user.id
     lang = user.language if user and user.language else "ru"
     locale = Locale(lang)
+    kb = ClientInlineKb(lang=lang)
 
     user_data = await state.get_data()
     delivery_address = user_data.get("delivery_address")
@@ -178,13 +184,19 @@ async def checkout_order(
     success_text = locale.format_order(order)
     updated_user = await user_repo.get_user_with_cart(user_id=user_id)
 
-    orders_count = len(updated_user.orders) if getattr(updated_user, "orders", None) else 0
-    cart_count = len(updated_user.cart) if getattr(updated_user, "cart", None) else 0
+    orders_count = (
+        len(updated_user.orders)
+        if getattr(updated_user, "orders", None)
+        else 0
+    )
+    cart_count = (
+        len(updated_user.cart) if getattr(updated_user, "cart", None) else 0
+    )
 
     await UIManager.show(
         event=callback,
         text=success_text,
-        reply_markup=InlineKb(lang).get_main_kb(
+        reply_markup=kb.get_main_kb(
             orders=orders_count,
             cart=cart_count,
         ),

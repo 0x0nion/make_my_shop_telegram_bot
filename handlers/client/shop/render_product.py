@@ -6,19 +6,16 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import Message
 
 from database.repositories.shop_repo import ShopRepository
-from keyboards.inline import InlineKb
+from keyboards.client_inline import ClientInlineKb
 from locales.locales import Locale
 from src.core.ui import UIManager
 from utils.logger import logger
 
 
 def format_product_from_template(product, locale: Locale) -> str:
-    """Динамический сборщик текста карточки товара с использованием встроенных методов Locale."""
+    """Динамический сборщик текста карточки товара с использованием локали."""
     unit_val = locale.get_unit(getattr(product, "unit", None))
-
-    no_desc_text = locale.get_text("no_description")
-    desc_fallback = no_desc_text if (no_desc_text and no_desc_text != "XXX") else ""
-    desc_val = getattr(product, "description", None) or desc_fallback
+    desc_val = getattr(product, "description", None) or locale.get_text("no_description")
 
     currency_code = getattr(product, "currency", None)
     currency_val = (
@@ -26,8 +23,6 @@ def format_product_from_template(product, locale: Locale) -> str:
         if currency_code
         else locale.get_text("currency_symbol")
     )
-    if not currency_val or currency_val == "XXX":
-        currency_val = "$"
 
     price_val = float(getattr(product, "price", 0.0) or 0.0)
 
@@ -39,15 +34,7 @@ def format_product_from_template(product, locale: Locale) -> str:
         "unit": unit_val,
     }
 
-    formatted = locale.get_text("product_template", **data)
-    if formatted in ("product_template", "XXX"):
-        return (
-            f"<b>{data['name']}</b>\n\n"
-            f"{desc_val}\n\n"
-            f"Цена: {price_val:.2f} {currency_val} / {unit_val}"
-        )
-
-    return formatted
+    return locale.get_text("product_template", **data)
 
 
 async def self_destruct(message: Message, seconds: int = 3):
@@ -86,13 +73,10 @@ async def show_product_card(
     )
 
     locale = Locale(lang)
-    kb_manager = InlineKb(lang)
+    kb_manager = ClientInlineKb(lang=lang)
 
     text = format_product_from_template(product=product, locale=locale)
-
     manager_url = locale.get_text("manager_url")
-    if not manager_url or manager_url == "XXX" or not manager_url.startswith(("http://", "https://")):
-        manager_url = "https://t.me/username"
 
     reply_markup = kb_manager.get_product_card_kb(
         product_id=current_id,

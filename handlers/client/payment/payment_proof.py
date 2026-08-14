@@ -10,6 +10,7 @@ from aiogram.types import CallbackQuery, Message
 from database.models import User
 from database.repositories.admin_repo import AdminRepository
 from database.repositories.user_repo import UserRepository
+from keyboards.client_inline import ClientInlineKb
 from locales.locales import Locale
 from src.core.constants import OrderStatus, PaymentProofType
 from src.core.ui import UIManager
@@ -55,6 +56,7 @@ async def start_order_payment(
     """Вызывается при нажатии кнопки '✅ Я оплатил'."""
     lang = user.language if user and user.language else "ru"
     locale = Locale(lang)
+    kb = ClientInlineKb(lang=lang)
 
     order_id = int(callback.data.split(":")[1])
     order = await user_repo.get_order_with_items(order_id, callback.from_user.id)
@@ -64,8 +66,13 @@ async def start_order_payment(
         return
 
     instruction_text = locale.get_text("payment_instruction")
+    cancel_kb = kb.get_kb("cancel_reply")
 
-    ui_msg = await UIManager.show(event=callback, text=instruction_text)
+    ui_msg = await UIManager.show(
+        event=callback,
+        text=instruction_text,
+        reply_markup=cancel_kb,
+    )
 
     instruction_msg_id = (
         ui_msg.message_id
@@ -112,24 +119,20 @@ async def process_pay_cash(
 
     await callback.answer()
 
-    if callback.message:
-        await safe_delete_message(
-            bot, callback.message.chat.id, callback.message.message_id
-        )
-
-    confirm_msg = await bot.send_message(
-        chat_id=callback.from_user.id,
+    confirm_msg = await UIManager.show(
+        event=callback,
         text=locale.get_text("payment_cash_accepted"),
     )
 
-    asyncio.create_task(
-        delete_message_after_delay(
-            chat_id=confirm_msg.chat.id,
-            message_id=confirm_msg.message_id,
-            bot=bot,
-            delay=20,
+    if confirm_msg:
+        asyncio.create_task(
+            delete_message_after_delay(
+                chat_id=confirm_msg.chat.id,
+                message_id=confirm_msg.message_id,
+                bot=bot,
+                delay=20,
+            )
         )
-    )
 
 
 @user_payment_router.message(
@@ -152,6 +155,7 @@ async def process_payment_proof_input(
     order_id: Optional[int] = data.get("active_order_id")
     instruction_msg_id: Optional[int] = data.get("instruction_msg_id")
 
+    # Очищаем пользовательский ввод
     await safe_delete_message(
         bot=bot, chat_id=message.chat.id, message_id=message.message_id
     )
@@ -163,17 +167,19 @@ async def process_payment_proof_input(
 
     if not order_id:
         await state.clear()
-        expired_msg = await bot.send_message(
-            chat_id=message.chat.id, text=locale.get_text("session_expired")
+        expired_msg = await UIManager.show(
+            event=message,
+            text=locale.get_text("session_expired"),
         )
-        asyncio.create_task(
-            delete_message_after_delay(
-                chat_id=expired_msg.chat.id,
-                message_id=expired_msg.message_id,
-                bot=bot,
-                delay=15,
+        if expired_msg:
+            asyncio.create_task(
+                delete_message_after_delay(
+                    chat_id=expired_msg.chat.id,
+                    message_id=expired_msg.message_id,
+                    bot=bot,
+                    delay=15,
+                )
             )
-        )
         return
 
     proof_type = PaymentProofType.TX_HASH.value
@@ -199,18 +205,19 @@ async def process_payment_proof_input(
     await state.clear()
 
     if not updated_order:
-        err_msg = await bot.send_message(
-            chat_id=message.chat.id,
+        err_msg = await UIManager.show(
+            event=message,
             text=locale.get_text("payment_error_or_already_paid"),
         )
-        asyncio.create_task(
-            delete_message_after_delay(
-                chat_id=err_msg.chat.id,
-                message_id=err_msg.message_id,
-                bot=bot,
-                delay=15,
+        if err_msg:
+            asyncio.create_task(
+                delete_message_after_delay(
+                    chat_id=err_msg.chat.id,
+                    message_id=err_msg.message_id,
+                    bot=bot,
+                    delay=15,
+                )
             )
-        )
         return
 
     # Вызов сервиса уведомления админов только для онлайн-чеков/хэшей
@@ -222,19 +229,20 @@ async def process_payment_proof_input(
         )
     )
 
-    confirm_msg = await bot.send_message(
-        chat_id=message.chat.id,
+    confirm_msg = await UIManager.show(
+        event=message,
         text=locale.get_text("payment_proof_accepted"),
     )
 
-    asyncio.create_task(
-        delete_message_after_delay(
-            chat_id=confirm_msg.chat.id,
-            message_id=confirm_msg.message_id,
-            bot=bot,
-            delay=20,
+    if confirm_msg:
+        asyncio.create_task(
+            delete_message_after_delay(
+                chat_id=confirm_msg.chat.id,
+                message_id=confirm_msg.message_id,
+                bot=bot,
+                delay=20,
+            )
         )
-    )
 
 
 @user_payment_router.message(UserPaymentState.waiting_for_proof)
@@ -251,15 +259,16 @@ async def process_invalid_payment_proof(
         bot=bot, chat_id=message.chat.id, message_id=message.message_id
     )
 
-    err_msg = await bot.send_message(
-        chat_id=message.chat.id,
+    err_msg = await UIManager.show(
+        event=message,
         text=locale.get_text("invalid_payment_proof_type"),
     )
-    asyncio.create_task(
-        delete_message_after_delay(
-            chat_id=err_msg.chat.id,
-            message_id=err_msg.message_id,
-            bot=bot,
-            delay=10,
+    if err_msg:
+        asyncio.create_task(
+            delete_message_after_delay(
+                chat_id=err_msg.chat.id,
+                message_id=err_msg.message_id,
+                bot=bot,
+                delay=10,
+            )
         )
-    )
