@@ -1,85 +1,98 @@
-# src/core/ui.py
+from typing import Optional, Union
 from aiogram import Bot
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InputMediaPhoto
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message, BufferedInputFile
+from utils.logger import logger
 
 
 class UIManager:
-    """
-    Глобальный менеджер интерфейса (Single Message UI).
-    Управляет отрисовкой экранов в рамках одного сообщения, исключая спам в чате.
-    """
-
     @staticmethod
+    def _extract_bot_and_chat(
+        bot: Optional[Bot],
+        chat_id: Optional[int],
+        event: Optional[Union[Message, CallbackQuery]]
+    ) -> tuple[Bot, int]:
+        """Извлекает bot и chat_id из переданных аргументов или объекта события."""
+        if bot and chat_id:
+            return bot, chat_id
+
+        if isinstance(event, Message):
+            return event.bot, event.chat.id
+        elif isinstance(event, CallbackQuery):
+            return event.bot, event.message.chat.id
+
+        raise ValueError("UIManager requires either (bot + chat_id) or a valid aiogram event (Message/CallbackQuery).")
+
+    @classmethod
     async def show(
-            event: Message | CallbackQuery,
-            text: str,
-            reply_markup: InlineKeyboardMarkup | None = None,
-            parse_mode: str = "HTML",
-            photo: str | BufferedInputFile | None = None,
-            message_id_to_edit: int | None = None,
-    ) -> Message:
+        cls,
+        text: str,
+        bot: Optional[Bot] = None,
+        chat_id: Optional[int] = None,
+        event: Optional[Union[Message, CallbackQuery]] = None,
+        reply_markup: Optional[InlineKeyboardMarkup] = None,
+        photo: Optional[str] = None,
+        message_id_to_edit: Optional[int] = None,
+    ) -> Optional[Message]:
         """
-        Универсальный метод отрисовки интерфейса в одно сообщение.
+        Единый метод отрисовки UI.
+        Гарантирует отображение контекста строго в 1 сообщении.
         """
-        bot: Bot = event.bot
-        chat_id = event.message.chat.id if isinstance(event, CallbackQuery) else event.chat.id
+        bot, chat_id = cls._extract_bot_and_chat(bot, chat_id, event)
 
-        msg_id = message_id_to_edit
-        if not msg_id and isinstance(event, CallbackQuery):
-            msg_id = event.message.message_id
+        # Если message_id_to_edit не передан явно, но передан CallbackQuery — берём ID из него
+        if not message_id_to_edit and isinstance(event, CallbackQuery) and event.message:
+            message_id_to_edit = event.message.message_id
 
-        try:
-            if photo:
-                if msg_id:
-                    try:
-                        await bot.delete_message(chat_id, msg_id)
-                    except TelegramBadRequest:
-                        pass
-
-                return await bot.send_photo(
-                    chat_id=chat_id,
-                    photo=photo,
-                    caption=text,
-                    reply_markup=reply_markup,
-                    parse_mode=parse_mode,
-                )
-
-            else:
-                if msg_id:
-                    try:
-                        return await bot.edit_message_text(
-                            chat_id=chat_id,
-                            message_id=msg_id,
-                            text=text,
-                            reply_markup=reply_markup,
-                            parse_mode=parse_mode,
-                        )
-                    except TelegramBadRequest as e:
-                        if "message is not modified" in str(e):
-                            return event.message if isinstance(event, CallbackQuery) else event
-
-                        try:
-                            await bot.delete_message(chat_id, msg_id)
-                        except TelegramBadRequest:
-                            pass
-                        return await bot.send_message(
-                            chat_id=chat_id,
-                            text=text,
-                            reply_markup=reply_markup,
-                            parse_mode=parse_mode,
-                        )
-                else:
-                    return await bot.send_message(
+        # 1. Попытка редактирования
+        if message_id_to_edit:
+            try:
+                if photo:
+                    return await bot.edit_message_media(
                         chat_id=chat_id,
+                        message_id=message_id_to_edit,
+                        media=InputMediaPhoto(media=photo, caption=text, parse_mode="HTML"),
+                        reply_markup=reply_markup,
+                    )
+                else:
+                    return await bot.edit_message_text(
+                        chat_id=chat_id,
+                        message_id=message_id_to_edit,
                         text=text,
                         reply_markup=reply_markup,
-                        parse_mode=parse_mode,
+                        parse_mode="HTML",
                     )
+            except TelegramBadRequest as e:
+                err_msg = str(e).lower()
 
-        finally:
-            if isinstance(event, CallbackQuery):
+                # Если контент идентичен — просто игнорируем
+                if "message is not modified" in err_msg:
+                    logger.debug(f"[UI] Message {message_id_to_edit} not modified.")
+                    return None
+
+                # Во всех остальных случаях (сменился тип фото/текст, сообщение слишком старо и т.д.):
+                # Удаляем старое сообщение, чтобы на его месте отправить новое и сохранить правило 1 сообщения!
+                logger.info(
+                    f"[UI] Cannot edit message {message_id_to_edit} ({e}). Re-creating UI frame."
+                )
                 try:
-                    await event.answer()
+                    await bot.delete_message(chat_id=chat_id, message_id=message_id_to_edit)
                 except TelegramBadRequest:
-                    pass
+                    pass  # Если сообщение уже удалено пользователем
+
+        # 2. Отправка нового сообщения (если редактирование не требовалось или не удалось)
+        if photo:
+            return await bot.send_photo(
+                chat_id=chat_id,
+                photo=photo,
+                caption=text,
+                reply_markup=reply_markup,
+                parse_mode="HTML",
+            )
+
+        return await bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            reply_markup=reply_markup,
+            parse_mode="HTML",
+        )

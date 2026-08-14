@@ -14,7 +14,9 @@ from aiogram.types import (
 )
 
 from config import config
+from database.models import User
 from database.repositories.user_repo import UserRepository
+from locales.locales import Locale
 from src.core.ui import UIManager
 
 logger = logging.getLogger(__name__)
@@ -30,11 +32,16 @@ class ClientReplyStates(StatesGroup):
 async def client_start_reply(
     callback: CallbackQuery,
     state: FSMContext,
+    user: User,
 ):
     """Клиент нажал кнопку "Ответить администратору" под сообщением по заказу."""
     parts = callback.data.split(":")
     order_id = int(parts[1])
 
+    lang = user.language if user and user.language else "ru"
+    locale = Locale(lang)
+
+    # Клавиатуры остаются без изменений
     cancel_kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -45,11 +52,10 @@ async def client_start_reply(
         ]
     )
 
-    # 1. Рендерим меню ввода
+    # 1. Рендерим меню ввода (get_text сам подставит order_id)
     msg = await UIManager.show(
         event=callback,
-        text=f"💬 <b>Ответ администратору (Заказ #{order_id})</b>\n\n"
-        f"Введите текст вашего сообщения:",
+        text=locale.get_text("client_reply_prompt", order_id=order_id),
         reply_markup=cancel_kb,
     )
 
@@ -66,12 +72,19 @@ async def client_start_reply(
 @client_reply_router.callback_query(
     F.data == "client_cancel_reply", ClientReplyStates.waiting_for_reply
 )
-async def client_cancel_reply(callback: CallbackQuery, state: FSMContext):
+async def client_cancel_reply(
+    callback: CallbackQuery,
+    state: FSMContext,
+    user: User,
+):
     """Отмена ввода ответа клиентом."""
     await state.clear()
+    lang = user.language if user and user.language else "ru"
+    locale = Locale(lang)
+
     await UIManager.show(
         event=callback,
-        text="❌ Отправка сообщения отменена.",
+        text=locale.get_text("client_reply_cancelled"),
         reply_markup=None,
     )
 
@@ -81,8 +94,12 @@ async def client_send_reply(
     message: Message,
     state: FSMContext,
     user_repo: UserRepository,
+    user: User,
 ):
     """Получает текст от клиента, сохраняет в историю заказа и уведомляет администраторов."""
+    lang = user.language if user and user.language else "ru"
+    locale = Locale(lang)
+
     data = await state.get_data()
     order_id = data.get("order_id")
     main_message_id = data.get("main_message_id")
@@ -96,7 +113,7 @@ async def client_send_reply(
     if not order_id:
         await UIManager.show(
             event=message,
-            text="❌ Ошибка сессии. Попробуйте снова.",
+            text=locale.get_text("client_reply_session_error"),
             message_id_to_edit=main_message_id,
         )
         return
@@ -119,7 +136,7 @@ async def client_send_reply(
     if not updated_order:
         await UIManager.show(
             event=message,
-            text="❌ Не удалось найти заказ или он недоступен.",
+            text=locale.get_text("client_reply_not_found"),
             message_id_to_edit=main_message_id,
         )
         return
@@ -127,11 +144,11 @@ async def client_send_reply(
     # Редактируем то самое сообщение бота, передавая main_message_id
     await UIManager.show(
         event=message,
-        text="✅ Ваш ответ успешно отправлен администратору!",
+        text=locale.get_text("client_reply_success"),
         message_id_to_edit=main_message_id,
     )
 
-    # Создаем кнопку для перехода прямо в карточку заказа
+    # Создаем кнопку для перехода прямо в карточку заказа (оставляем оригинал)
     admin_kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -143,12 +160,14 @@ async def client_send_reply(
         ]
     )
 
+    # Уведомление админу через локаль
+    admin_text = locale.get_text("admin_notify_client_reply", order_id=order_id)
+
     for admin_id in config.ADMIN_ID:
         try:
             await message.bot.send_message(
                 chat_id=admin_id,
-                text=f"💬 <b>Новое сообщение в заказе #{order_id}</b>\n\n"
-                f"Клиент написал ответ по заказу.",
+                text=admin_text,
                 reply_markup=admin_kb,
             )
         except Exception as e:

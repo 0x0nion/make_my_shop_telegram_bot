@@ -1,7 +1,6 @@
-# handlers/client/order/order.py
 import logging
 
-from aiogram import Router, F
+from aiogram import F, Router
 from aiogram.types import CallbackQuery
 
 from database.models import User
@@ -15,35 +14,48 @@ user_order_router = Router()
 
 
 @user_order_router.callback_query(F.data == "client_orders")
-async def show_pending_orders(callback: CallbackQuery, user_repo: UserRepository, user: User):
+async def show_pending_orders(
+    callback: CallbackQuery,
+    user_repo: UserRepository,
+    user: User,
+):
     user_id = callback.from_user.id
+    lang = user.language if user and user.language else "ru"
 
-    locale = Locale(user.language)
-    kb_manager = InlineKb(user.language)
+    locale = Locale(lang)
+    kb_manager = InlineKb(lang)
 
     orders = await user_repo.get_pending_orders(user_id)
 
     if not orders:
-        text = locale.get_text('user_empty_orders')
-        reply_markup = kb_manager.get_main_kb(orders=len(user.orders), cart=len(user.cart))
+        text = locale.get_text("user_empty_orders")
+        orders_count = len(getattr(user, "orders", []) or [])
+        cart_count = len(getattr(user, "cart", []) or [])
+        reply_markup = kb_manager.get_main_kb(
+            orders=orders_count, cart=cart_count
+        )
     else:
-        text = locale.get_text('user_active_orders_title')
+        text = locale.get_text("user_active_orders_title")
         reply_markup = kb_manager.get_orders_kb(orders)
 
     await UIManager.show(
         event=callback,
         text=text,
-        reply_markup=reply_markup
+        reply_markup=reply_markup,
     )
 
 
 @user_order_router.callback_query(F.data.startswith("view_details_order_"))
-async def view_order_details(callback: CallbackQuery, user_repo: UserRepository):
+async def view_order_details(
+    callback: CallbackQuery,
+    user_repo: UserRepository,
+    user: User,
+):
     user_id = callback.from_user.id
-    user = await user_repo.get_user(user_id=user_id)
+    lang = user.language if user and user.language else "ru"
 
-    locale = Locale(user.language)
-    kb_manager = InlineKb(user.language)
+    locale = Locale(lang)
+    kb_manager = InlineKb(lang)
 
     order_id = int(callback.data.split("_")[-1])
 
@@ -54,7 +66,7 @@ async def view_order_details(callback: CallbackQuery, user_repo: UserRepository)
         # так как UIManager управляет отрисовкой сообщений в чате
         await callback.answer(
             text=locale.get_text("user_order_not_found"),
-            show_alert=True
+            show_alert=True,
         )
         return
 
@@ -64,5 +76,5 @@ async def view_order_details(callback: CallbackQuery, user_repo: UserRepository)
     await UIManager.show(
         event=callback,
         text=text,
-        reply_markup=reply_markup
+        reply_markup=reply_markup,
     )

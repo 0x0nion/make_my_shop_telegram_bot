@@ -11,7 +11,6 @@ class ProductUnit(str, Enum):
     MILLILITER = "ml"
 
 
-# Переводы меток для UI (ru, en, es)
 UNIT_LABELS: dict[ProductUnit, dict[str, str]] = {
     ProductUnit.PIECE: {"ru": "шт.", "en": "pcs", "es": "un."},
     ProductUnit.GRAM: {"ru": "г", "en": "g", "es": "g"},
@@ -25,15 +24,13 @@ UNIT_LABELS: dict[ProductUnit, dict[str, str]] = {
 DEFAULT_UNIT = ProductUnit.PIECE
 
 
-def get_unit_label(unit_code: str | None, lang: str = "ru") -> str:
+def get_unit_label(unit_code: str | None = None, lang: str = "ru") -> str:
     """Безопасно возвращает локализованную метку единицы измерения."""
     if not unit_code:
         unit_code = DEFAULT_UNIT.value
-
     try:
         unit_enum = ProductUnit(unit_code)
         labels = UNIT_LABELS[unit_enum]
-        return labels.get(lang, labels.get("ru", unit_code))
+        return labels.get(lang) or labels.get("en") or labels.get("ru") or str(unit_code)
     except ValueError:
-        # Фолбэк на случай старых или нестандартных значений в БД
         return str(unit_code)

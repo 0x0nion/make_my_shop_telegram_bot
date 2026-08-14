@@ -9,52 +9,46 @@ class Currency(str, Enum):
     RUB = "RUB"
 
 
-# Дефолтная базовая валюта системы
 DEFAULT_CURRENCY = Currency.USD
 
-# Метаданные валют
 CURRENCY_DATA: dict[Currency, dict[str, str]] = {
     Currency.USD: {
         "symbol": "$",
         "ru": "Доллар ($)",
         "en": "US Dollar ($)",
-        "es": "Dólar ($)"
+        "es": "Dólar ($)",
     },
     Currency.USDT: {
         "symbol": "USDT",
         "ru": "USDT",
         "en": "USDT",
-        "es": "USDT"
+        "es": "USDT",
     },
     Currency.BTC: {
         "symbol": "₿",
         "ru": "Bitcoin (₿)",
         "en": "Bitcoin (₿)",
-        "es": "Bitcoin (₿)"
+        "es": "Bitcoin (₿)",
     },
     Currency.ARS: {
         "symbol": "ARS$",
         "ru": "Песо ($)",
         "en": "Peso ($)",
-        "es": "Peso ($)"
+        "es": "Peso ($)",
     },
     Currency.RUB: {
         "symbol": "₽",
         "ru": "Рубль (₽)",
         "en": "Ruble (₽)",
-        "es": "Rublo (₽)"
-    }
+        "es": "Rublo (₽)",
+    },
 }
 
 
 def get_currency_symbol(currency_code: str | None = None) -> str:
-    """
-    Возвращает символ валюты (например, '$', '₽', '₿').
-    Если код не передан или не найден — отдает символ дефолтной валюты.
-    """
+    """Возвращает символ валюты (например, '$', '₽', '₿')."""
     if not currency_code:
         return CURRENCY_DATA[DEFAULT_CURRENCY]["symbol"]
-
     try:
         curr_enum = Currency(currency_code)
         return CURRENCY_DATA.get(curr_enum, {}).get("symbol", currency_code)
@@ -62,14 +56,14 @@ def get_currency_symbol(currency_code: str | None = None) -> str:
         return currency_code
 
 
-def get_currency_label(currency_code: str | None = None, lang: str = "ru") -> str:
-    """
-    Возвращает локализованное название валюты для интерфейса.
-    """
+def get_currency_label(
+    currency_code: str | None = None, lang: str = "ru"
+) -> str:
+    """Возвращает локализованное название валюты."""
     code = currency_code or DEFAULT_CURRENCY.value
     try:
         curr_enum = Currency(code)
         labels = CURRENCY_DATA.get(curr_enum, {})
-        return labels.get(lang) or labels.get("en") or code
+        return labels.get(lang) or labels.get("en") or labels.get("ru") or code
     except ValueError:
         return code

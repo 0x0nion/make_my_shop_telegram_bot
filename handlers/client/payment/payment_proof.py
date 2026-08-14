@@ -7,7 +7,7 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
-from database.models.user import User
+from database.models import User
 from database.repositories.admin_repo import AdminRepository
 from database.repositories.user_repo import UserRepository
 from locales.locales import Locale
@@ -53,7 +53,9 @@ async def start_order_payment(
     user: User,
 ):
     """Вызывается при нажатии кнопки '✅ Я оплатил'."""
-    locale = Locale(lang=user.language or "ru")
+    lang = user.language if user and user.language else "ru"
+    locale = Locale(lang)
+
     order_id = int(callback.data.split(":")[1])
     order = await user_repo.get_order_with_items(order_id, callback.from_user.id)
 
@@ -85,7 +87,9 @@ async def process_pay_cash(
     user: User,
 ):
     """Вызывается при выборе оплаты наличными курьеру."""
-    locale = Locale(lang=user.language or "ru")
+    lang = user.language if user and user.language else "ru"
+    locale = Locale(lang)
+
     order_id = int(callback.data.split(":")[1])
 
     # 1. Записываем тип и маркер подтверждения
@@ -100,9 +104,11 @@ async def process_pay_cash(
         await callback.answer(locale.get_text("order_not_found"), show_alert=True)
         return
 
-    # 2. Так как проверка админом не требуется, переводим сразу в статус обработки (готовится к передаче курьеру)
-    updated_order.status = OrderStatus.PROCESSING.value
-    await user_repo.session.commit()
+    # 2. Обновляем статус заказа до 'processing' через репозиторий
+    await user_repo.update_order_status(
+        order_id=order_id,
+        status=OrderStatus.PROCESSING.value,
+    )
 
     await callback.answer()
 
@@ -139,7 +145,9 @@ async def process_payment_proof_input(
     user: User,
 ):
     """Единый обработчик скриншота, файла или хэша транзакции."""
-    locale = Locale(lang=user.language or "ru")
+    lang = user.language if user and user.language else "ru"
+    locale = Locale(lang)
+
     data = await state.get_data()
     order_id: Optional[int] = data.get("active_order_id")
     instruction_msg_id: Optional[int] = data.get("instruction_msg_id")
@@ -225,5 +233,33 @@ async def process_payment_proof_input(
             message_id=confirm_msg.message_id,
             bot=bot,
             delay=20,
+        )
+    )
+
+
+@user_payment_router.message(UserPaymentState.waiting_for_proof)
+async def process_invalid_payment_proof(
+    message: Message,
+    bot: Bot,
+    user: User,
+):
+    """Отлавливает некорректный контент (стикеры, аудио, видео) в состоянии ожидания чека."""
+    lang = user.language if user and user.language else "ru"
+    locale = Locale(lang)
+
+    await safe_delete_message(
+        bot=bot, chat_id=message.chat.id, message_id=message.message_id
+    )
+
+    err_msg = await bot.send_message(
+        chat_id=message.chat.id,
+        text=locale.get_text("invalid_payment_proof_type"),
+    )
+    asyncio.create_task(
+        delete_message_after_delay(
+            chat_id=err_msg.chat.id,
+            message_id=err_msg.message_id,
+            bot=bot,
+            delay=10,
         )
     )
