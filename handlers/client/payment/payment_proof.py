@@ -54,9 +54,8 @@ async def start_order_payment(
     user: User,
 ):
     """Вызывается при нажатии кнопки '✅ Я оплатил'."""
-    lang = user.language if user and user.language else "ru"
-    locale = Locale(lang)
-    kb = ClientInlineKb(lang=lang)
+    locale = Locale(user.language)
+    kb = ClientInlineKb(lang=user.language)
 
     order_id = int(callback.data.split(":")[1])
     order = await user_repo.get_order_with_items(order_id, callback.from_user.id)
@@ -94,8 +93,7 @@ async def process_pay_cash(
     user: User,
 ):
     """Вызывается при выборе оплаты наличными курьеру."""
-    lang = user.language if user and user.language else "ru"
-    locale = Locale(lang)
+    locale = Locale(user.language)
 
     order_id = int(callback.data.split(":")[1])
 
@@ -148,8 +146,7 @@ async def process_payment_proof_input(
     user: User,
 ):
     """Единый обработчик скриншота, файла или хэша транзакции."""
-    lang = user.language if user and user.language else "ru"
-    locale = Locale(lang)
+    locale = Locale(user.language)
 
     data = await state.get_data()
     order_id: Optional[int] = data.get("active_order_id")
@@ -252,8 +249,7 @@ async def process_invalid_payment_proof(
     user: User,
 ):
     """Отлавливает некорректный контент (стикеры, аудио, видео) в состоянии ожидания чека."""
-    lang = user.language if user and user.language else "ru"
-    locale = Locale(lang)
+    locale = Locale(user.language)
 
     await safe_delete_message(
         bot=bot, chat_id=message.chat.id, message_id=message.message_id

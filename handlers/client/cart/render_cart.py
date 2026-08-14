@@ -18,10 +18,9 @@ async def render_cart(
     """Рендерит текущую корзину пользователя со списком товаров, суммой и деталями доставки."""
     # Загружаем пользователя вместе с корзиной и заказами
     user = await user_repo.get_user_with_cart(user_id=event.from_user.id)
-    lang = user.language if user and user.language else "ru"
 
-    locale = Locale(lang)
-    kb_manager = ClientInlineKb(lang=lang)
+    locale = Locale(user.language)
+    kb_manager = ClientInlineKb(lang=user.language)
 
     state_data = await state.get_data()
     cart_msg_id = state_data.get("cart_message_id")

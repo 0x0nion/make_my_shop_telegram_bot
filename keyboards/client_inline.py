@@ -20,7 +20,7 @@ class ClientInlineKb(BaseKeyboardFactory):
     _base_dir = Path(__file__).resolve().parent
     JSON_PATH = _base_dir / "client_kb.json"
 
-    def __init__(self, lang: str = "ru"):
+    def __init__(self, lang: str = "en"):
         actual_path = self.JSON_PATH
         if not actual_path.exists():
             for fallback_name in ("kb.json", "user_kb.json"):

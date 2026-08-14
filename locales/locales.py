@@ -20,8 +20,8 @@ class Locale:
     locale_path = Path(__file__).resolve().parent / "msg.json"
     _cached_locales: Optional[Dict[str, Any]] = None
 
-    def __init__(self, lang: str = "ru"):
-        self.lang = lang or "ru"
+    def __init__(self, lang: str = "en"):
+        self.lang = lang or "en"
         self.locales: Dict[str, Any] = self._get_locales()
 
     @classmethod

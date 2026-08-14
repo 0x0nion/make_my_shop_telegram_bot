@@ -32,9 +32,8 @@ async def get_address(
     state: FSMContext,
     user: User,
 ):
-    lang = user.language if user and user.language else "ru"
-    locale = Locale(lang)
-    kb = ClientInlineKb(lang=lang)
+    locale = Locale(user.language)
+    kb = ClientInlineKb(lang=user.language)
 
     await state.set_state(UserState.waiting_for_address)
     await state.update_data(cart_message_id=callback.message.message_id)
@@ -53,9 +52,8 @@ async def process_address(
     user_repo: UserRepository,
     user: User,
 ):
-    lang = user.language if user and user.language else "ru"
-    locale = Locale(lang)
-    kb = ClientInlineKb(lang=lang)
+    locale = Locale(user.language)
+    kb = ClientInlineKb(lang=user.language)
 
     with suppress(TelegramBadRequest):
         await message.delete()
@@ -152,22 +150,20 @@ async def update_quantity(
 
 @user_cart_router.callback_query(F.data == "checkout_confirm")
 async def checkout_order(
-    callback: CallbackQuery,
-    user_repo: UserRepository,
-    state: FSMContext,
-    user: User,
+        callback: CallbackQuery,
+        user_repo: UserRepository,
+        state: FSMContext,
+        user: User,
 ):
-    user_id = callback.from_user.id
-    lang = user.language if user and user.language else "ru"
-    locale = Locale(lang)
-    kb = ClientInlineKb(lang=lang)
+    locale = Locale(user.language)
+    kb = ClientInlineKb(lang=user.language)
 
     user_data = await state.get_data()
     delivery_address = user_data.get("delivery_address")
     user_comment = user_data.get("user_comment")
 
     order = await user_repo.create_order_from_cart(
-        user_id=user_id,
+        user_id=user.id,
         delivery_address=delivery_address,
         user_comment=user_comment,
     )
@@ -182,15 +178,19 @@ async def checkout_order(
     await state.clear()
 
     success_text = locale.format_order(order)
-    updated_user = await user_repo.get_user_with_cart(user_id=user_id)
+
+    # Заново запрашиваем пользователя из базы, чтобы подтянуть пустую корзину и новый заказ
+    updated_user = await user_repo.get_user_with_cart(user_id=user.id)
 
     orders_count = (
         len(updated_user.orders)
-        if getattr(updated_user, "orders", None)
+        if updated_user and getattr(updated_user, "orders", None)
         else 0
     )
     cart_count = (
-        len(updated_user.cart) if getattr(updated_user, "cart", None) else 0
+        len(updated_user.cart)
+        if updated_user and getattr(updated_user, "cart", None)
+        else 0
     )
 
     await UIManager.show(

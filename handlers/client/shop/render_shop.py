@@ -19,10 +19,9 @@ async def render_shop_menu(
     """Универсальная и безопасная функция отрисовки интерфейса магазина для клиента."""
     user_id = event.from_user.id
     user = await user_repo.get_user(user_id=user_id)
-    lang = user.language if user and user.language else "ru"
 
-    locale = Locale(lang)
-    kb_manager = ClientInlineKb(lang=lang)
+    locale = Locale(user.language)
+    kb_manager = ClientInlineKb(lang=user.language)
 
     current_cat = None
     parent_id = None
@@ -39,7 +38,7 @@ async def render_shop_menu(
                 await user_repo.get_locale_text(
                     entity_type="category_name",
                     entity_id=current_cat_id,
-                    lang_code=lang,
+                    lang_code=user.language,
                 )
                 or current_cat.name
             )
@@ -49,7 +48,7 @@ async def render_shop_menu(
                 await user_repo.get_locale_text(
                     entity_type="category_description",
                     entity_id=current_cat_id,
-                    lang_code=lang,
+                    lang_code=user.language,
                 )
                 or ""
             )
@@ -67,7 +66,7 @@ async def render_shop_menu(
             await user_repo.get_locale_text(
                 entity_type="category_description",
                 entity_id=0,
-                lang_code=lang,
+                lang_code=user.language,
             )
             or ""
         )
@@ -86,7 +85,7 @@ async def render_shop_menu(
                 user_repo.get_locale_text(
                     entity_type="category_name",
                     entity_id=cat.id,
-                    lang_code=lang,
+                    lang_code=user.language,
                 )
                 for cat in db_categories
             ]

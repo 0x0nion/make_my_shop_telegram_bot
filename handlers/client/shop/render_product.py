@@ -51,7 +51,7 @@ async def show_product_card(
     product_id: int,
     shop_repo: ShopRepository,
     bot: Bot,
-    lang: str = "ru",
+    lang: str = "en",
     cart_item: int = 0,
     old_message_id: Optional[int] = None,
 ):

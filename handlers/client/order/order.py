@@ -20,13 +20,10 @@ async def show_pending_orders(
     user: User,
 ):
     """Отображает список активных/незавершенных заказов пользователя."""
-    user_id = callback.from_user.id
-    lang = user.language if user and user.language else "ru"
+    locale = Locale(user.language)
+    kb_manager = ClientInlineKb(lang=user.language)
 
-    locale = Locale(lang)
-    kb_manager = ClientInlineKb(lang=lang)
-
-    orders = await user_repo.get_pending_orders(user_id)
+    orders = await user_repo.get_pending_orders(user_id=user.id)
 
     if not orders:
         text = locale.get_text("user_empty_orders")
@@ -53,14 +50,11 @@ async def view_order_details(
     user: User,
 ):
     """Отображает подробную информацию по конкретному заказу."""
-    user_id = callback.from_user.id
-    lang = user.language if user and user.language else "ru"
-
-    locale = Locale(lang)
-    kb_manager = ClientInlineKb(lang=lang)
+    locale = Locale(user.language)
+    kb_manager = ClientInlineKb(lang=user.language)
 
     order_id = int(callback.data.split("_")[-1])
-    order = await user_repo.get_order_with_items(order_id, user_id)
+    order = await user_repo.get_order_with_items(order_id, user.id)
 
     if not order:
         await callback.answer(

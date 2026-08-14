@@ -69,25 +69,25 @@
     "en": "🛒 <b>Shopping Cart:</b>\n\n",
     "es": "🛒 <b>Carrito de compras:</b>\n\n"
   },
-  "cart_item_line": {
-    "ru": "• {name} — {quantity} {unit} x {price:.2f} {currency} = {item_total:.2f} {currency}\n",
-    "en": "• {name} — {quantity} {unit} x {price:.2f} {currency} = {item_total:.2f} {currency}\n",
-    "es": "• {name} — {quantity} {unit} x {price:.2f} {currency} = {item_total:.2f} {currency}\n"
-  },
+"cart_item_line": {
+  "ru": "• {name} — {quantity} {unit} x {price} {currency} = {item_total} {currency}\n",
+  "en": "• {name} — {quantity} {unit} x {price} {currency} = {item_total} {currency}\n",
+  "es": "• {name} — {quantity} {unit} x {price} {currency} = {item_total} {currency}\n"
+},
   "cart_summary_subtotal": {
-    "ru": "\n💰 <b>Товары:</b> {subtotal:.2f} {currency}\n",
-    "en": "\n💰 <b>Subtotal:</b> {subtotal:.2f} {currency}\n",
-    "es": "\n💰 <b>Productos:</b> {subtotal:.2f} {currency}\n"
+    "ru": "\n💰 <b>Товары:</b> {subtotal} {currency}\n",
+    "en": "\n💰 <b>Subtotal:</b> {subtotal} {currency}\n",
+    "es": "\n💰 <b>Productos:</b> {subtotal} {currency}\n"
   },
   "cart_summary_delivery": {
-    "ru": "🚚 <b>Доставка:</b> {delivery:.2f} {currency}\n",
-    "en": "🚚 <b>Delivery:</b> {delivery:.2f} {currency}\n",
-    "es": "🚚 <b>Envío:</b> {delivery:.2f} {currency}\n"
+    "ru": "🚚 <b>Доставка:</b> {delivery} {currency}\n",
+    "en": "🚚 <b>Delivery:</b> {delivery} {currency}\n",
+    "es": "🚚 <b>Envío:</b> {delivery:} {currency}\n"
   },
   "cart_summary_total": {
-    "ru": "💵 <b>Итого:</b> {total:.2f} {currency}\n\n",
-    "en": "💵 <b>Total:</b> {total:.2f} {currency}\n\n",
-    "es": "💵 <b>Total:</b> {total:.2f} {currency}\n\n"
+    "ru": "💵 <b>Итого:</b> {total} {currency}\n\n",
+    "en": "💵 <b>Total:</b> {total} {currency}\n\n",
+    "es": "💵 <b>Total:</b> {total} {currency}\n\n"
   },
   "cart_address_label": {
     "ru": "📍 <b>Адрес:</b> {address}\n",

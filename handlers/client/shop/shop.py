@@ -4,6 +4,7 @@ from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
+from database.models import User
 from database.repositories.shop_repo import ShopRepository
 from database.repositories.user_repo import UserRepository
 from handlers.client.shop.render_product import show_product_card
@@ -63,6 +64,7 @@ async def route_product_card(
     callback: CallbackQuery,
     shop_repo: ShopRepository,
     user_repo: UserRepository,
+    user: User
 ) -> None:
     """Отображение карточки товара."""
     await callback.answer()
@@ -73,8 +75,6 @@ async def route_product_card(
         )
         return
 
-    user = await user_repo.get_user_with_cart(user_id=callback.from_user.id)
-    lang = user.language if user and user.language else "ru"
     cart_count = len(user.cart) if user and user.cart else 0
 
     await show_product_card(
@@ -83,7 +83,7 @@ async def route_product_card(
         shop_repo=shop_repo,
         cart_item=cart_count,
         bot=callback.bot,
-        lang=lang,
+        lang=user.language,
         old_message_id=callback.message.message_id,
     )
 
@@ -107,13 +107,13 @@ async def order_product(
     await user_repo.add_to_cart(
         user_id=callback.from_user.id, product_id=product_id
     )
+
     user = await user_repo.get_user_with_cart(user_id=callback.from_user.id)
 
-    lang = user.language if user and user.language else "ru"
     cart_count = len(user.cart) if user and user.cart else 0
 
     # Уведомление пользователю о добавлении товара в корзину через локали
-    locale = Locale(lang)
+    locale = Locale(user.language)
     added_msg = locale.get_text("product_added_to_cart")
 
     await callback.answer(text=added_msg, show_alert=False)
@@ -125,6 +125,6 @@ async def order_product(
         shop_repo=shop_repo,
         cart_item=cart_count,
         bot=callback.bot,
-        lang=lang,
+        lang=user.language,
         old_message_id=callback.message.message_id,
     )

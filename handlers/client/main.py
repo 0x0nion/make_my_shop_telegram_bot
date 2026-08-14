@@ -58,16 +58,13 @@ async def cmd_start(
 
     if user and user.language:
         await show_client_main_menu(
-            event=message, user_repo=user_repo, user=user
+            event=message,
+            user_repo=user_repo,
+            user=user
         )
     else:
-        if not user:
-            await user_repo.create_user(user_id=message.from_user.id)
-
-        # Подтягиваем локаль по умолчанию для выбора языка
-        default_lang = "ru"
-        locale = Locale(default_lang)
-        kb = ClientInlineKb(lang=default_lang)
+        locale = Locale("en")
+        kb = ClientInlineKb(lang="en")
 
         await UIManager.show(
             event=message,
@@ -97,9 +94,8 @@ async def open_settings(
     user: User,
 ) -> None:
     await callback.answer()
-    lang = user.language if user and user.language else "en"
-    locale = Locale(lang)
-    kb = ClientInlineKb(lang=lang)
+    locale = Locale(user.language)
+    kb = ClientInlineKb(lang=user.language)
 
     await UIManager.show(
         event=callback,
@@ -117,10 +113,10 @@ async def select_language(
     await callback.answer()
     lang_code = callback.data.split("_")[-1]
 
-    await user_repo.update_language(
-        user_id=callback.from_user.id, language=lang_code
+    user = await user_repo.update_language(
+        user_id=callback.from_user.id,
+        language=lang_code
     )
-    user = await user_repo.get_or_create_user(callback.from_user)
 
     if callback.message:
         try:

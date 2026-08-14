@@ -39,11 +39,10 @@ async def client_start_reply(
     parts = callback.data.split(":")
     order_id = int(parts[1])
 
-    lang = user.language if user and user.language else "ru"
-    locale = Locale(lang)
+    locale = Locale(user.language)
 
     # Загружаем клавиатуру отмены напрямую из kb.json по ключу "cancel_reply"
-    kb = ClientInlineKb(lang=lang)
+    kb = ClientInlineKb(lang=user.language)
     cancel_kb = kb.get_kb("cancel_reply")
 
     # 1. Рендерим меню ввода
@@ -73,8 +72,7 @@ async def client_cancel_reply(
 ):
     """Отмена ввода ответа клиентом."""
     await state.clear()
-    lang = user.language if user and user.language else "ru"
-    locale = Locale(lang)
+    locale = Locale(user.language)
 
     await UIManager.show(
         event=callback,
@@ -91,8 +89,7 @@ async def client_send_reply(
     user: User,
 ):
     """Получает текст от клиента, сохраняет в историю заказа и уведомляет администраторов."""
-    lang = user.language if user and user.language else "ru"
-    locale = Locale(lang)
+    locale = Locale(user.language)
 
     data = await state.get_data()
     order_id = data.get("order_id")
