@@ -8,6 +8,7 @@ from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKe
 from database.models.user import User
 from database.repositories.admin_repo import AdminRepository
 from handlers.admin.orders.common import render_order_detail
+from src.core.ui import UIManager
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,6 @@ def format_chat_history(chat_history: list | None, page: int = 1) -> tuple[str, 
 
     history_text += "—" * 20 + f"\n📄 Страница {current_page} из {total_pages}\n\n"
 
-    # Создаем клавиатуру пагинации для истории, если страниц больше одной
     pagination_buttons = []
     if total_pages > 1:
         if current_page > 1:
@@ -87,7 +87,6 @@ async def process_contact_client_start(
         await callback.answer("❌ Данные пользователя или сам заказ недоступны", show_alert=True)
         return
 
-    # Сохраняем необходимые данные в стейт (включая последнюю страницу истории по умолчанию)
     chat_history = order.chat_history or []
     initial_chat_page = max(1, (len(chat_history) + MESSAGES_PER_PAGE - 1) // MESSAGES_PER_PAGE)
 
@@ -107,7 +106,6 @@ async def process_contact_client_start(
     if nav_buttons:
         keyboard_rows.append(nav_buttons)
 
-    # Кнопка отмены возвращает в карточку заказа
     keyboard_rows.append(
         [InlineKeyboardButton(text="❌ Отмена", callback_data=f"admin_order_view:{order_id}:{status}:{page}")]
     )
@@ -120,8 +118,13 @@ async def process_contact_client_start(
         f"Введите текст сообщения, который хотите отправить покупателю:"
     )
 
-    await callback.message.edit_text(text=text_content, reply_markup=cancel_kb)
-    await callback.answer()
+    # Используем UIManager для отрисовки экрана ввода сообщения
+    await UIManager.show(
+        event=callback,
+        text=text_content,
+        reply_markup=cancel_kb,
+        message_id_to_edit=callback.message.message_id,
+    )
 
 
 @order_contact_router.callback_query(F.data.startswith("admin_chat_page:"))
@@ -165,11 +168,13 @@ async def process_chat_pagination(
         f"Введите текст сообщения, который хотите отправить покупателю:"
     )
 
-    try:
-        await callback.message.edit_text(text=text_content, reply_markup=cancel_kb)
-    except Exception:
-        pass
-    await callback.answer()
+    # Используем UIManager для пагинации (автоматически обработает «message is not modified»)
+    await UIManager.show(
+        event=callback,
+        text=text_content,
+        reply_markup=cancel_kb,
+        message_id_to_edit=callback.message.message_id,
+    )
 
 
 @order_contact_router.message(AdminContactStates.waiting_for_message)
@@ -192,7 +197,6 @@ async def process_send_client_message(
 
     await state.clear()
 
-    # Удаляем сообщение с введенным текстом от администратора
     try:
         await message.delete()
     except Exception as e:
@@ -201,7 +205,6 @@ async def process_send_client_message(
     if not target_user_id or not order_id:
         return
 
-    # 1. Формируем запись сообщения админа
     now_str = datetime.utcnow().strftime("%d.%m.%Y %H:%M")
     message_record = {
         "sender": "admin",
@@ -209,10 +212,8 @@ async def process_send_client_message(
         "time": now_str,
     }
 
-    # 2. Сохраняем в историю заказа в БД
     await admin_repo.append_order_chat_history(order_id, message_record)
 
-    # Кнопка для клиента, чтобы он мог ответить
     client_kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="💬 Ответить администратору", callback_data=f"client_reply_order:{order_id}")]
@@ -220,7 +221,6 @@ async def process_send_client_message(
     )
 
     try:
-        # Отправляем сообщение клиенту
         await message.bot.send_message(
             chat_id=target_user_id,
             text=f"💬 <b>Сообщение от администрации по заказу #{order_id}:</b>\n\n{message.text}",
@@ -230,7 +230,6 @@ async def process_send_client_message(
         logger.error(f"[ADMIN CONTACT] Failed to send message to user {target_user_id}: {e}")
         return
 
-    # Возвращаем администратора обратно в карточку заказа
     await render_order_detail(
         event=message,
         admin_repo=admin_repo,

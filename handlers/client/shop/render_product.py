@@ -1,6 +1,6 @@
 import asyncio
 from aiogram import Bot
-from aiogram.types import Message, InputMediaPhoto
+from aiogram.types import Message, Chat
 from aiogram.exceptions import TelegramBadRequest
 
 from database.repositories.shop_repo import ShopRepository
@@ -9,6 +9,7 @@ from locales.locales import Locale
 from locales.units import get_unit_label  # Единая логика с админкой!
 from locales.currencies import get_currency_symbol  # Единая логика с админкой!
 from utils.logger import logger
+from src.core.ui import UIManager
 
 
 def format_product_from_template(product, locale: Locale, lang: str = "en") -> str:
@@ -103,48 +104,18 @@ async def show_product_card(
         manager_url=manager_url
     )
 
-    try:
-        if product.image_id:
-            await bot.edit_message_media(
-                chat_id=chat_id,
-                message_id=old_message_id,
-                media=InputMediaPhoto(
-                    media=product.image_id,
-                    caption=text,
-                    parse_mode="HTML"
-                ),
-                reply_markup=reply_markup
-            )
-        else:
-            await bot.edit_message_text(
-                chat_id=chat_id,
-                message_id=old_message_id,
-                text=text,
-                parse_mode="HTML",
-                reply_markup=reply_markup,
-            )
-    except TelegramBadRequest as e:
-        if "message is not modified" not in str(e).lower():
-            try:
-                await bot.delete_message(
-                    chat_id=chat_id,
-                    message_id=old_message_id
-                )
-            except Exception:
-                pass
+    # Формируем минимальный объект Message для корректной работы UIManager
+    dummy_msg = Message(
+        message_id=old_message_id or 0,
+        date=None,
+        chat=Chat(id=chat_id, type="private")
+    )
+    dummy_msg._bot = bot
 
-            if product.image_id:
-                await bot.send_photo(
-                    chat_id=chat_id,
-                    photo=product.image_id,
-                    caption=text,
-                    parse_mode="HTML",
-                    reply_markup=reply_markup,
-                )
-            else:
-                await bot.send_message(
-                    chat_id=chat_id,
-                    text=text,
-                    parse_mode="HTML",
-                    reply_markup=reply_markup,
-                )
+    return await UIManager.show(
+        event=dummy_msg,
+        text=text,
+        reply_markup=reply_markup,
+        photo=product.image_id if product.image_id else None,
+        message_id_to_edit=old_message_id
+    )

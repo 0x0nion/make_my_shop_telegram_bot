@@ -7,6 +7,7 @@ from database.repositories.admin_repo import AdminRepository
 from handlers.admin.orders.common import render_order_detail
 from handlers.admin.utils import get_user_lang
 from keyboards.admin_inline import AdminInlineKb
+from src.core.ui import UIManager
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,6 @@ async def process_change_status_menu(
         "order_status_prompt",
         f"🔄 <b>Изменение статуса заказа #{order_id}</b>\n\nВыберите новый статус из списка:"
     )
-    # Если в admin_messages нет конкретного ключа, формируем динамически
     if "{order_id}" in prompt_text:
         prompt_text = prompt_text.format(order_id=order_id)
 
@@ -51,11 +51,12 @@ async def process_change_status_menu(
         page=page,
     )
 
-    await callback.message.edit_text(
+    # Используем UIManager для отрисовки меню выбора статуса
+    await UIManager.show(
+        event=callback,
         text=prompt_text,
         reply_markup=reply_markup,
     )
-    await callback.answer()
 
 
 @order_status_router.callback_query(F.data.startswith("admin_order_set_status:"))
@@ -85,7 +86,7 @@ async def process_set_order_status(
 
     await callback.answer(f"✅ Статус заказа успешно изменен на: {new_status}", show_alert=True)
 
-    # Возвращаем в подробную карточку заказа
+    # Возвращаем в подробную карточку заказа (UIManager уже задействован внутри render_order_detail)
     await render_order_detail(
         event=callback,
         admin_repo=admin_repo,

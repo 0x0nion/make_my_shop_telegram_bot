@@ -9,6 +9,7 @@ from database.repositories.user_repo import UserRepository
 from handlers.client.cart.render_cart import render_cart
 from keyboards.inline import InlineKb
 from locales.locales import Locale
+from src.core.ui import UIManager
 from state.user_states import UserState
 
 user_cart_router = Router()
@@ -27,11 +28,11 @@ async def get_address(callback: CallbackQuery, state: FSMContext, user_repo: Use
     user = await user_repo.get_user(callback.from_user.id)
     await state.update_data(cart_message_id=callback.message.message_id)
 
-    await callback.message.edit_text(
+    await UIManager.show(
+        event=callback,
         text=Locale(user.language).get_text('user_set_address'),
         reply_markup=InlineKb(user.language).get_kb('cancel')
     )
-    await callback.answer()
 
 
 @user_cart_router.message(UserState.waiting_for_address)
@@ -65,11 +66,11 @@ async def ask_comment(callback: CallbackQuery, user_repo: UserRepository, state:
     user = await user_repo.get_user(callback.from_user.id)
     await state.update_data(cart_message_id=callback.message.message_id)
 
-    await callback.message.edit_text(
+    await UIManager.show(
+        event=callback,
         text=Locale(user.language).get_text('user_set_comment'),
         reply_markup=InlineKb(user.language).get_kb('cancel')
     )
-    await callback.answer()
 
 
 @user_cart_router.message(UserState.waiting_for_comment)
@@ -128,11 +129,11 @@ async def checkout_order(callback: CallbackQuery, user_repo: UserRepository, sta
     success_text = locale.format_order(order)
     updated_user = await user_repo.get_user_with_cart(user_id=user_id)
 
-    await callback.message.edit_text(
+    await UIManager.show(
+        event=callback,
         text=success_text,
         reply_markup=InlineKb(user.language).get_main_kb(
             orders=len(updated_user.orders) if hasattr(updated_user, "orders") else 0,
             cart=len(updated_user.cart) if hasattr(updated_user, "cart") else 0
         )
     )
-    await callback.answer()
