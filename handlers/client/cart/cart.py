@@ -77,7 +77,6 @@ async def process_address(
         await state.set_state(None)
         await render_cart(event=message, user_repo=user_repo, state=state)
     else:
-        # Если отправлен неподдерживаемый тип контента (стикер, фото и т.д.)
         data = await state.get_data()
         cart_msg_id = data.get("cart_message_id")
         await UIManager.show(
