@@ -1,3 +1,4 @@
+# handlers/client/cart/cart.py
 from contextlib import suppress
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
@@ -68,7 +69,7 @@ async def process_address(
         maps_url = (
             f"https://www.google.com/maps/search/?api=1&query={latitude},{longitude}"
         )
-        address = locale.format_address(maps_url)
+        address = maps_url
     elif message.text:
         address = message.text.strip()
 
@@ -165,7 +166,7 @@ async def checkout_order(
 
     order = await user_repo.create_order_from_cart(
         user_id=user.id,
-        delivery_address=delivery_address,
+        delivery_address=locale.format_address(delivery_address),
         user_comment=user_comment,
     )
 

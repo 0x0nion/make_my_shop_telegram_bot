@@ -1,3 +1,4 @@
+# handlers/client/shop/shop.py
 import logging
 
 from aiogram import F, Router

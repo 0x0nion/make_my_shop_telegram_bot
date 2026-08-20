@@ -1,3 +1,4 @@
+# handlers/client/shop/render_shop.py
 import asyncio
 from aiogram.types import CallbackQuery, Message
 

@@ -1,3 +1,4 @@
+# handlers/client/shop/render_product.py
 import asyncio
 from typing import Optional
 
