@@ -8,6 +8,7 @@ from database.connection import async_session, init_db
 
 from handlers import routers as all_routers
 from middlewares.db import DbSessionMiddleware
+from aiogram.fsm.storage.memory import MemoryStorage
 
 
 async def main():
@@ -35,4 +36,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-    
