@@ -226,7 +226,7 @@ async def process_reject_payment(
     client_locale = Locale(lang=client_lang)
 
     raw_reject_msg = client_locale.get_text("client.user_payment_rejected_notification")
-    reject_msg = raw_reject_msg.format(order_id=order_id) if raw_reject_msg != "XXX" else f"Оплата по заказу №{order_id} отклонена."
+    reject_msg = raw_reject_msg.format(id=order_id) if raw_reject_msg != "XXX" else f"Оплата по заказу №{order_id} отклонена."
 
     try:
         payment_form_msg = client_locale.format_order(
