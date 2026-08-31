@@ -80,10 +80,10 @@ async def show_product_card(
 
     reply_markup = kb_manager.get_product_card_kb(
         product_id=current_id,
-        product=product,
         category_id=category_id,
         prev_id=getattr(prev_product, "id", None) if prev_product else None,
         next_id=getattr(next_product, "id", None) if next_product else None,
+        cart_item=cart_item,
         manager_url=manager_url,
     )
 
