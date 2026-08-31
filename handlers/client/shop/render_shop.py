@@ -4,8 +4,7 @@ from aiogram.types import CallbackQuery, Message
 
 from database.repositories.shop_repo import ShopRepository
 from database.repositories.user_repo import UserRepository
-from keyboards.client_inline import ClientInlineKb
-from locales.locales import Locale
+from locales.locale import Locale
 from src.core.ui import UIManager
 from utils.logger import logger
 
@@ -22,7 +21,7 @@ async def render_shop_menu(
     user = await user_repo.get_user(user_id=user_id)
 
     locale = Locale(user.language)
-    kb_manager = ClientInlineKb(lang=user.language)
+    kb_manager = locale.keyboards
 
     current_cat = None
     parent_id = None
@@ -55,14 +54,14 @@ async def render_shop_menu(
             )
 
             shop_caption = locale.get_text(
-                "shop_category_title", cat_name=cat_name
+                "client.shop_category_title", cat_name=cat_name
             )
         else:
             logger.warning(f"[SHOP] Category id={current_cat_id} not found.")
-            shop_caption = locale.get_text("shop_category_not_found")
+            shop_caption = locale.get_text("client.shop_category_not_found")
     else:
         # Корневое меню магазина (entity_id = 0)
-        shop_caption = locale.get_text("shop_main_menu_title")
+        shop_caption = locale.get_text("client.shop_main_menu_title")
         category_text = (
             await user_repo.get_locale_text(
                 entity_type="category_description",
@@ -114,7 +113,7 @@ async def render_shop_menu(
 
             # Безопасное форматирование через SafeDict в get_text
             line = locale.get_text(
-                "shop_product_line",
+                "client.shop_product_line",
                 id=product.id,
                 name=product.name,
                 price=f"{raw_price:.2f}",
@@ -128,7 +127,7 @@ async def render_shop_menu(
     else:
         text = base_text
 
-    # 5. Сборка клавиатуры через ClientInlineKb
+    # 5. Сборка клавиатуры через единый KeyboardFactory
     reply_markup = kb_manager.get_shop_keyboard(
         categories=db_categories,
         products=db_products,

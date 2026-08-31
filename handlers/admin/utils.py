@@ -8,11 +8,7 @@ SUPPORTED_LANGUAGES = {"ru", "en", "es"}
 DEFAULT_LANGUAGE = "en"
 
 
-def get_user_lang(user: User) -> str:
-    """DRY: Безопасное определение языка пользователя."""
-    if user and user.language in SUPPORTED_LANGUAGES:
-        return user.language
-    return DEFAULT_LANGUAGE
+
 
 
 def parse_id(raw_value: str) -> int | None:

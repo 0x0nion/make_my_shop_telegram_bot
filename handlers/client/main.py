@@ -6,8 +6,7 @@ from aiogram.types import CallbackQuery, Message
 
 from database.models import User
 from database.repositories.user_repo import UserRepository
-from keyboards.client_inline import ClientInlineKb
-from locales.locales import Locale
+from locales.locale import Locale
 from src.core.ui import UIManager
 
 client_main_router = Router()
@@ -30,12 +29,12 @@ async def show_client_main_menu(
     text, photo_id = await user_repo.get_welcome_card(lang_code=lang)
 
     if not text:
-        text = locale.get_text("user_main")
+        text = locale.get_text("client.user_main")
 
     orders_count = len(user.orders) if user and user.orders else 0
     cart_count = len(user.cart) if user and user.cart else 0
 
-    kb = ClientInlineKb(lang=lang)
+    kb = locale.keyboards
     reply_markup = kb.get_main_kb(orders=orders_count, cart=cart_count)
 
     await UIManager.show(
@@ -64,11 +63,11 @@ async def cmd_start(
         )
     else:
         locale = Locale("en")
-        kb = ClientInlineKb(lang="en")
+        kb = locale.keyboards
 
         await UIManager.show(
             event=message,
-            text=locale.get_text("select_language_title"),
+            text=locale.get_text("client.select_language_title"),
             reply_markup=kb.get_language_keyboard(),
         )
 
@@ -95,11 +94,11 @@ async def open_settings(
 ) -> None:
     await callback.answer()
     locale = Locale(user.language)
-    kb = ClientInlineKb(lang=user.language)
+    kb = locale.keyboards
 
     await UIManager.show(
         event=callback,
-        text=locale.get_text("select_language_title"),
+        text=locale.get_text("client.select_language_title"),
         reply_markup=kb.get_language_keyboard(),
         message_id_to_edit=callback.message.message_id,
     )

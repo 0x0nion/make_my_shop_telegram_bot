@@ -5,8 +5,7 @@ from aiogram.types import CallbackQuery
 from database.models.user import User
 from database.repositories.admin_repo import AdminRepository
 from handlers.admin.orders.common import render_order_detail
-from handlers.admin.utils import get_user_lang
-from keyboards.admin_inline import AdminInlineKb
+from locales.locale import Locale
 from src.core.ui import UIManager
 
 logger = logging.getLogger(__name__)
@@ -34,14 +33,12 @@ async def process_change_status_menu(
         await callback.answer("❌ Заказ не найден", show_alert=True)
         return
 
-    lang = get_user_lang(user)
-    kb = AdminInlineKb(lang=lang)
+    lang = user.language
+    locale = Locale(lang)
+    kb = locale.keyboards
 
     # Получаем локализованный текст через get_text
-    prompt_text = kb.get_text(
-        "order_status_prompt",
-        f"🔄 <b>Изменение статуса заказа #{order_id}</b>\n\nВыберите новый статус из списка:"
-    )
+    prompt_text = locale.get_text("admin.orders.status_prompt")
     if "{order_id}" in prompt_text:
         prompt_text = prompt_text.format(order_id=order_id)
 

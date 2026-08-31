@@ -57,13 +57,12 @@ def get_currency_symbol(currency_code: str | None = None) -> str:
 
 
 def get_currency_label(
-    currency_code: str | None = None, lang: str = "ru"
+    currency_code: str | None = DEFAULT_CURRENCY.value, lang: str = "ru"
 ) -> str:
     """Возвращает локализованное название валюты."""
-    code = currency_code or DEFAULT_CURRENCY.value
     try:
-        curr_enum = Currency(code)
+        curr_enum = Currency(currency_code)
         labels = CURRENCY_DATA.get(curr_enum, {})
-        return labels.get(lang) or labels.get("en") or labels.get("ru") or code
+        return labels.get(lang) or labels.get("en") or labels.get("ru") or currency_code
     except ValueError:
         return code

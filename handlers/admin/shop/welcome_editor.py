@@ -8,8 +8,8 @@ from aiogram.types import CallbackQuery, Message
 
 from database.models.user import User
 from database.repositories.admin_repo import AdminRepository
-from handlers.admin.utils import get_user_lang, self_destruct
-from keyboards.admin_inline import AdminInlineKb
+from handlers.admin.utils import self_destruct
+from locales.locale import Locale
 from src.core.ui import UIManager
 from state.admin_states import EditWelcome
 
@@ -31,8 +31,10 @@ async def show_welcome_card(
         use_temp=False,
     )
 
+    locale = Locale(lang=lang)
+
     if not text_val:
-        text_val = "👋 Добро пожаловать в наш магазин!"
+        text_val = locale.get_text("admin.welcome_editor.default_welcome")
 
     photo_id = await admin_repo.get_locale_text(
         entity_id=0,
@@ -43,8 +45,7 @@ async def show_welcome_card(
     if not photo_id or (photo_id.startswith("http") == False and len(photo_id) < 10):
         photo_id = None
 
-    kb = AdminInlineKb(lang=lang)
-    reply_markup = kb.get_welcome_editor_kb(has_photo=bool(photo_id))
+    reply_markup = locale.keyboards.get_welcome_editor_kb(has_photo=bool(photo_id))
 
     await UIManager.show(
         event=event,
@@ -60,7 +61,7 @@ async def route_welcome_card(
         callback: CallbackQuery, admin_repo: AdminRepository, user: User
 ):
     """Открытие меню редактора приветствия по кнопке из настроек магазина."""
-    lang = get_user_lang(user)
+    lang = user.language
     await show_welcome_card(event=callback, admin_repo=admin_repo, lang=lang)
     await callback.answer()
 
@@ -70,13 +71,14 @@ async def start_edit_welcome_text(
         callback: CallbackQuery, state: FSMContext, user: User
 ):
     """Запрос нового текста приветствия."""
-    lang = get_user_lang(user)
-    kb = AdminInlineKb(lang=lang)
+    await callback.answer()
+    lang = user.language
+    locale = Locale(lang=lang)
 
     await state.set_state(EditWelcome.text)
     await state.update_data(menu_message_id=callback.message.message_id)
 
-    prompt_text = kb.get_text("prompts.welcome_text", "✍️ Введите новый текст приветственного сообщения:")
+    prompt_text = locale.get_text("admin.welcome_editor.text")
 
     await UIManager.show(
         event=callback,
@@ -90,13 +92,14 @@ async def start_edit_welcome_photo(
         callback: CallbackQuery, state: FSMContext, user: User
 ):
     """Запрос нового фото для приветствия."""
-    lang = get_user_lang(user)
-    kb = AdminInlineKb(lang=lang)
+    await callback.answer()
+    lang = user.language
+    locale = Locale(lang=lang)
 
     await state.set_state(EditWelcome.photo)
     await state.update_data(menu_message_id=callback.message.message_id)
 
-    prompt_text = kb.get_text("prompts.welcome_photo", "📸 Пришлите новое изображение для приветствия:")
+    prompt_text = locale.get_text("admin.welcome_editor.photo")
 
     await UIManager.show(
         event=callback,
@@ -110,7 +113,7 @@ async def delete_welcome_photo(
         callback: CallbackQuery, admin_repo: AdminRepository, user: User
 ):
     """Удаление фото приветствия напрямую из базы."""
-    lang = get_user_lang(user)
+    lang = user.language
 
     for lang_code in admin_repo.SUPPORTED_LANGUAGES:
         await admin_repo.update_temp_locale(
@@ -152,7 +155,7 @@ async def process_welcome_text_input(
     new_text = message.text.strip()
     user_data = await state.get_data()
     menu_message_id = user_data.get("menu_message_id")
-    lang = get_user_lang(user)
+    lang = user.language
 
     try:
         await message.delete()
@@ -210,7 +213,7 @@ async def process_welcome_photo_input(
     photo_id = message.photo[-1].file_id
     user_data = await state.get_data()
     menu_message_id = user_data.get("menu_message_id")
-    lang = get_user_lang(user)
+    lang = user.language
 
     try:
         await message.delete()
@@ -260,8 +263,8 @@ async def process_welcome_photo_input(
 @welcome_editor_router.message(EditWelcome.photo)
 async def process_welcome_photo_invalid(message: Message, user: User):
     """Обработка неверного ввода (если прислали не фото)."""
-    lang = get_user_lang(user)
-    kb = AdminInlineKb(lang=lang)
-    err_msg = kb.get_text("errors.not_photo", "❌ Пожалуйста, пришлите изображение.")
+    lang = user.language
+    locale = Locale(lang=lang)
+    err_msg = locale.get_text("admin.welcome_editor.not_photo")
     err = await message.answer(err_msg)
     asyncio.create_task(self_destruct(err))

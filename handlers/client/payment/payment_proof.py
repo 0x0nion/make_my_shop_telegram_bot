@@ -11,8 +11,7 @@ from aiogram.types import CallbackQuery, Message
 from database.models import User
 from database.repositories.admin_repo import AdminRepository
 from database.repositories.user_repo import UserRepository
-from keyboards.client_inline import ClientInlineKb
-from locales.locales import Locale
+from locales.locale import Locale
 from src.core.constants import OrderStatus, PaymentProofType
 from src.core.ui import UIManager
 from src.services.notification_service import notify_admins_about_payment
@@ -56,16 +55,16 @@ async def start_order_payment(
 ):
     """Вызывается при нажатии кнопки '✅ Я оплатил'."""
     locale = Locale(user.language)
-    kb = ClientInlineKb(lang=user.language)
+    kb = locale.keyboards
 
     order_id = int(callback.data.split(":")[1])
     order = await user_repo.get_order_with_items(order_id, callback.from_user.id)
 
     if not order or order.is_paid or OrderStatus.is_final(order.status):
-        await callback.answer(locale.get_text("order_not_found"), show_alert=True)
+        await callback.answer(locale.get_text("client.order_not_found"), show_alert=True)
         return
 
-    instruction_text = locale.get_text("payment_instruction")
+    instruction_text = locale.get_text("client.payment_instruction")
     cancel_kb = kb.get_kb("cancel_reply")
 
     ui_msg = await UIManager.show(
@@ -167,7 +166,7 @@ async def process_payment_proof_input(
         await state.clear()
         expired_msg = await UIManager.show(
             event=message,
-            text=locale.get_text("session_expired"),
+            text=locale.get_text("client.session_expired"),
         )
         if expired_msg:
             asyncio.create_task(
@@ -205,7 +204,7 @@ async def process_payment_proof_input(
     if not updated_order:
         err_msg = await UIManager.show(
             event=message,
-            text=locale.get_text("payment_error_or_already_paid"),
+            text=locale.get_text("client.payment_error_or_already_paid"),
         )
         if err_msg:
             asyncio.create_task(
@@ -229,7 +228,7 @@ async def process_payment_proof_input(
 
     confirm_msg = await UIManager.show(
         event=message,
-        text=locale.get_text("payment_proof_accepted"),
+        text=locale.get_text("client.payment_proof_accepted"),
     )
 
     if confirm_msg:
@@ -258,7 +257,7 @@ async def process_invalid_payment_proof(
 
     err_msg = await UIManager.show(
         event=message,
-        text=locale.get_text("invalid_payment_proof_type"),
+        text=locale.get_text("client.invalid_payment_proof_type"),
     )
     if err_msg:
         asyncio.create_task(

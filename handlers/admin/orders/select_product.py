@@ -8,9 +8,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from database.models.order import OrderItem
 from database.models.user import User
 from database.repositories.admin_repo import AdminRepository
-from handlers.admin.utils import get_user_lang
-from keyboards.admin_inline import AdminInlineKb
 from locales.currencies import get_currency_symbol
+from locales.locale import Locale
 from src.core.ui import UIManager
 
 logger = logging.getLogger(__name__)
@@ -23,7 +22,7 @@ order_catalog_router = Router()
 # -------------------------------------------------------------------
 
 def get_order_catalog_kb(
-        kb: AdminInlineKb,
+        locale: Locale,
         categories: list,
         products: list,
         order_id: int,
@@ -58,7 +57,7 @@ def get_order_catalog_kb(
         )
 
     # 3. Кнопка Назад / Назад в редактирование заказа
-    back_text = kb.get_text("common.back", "⬅️ Назад")
+    back_text = locale.get_text("base.back")
 
     if current_cat_id:
         parent_target = parent_id if parent_id is not None else "root"
@@ -70,7 +69,7 @@ def get_order_catalog_kb(
         )
     else:
         # На самом верхнем уровне кнопка "Назад" возвращает в редактор состава заказа
-        cancel_text = kb.get_text("common.cancel", "❌ Отмена")
+        cancel_text = locale.get_text("base.cancel")
         builder.row(
             InlineKeyboardButton(
                 text=cancel_text,
@@ -94,8 +93,8 @@ async def render_order_catalog_ui(
     Функция отрисовки каталога товаров в режиме выбора товара для добавления в заказ #order_id.
     """
     admin_id = event.from_user.id
-    lang = get_user_lang(user)
-    kb = AdminInlineKb(lang=lang)
+    lang = user.language
+    locale = Locale(lang=lang)
 
     current_cat = None
     category_text = ""
@@ -174,7 +173,7 @@ async def render_order_catalog_ui(
     parent_id = current_cat.parent_id if current_cat else None
 
     reply_markup = get_order_catalog_kb(
-        kb=kb,
+        locale=locale,
         categories=db_categories,
         products=db_products,
         order_id=order_id,
@@ -206,8 +205,8 @@ async def render_order_product_card_ui(
     Отрисовка карточки товара без медиа для максимальной скорости работы.
     """
     admin_id = callback.from_user.id
-    lang = get_user_lang(user)
-    kb = AdminInlineKb(lang=lang)
+    lang = user.language
+    locale = Locale(lang=lang)
 
     product = await admin_repo.get_product_by_id(
         product_id, use_temp=False, admin_id=admin_id
@@ -266,7 +265,7 @@ async def render_order_product_card_ui(
         )
     )
 
-    back_text = kb.get_text("common.back", "⬅️ Назад")
+    back_text = locale.get_text("base.back")
     builder.row(
         InlineKeyboardButton(
             text=back_text,

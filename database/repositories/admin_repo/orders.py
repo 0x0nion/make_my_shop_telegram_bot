@@ -55,6 +55,17 @@ class AdminOrdersMixin:
             offset=offset
         )
 
+    async def get_new_orders_count(self, status: str = "pending") -> int:
+        """
+        Возвращает точное количество новых (необработанных) заказов.
+        """
+        stmt = (
+            select(func.count(Order.id))
+            .where(Order.status == status)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar() or 0
+
     async def get_order_by_id(self, order_id: int) -> Order | None:
         """
         Получение одного заказа по ID со всеми связанными сущностями (user, items, product).

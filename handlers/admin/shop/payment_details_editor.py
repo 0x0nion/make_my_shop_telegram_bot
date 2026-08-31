@@ -8,8 +8,7 @@ from sqlalchemy import update
 from database.models import LocaleText
 from database.models.user import User
 from database.repositories.admin_repo import AdminRepository
-from handlers.admin.utils import get_user_lang
-from keyboards.admin_inline import AdminInlineKb
+from locales.locale import Locale
 from src.core.ui import UIManager
 from state.admin_states import EditPaymentDetails
 
@@ -36,13 +35,14 @@ async def show_payment_details_card(
 
     has_text = bool(text_val and text_val.strip())
 
+    locale = Locale(lang=lang)
+
     if not has_text:
-        display_text = "💳 Платежные данные еще не указаны."
+        display_text = locale.get_text("admin.payment_details.not_set")
     else:
         display_text = text_val
 
-    kb = AdminInlineKb(lang=lang)
-    reply_markup = kb.get_payment_details_editor_kb(has_text=has_text)
+    reply_markup = locale.keyboards.get_payment_details_editor_kb(has_text=has_text)
 
     await UIManager.show(
         event=event,
@@ -57,7 +57,7 @@ async def route_payment_details_card(
     callback: CallbackQuery, admin_repo: AdminRepository, user: User
 ):
     """Открытие меню карточки платежных данных."""
-    lang = get_user_lang(user)
+    lang = user.language
     await show_payment_details_card(event=callback, admin_repo=admin_repo, lang=lang)
     await callback.answer()
 
@@ -67,16 +67,14 @@ async def start_edit_payment_text(
     callback: CallbackQuery, state: FSMContext, user: User
 ):
     """Запрос нового текста платежных реквизитов."""
-    lang = get_user_lang(user)
-    kb = AdminInlineKb(lang=lang)
+    await callback.answer()
+    lang = user.language
+    locale = Locale(lang=lang)
 
     await state.set_state(EditPaymentDetails.text)
     await state.update_data(menu_message_id=callback.message.message_id)
 
-    prompt_text = kb.get_text(
-        "prompts.payment_details_text",
-        "✍️ Введите новые платежные реквизиты (они будут сохранены для всех языков):"
-    )
+    prompt_text = locale.get_text("admin.payment_details.prompt")
 
     await UIManager.show(
         event=callback,
@@ -96,7 +94,7 @@ async def process_payment_text_input(
     new_text = message.text.strip()
     user_data = await state.get_data()
     menu_message_id = user_data.get("menu_message_id")
-    lang = get_user_lang(user)
+    lang = user.language
 
     try:
         await message.delete()

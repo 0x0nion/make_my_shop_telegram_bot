@@ -9,8 +9,7 @@ from aiogram.types import CallbackQuery, Message
 from database.models.user import User
 from database.repositories.admin_repo import AdminRepository
 from handlers.admin.orders.common import render_order_detail
-from locales.locales import Locale
-from keyboards.user_inline import UserInlineKb
+from locales.locale import Locale
 from src.core.constants import OrderStatus
 
 logger = logging.getLogger(__name__)
@@ -93,7 +92,7 @@ async def process_admin_request_payment(
     try:
         client_text = locale.format_order(
             order=order,
-            template_key="order_payment_request_text",
+            template_key="client.order_payment_request_text",
             payment_details=payment_details,
         )
     except KeyError as e:
@@ -101,7 +100,7 @@ async def process_admin_request_payment(
         await callback.answer("❌ Ошибка форматирования сообщения оплаты", show_alert=True)
         return
 
-    client_kb = UserInlineKb(lang=client_lang)
+    client_kb = locale.keyboards
     client_reply_markup = client_kb.get_order_payment_request_kb(order_id=order.id)
 
     # 1. Отправка клиенту
@@ -149,16 +148,16 @@ async def process_approve_payment(
     try:
         order_id = int(callback.data.split(":")[1])
     except (IndexError, ValueError):
-        await callback.answer(admin_locale.get_text("invalid_data"), show_alert=True)
+        await callback.answer(admin_locale.get_text("admin.orders.invalid_data"), show_alert=True)
         return
 
     order = await admin_repo.get_order_by_id(order_id)
     if not order:
-        await callback.answer(admin_locale.get_text("order_not_found"), show_alert=True)
+        await callback.answer(admin_locale.get_text("admin.orders.order_not_found"), show_alert=True)
         return
 
     if order.is_paid:
-        await callback.answer(admin_locale.get_text("order_already_processed"), show_alert=True)
+        await callback.answer(admin_locale.get_text("admin.orders.order_already_processed"), show_alert=True)
         return
 
     # 1. Изменение статуса и флага оплаты
@@ -166,7 +165,7 @@ async def process_approve_payment(
     order.status = OrderStatus.PROCESSING.value
     await admin_repo.update_order(order)
 
-    await callback.answer(admin_locale.get_text("payment_approved_alert"), show_alert=False)
+    await callback.answer(admin_locale.get_text("admin.orders.payment_approved_alert"), show_alert=False)
 
     # 2. Уведомление клиента
     if order.user:
@@ -174,7 +173,7 @@ async def process_approve_payment(
         client_locale = Locale(lang=client_lang)
         client_tg_id = _get_client_tg_id(order.user)
 
-        raw_template = client_locale.get_text("user_payment_confirmed_notification")
+        raw_template = client_locale.get_text("client.user_payment_confirmed_notification")
         formatted_text = raw_template.format(id=order_id) if raw_template != "XXX" else f"Ваша оплата по заказу №{order_id} подтверждена!"
 
         try:
@@ -212,12 +211,12 @@ async def process_reject_payment(
     try:
         order_id = int(callback.data.split(":")[1])
     except (IndexError, ValueError):
-        await callback.answer(admin_locale.get_text("invalid_data"), show_alert=True)
+        await callback.answer(admin_locale.get_text("admin.orders.invalid_data"), show_alert=True)
         return
 
     order = await admin_repo.get_order_by_id(order_id)
     if not order or not order.user:
-        await callback.answer(admin_locale.get_text("order_not_found"), show_alert=True)
+        await callback.answer(admin_locale.get_text("admin.orders.order_not_found"), show_alert=True)
         return
 
     client_lang = _get_client_lang(order.user)
@@ -226,13 +225,13 @@ async def process_reject_payment(
     payment_details = await _fetch_payment_details(admin_repo, client_lang)
     client_locale = Locale(lang=client_lang)
 
-    raw_reject_msg = client_locale.get_text("user_payment_rejected_notification")
+    raw_reject_msg = client_locale.get_text("client.user_payment_rejected_notification")
     reject_msg = raw_reject_msg.format(order_id=order_id) if raw_reject_msg != "XXX" else f"Оплата по заказу №{order_id} отклонена."
 
     try:
         payment_form_msg = client_locale.format_order(
             order=order,
-            template_key="order_payment_request_text",
+            template_key="client.order_payment_request_text",
             payment_details=payment_details,
         )
     except KeyError as e:
@@ -242,7 +241,7 @@ async def process_reject_payment(
 
     full_client_text = f"{reject_msg}\n\n{payment_form_msg}"
 
-    client_kb = UserInlineKb(lang=client_lang)
+    client_kb = client_locale.keyboards
     client_reply_markup = client_kb.get_order_payment_request_kb(order_id=order.id)
 
     # 1. Отправка повторного запроса клиенту
@@ -267,7 +266,7 @@ async def process_reject_payment(
     order.status = OrderStatus.PAYMENT_REQUESTED.value if hasattr(OrderStatus, "PAYMENT_REQUESTED") else "payment_requested"
     await admin_repo.update_order(order)
 
-    await callback.answer(admin_locale.get_text("payment_rejected_alert"), show_alert=False)
+    await callback.answer(admin_locale.get_text("admin.orders.payment_rejected_alert"), show_alert=False)
 
     # 3. Обновление плашки у админа и ее удаление через 3 сек
     status_text = "❌ <b>Оплата отклонена. Клиенту отправлен повторный запрос оплаты.</b>"

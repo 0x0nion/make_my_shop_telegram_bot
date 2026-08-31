@@ -17,8 +17,7 @@ from aiogram.types import (
 from config import config
 from database.models import User
 from database.repositories.user_repo import UserRepository
-from keyboards.client_inline import ClientInlineKb
-from locales.locales import Locale
+from locales.locale import Locale
 from src.core.ui import UIManager
 
 logger = logging.getLogger(__name__)
@@ -42,14 +41,14 @@ async def client_start_reply(
 
     locale = Locale(user.language)
 
-    # Загружаем клавиатуру отмены напрямую из kb.json по ключу "cancel_reply"
-    kb = ClientInlineKb(lang=user.language)
+    # Загружаем клавиатуру отмены из locale.json по ключу client.cancel_reply
+    kb = locale.keyboards
     cancel_kb = kb.get_kb("cancel_reply")
 
     # 1. Рендерим меню ввода
     msg = await UIManager.show(
         event=callback,
-        text=locale.get_text("client_reply_prompt", order_id=order_id),
+        text=locale.get_text("client.client_reply_prompt", order_id=order_id),
         reply_markup=cancel_kb,
     )
 
@@ -77,7 +76,7 @@ async def client_cancel_reply(
 
     await UIManager.show(
         event=callback,
-        text=locale.get_text("client_reply_cancelled"),
+        text=locale.get_text("client.client_reply_cancelled"),
         reply_markup=None,
     )
 
@@ -105,7 +104,7 @@ async def client_send_reply(
     if not order_id:
         await UIManager.show(
             event=message,
-            text=locale.get_text("client_reply_session_error"),
+            text=locale.get_text("client.client_reply_session_error"),
             message_id_to_edit=main_message_id,
         )
         return
@@ -128,7 +127,7 @@ async def client_send_reply(
     if not updated_order:
         await UIManager.show(
             event=message,
-            text=locale.get_text("client_reply_not_found"),
+            text=locale.get_text("client.client_reply_not_found"),
             message_id_to_edit=main_message_id,
         )
         return
@@ -136,7 +135,7 @@ async def client_send_reply(
     # Редактируем то самое сообщение бота, передавая main_message_id
     await UIManager.show(
         event=message,
-        text=locale.get_text("client_reply_success"),
+        text=locale.get_text("client.client_reply_success"),
         message_id_to_edit=main_message_id,
     )
 
@@ -153,7 +152,7 @@ async def client_send_reply(
     )
 
     # Уведомление админу через локаль
-    admin_text = locale.get_text("admin_notify_client_reply", order_id=order_id)
+    admin_text = locale.get_text("client.admin_notify_client_reply", order_id=order_id)
 
     for admin_id in config.ADMIN_ID:
         try:

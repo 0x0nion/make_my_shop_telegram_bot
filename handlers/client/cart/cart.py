@@ -8,8 +8,7 @@ from aiogram.types import CallbackQuery, Message
 from database.models import User
 from database.repositories.user_repo import UserRepository
 from handlers.client.cart.render_cart import render_cart
-from keyboards.client_inline import ClientInlineKb
-from locales.locales import Locale
+from locales.locale import Locale
 from src.core.ui import UIManager
 from state.user_states import UserState
 
@@ -34,15 +33,15 @@ async def get_address(
     user: User,
 ):
     locale = Locale(user.language)
-    kb = ClientInlineKb(lang=user.language)
+    kb = locale.keyboards
 
     await state.set_state(UserState.waiting_for_address)
     await state.update_data(cart_message_id=callback.message.message_id)
 
     await UIManager.show(
         event=callback,
-        text=locale.get_text("user_set_address"),
-        reply_markup=kb.get_kb("cancel_input"),
+        text=locale.get_text("client.user_set_address"),
+        reply_markup=kb.get_kb("cancel"),
     )
 
 
@@ -54,7 +53,7 @@ async def process_address(
     user: User,
 ):
     locale = Locale(user.language)
-    kb = ClientInlineKb(lang=user.language)
+    kb = locale.keyboards
 
     with suppress(TelegramBadRequest):
         await message.delete()
@@ -82,8 +81,8 @@ async def process_address(
         cart_msg_id = data.get("cart_message_id")
         await UIManager.show(
             event=message,
-            text=f"{locale.get_text('user_set_address')}\n\n{locale.get_text('user_set_address_error')}",
-            reply_markup=kb.get_kb("cancel_input"),
+            text=f"{locale.get_text('client.user_set_address')}\n\n{locale.get_text('client.user_set_address_error')}",
+            reply_markup=kb.get_kb("cancel"),
             message_id_to_edit=cart_msg_id,
         )
 
@@ -95,15 +94,15 @@ async def ask_comment(
     user: User,
 ):
     locale = Locale(user.language)
-    kb = ClientInlineKb(lang=user.language)
+    kb = locale.keyboards
 
     await state.set_state(UserState.waiting_for_comment)
     await state.update_data(cart_message_id=callback.message.message_id)
 
     await UIManager.show(
         event=callback,
-        text=locale.get_text("user_set_comment"),
-        reply_markup=kb.get_kb("cancel_input"),
+        text=locale.get_text("client.user_set_comment"),
+        reply_markup=kb.get_kb("cancel"),
     )
 
 
@@ -158,7 +157,7 @@ async def checkout_order(
         user: User,
 ):
     locale = Locale(user.language)
-    kb = ClientInlineKb(lang=user.language)
+    kb = locale.keyboards
 
     user_data = await state.get_data()
     delivery_address = user_data.get("delivery_address")
@@ -172,7 +171,7 @@ async def checkout_order(
 
     if not order:
         await callback.answer(
-            text=locale.get_text("user_empty_cart"), show_alert=True
+            text=locale.get_text("client.user_empty_cart"), show_alert=True
         )
         await render_cart(event=callback, user_repo=user_repo, state=state)
         return

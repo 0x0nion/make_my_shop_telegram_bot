@@ -10,7 +10,7 @@ from database.repositories.shop_repo import ShopRepository
 from database.repositories.user_repo import UserRepository
 from handlers.client.shop.render_product import show_product_card
 from handlers.client.shop.render_shop import render_shop_menu
-from locales.locales import Locale
+from locales.locale import Locale
 from utils.logger import logger
 
 user_shop_router = Router()
@@ -113,7 +113,7 @@ async def order_product(
     cart_count = len(user.cart)
 
     locale = Locale(user.language)
-    added_msg = locale.get_text("product_added_to_cart")
+    added_msg = locale.get_text("client.product_added_to_cart")
 
     await callback.answer(text=added_msg, show_alert=False)
 

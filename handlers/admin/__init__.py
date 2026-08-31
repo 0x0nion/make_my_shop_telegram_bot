@@ -2,7 +2,7 @@
 from aiogram import Router
 
 from filters.admin import IsAdminFilter
-from .admin_main import admin_main_router
+from .main import admin_main_router
 from .orders import admin_orders_group_router
 from .shop import admin_shop_group_router
 

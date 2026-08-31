@@ -1,4 +1,3 @@
-# middlewares/db.py
 from typing import Any, Awaitable, Callable, Dict
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject, Message, CallbackQuery, Update
@@ -7,6 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from database.repositories.admin_repo import AdminRepository
 from database.repositories.shop_repo import ShopRepository
 from database.repositories.user_repo import UserRepository
+from locales.locale import Locale
 from src.services.admin_shop_service import AdminShopService
 
 
@@ -16,14 +16,18 @@ class DbSessionMiddleware(BaseMiddleware):
         self.session_pool = session_pool
 
     async def __call__(
-            self,
-            handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
-            event: TelegramObject,
-            data: Dict[str, Any]
+        self,
+        handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
+        event: TelegramObject,
+        data: Dict[str, Any]
     ) -> Any:
         actual_event = event.event if isinstance(event, Update) else event
         tg_user = None
         if isinstance(actual_event, (Message, CallbackQuery)):
+
+            if isinstance(actual_event, CallbackQuery):
+                print(actual_event.data)
+
             if actual_event.from_user:
                 tg_user = actual_event.from_user
 
@@ -43,10 +47,15 @@ class DbSessionMiddleware(BaseMiddleware):
             data["admin_service"] = admin_shop_service
 
             db_user = None
+            user_lang = "en"
+
             if tg_user:
                 db_user = await user_repo.get_or_create_user(tg_user)
+                if db_user:
+                    user_lang = db_user.language
 
             data["user"] = db_user
+            data["locale"] = Locale(lang=user_lang)
 
             try:
                 return await handler(event, data)

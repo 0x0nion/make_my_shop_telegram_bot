@@ -5,9 +5,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from database.repositories.user_repo import UserRepository
-from keyboards.client_inline import ClientInlineKb
 from locales.currencies import DEFAULT_CURRENCY
-from locales.locales import Locale
+from locales.locale import Locale
 from src.core.ui import UIManager
 
 
@@ -21,14 +20,14 @@ async def render_cart(
     user = await user_repo.get_user_with_cart(user_id=event.from_user.id)
 
     locale = Locale(user.language)
-    kb_manager = ClientInlineKb(lang=user.language)
+    kb_manager = locale.keyboards
 
     state_data = await state.get_data()
     cart_msg_id = state_data.get("cart_message_id")
 
     # 1. Если корзина пуста
     if not user or not user.cart:
-        text = locale.get_text("cart_empty")
+        text = locale.get_text("client.cart_empty")
         orders_list = getattr(user, "orders", []) or []
         main_kb = kb_manager.get_main_kb(orders=len(orders_list), cart=0)
 
@@ -50,7 +49,7 @@ async def render_cart(
     text_blocks = []
 
     # Заголовок
-    text_blocks.append(locale.get_text("cart_title"))
+    text_blocks.append(locale.get_text("client.cart_title"))
 
     # Символ валюты
     currency = locale.get_currency_symbol(DEFAULT_CURRENCY)
@@ -70,7 +69,7 @@ async def render_cart(
         unit_val = locale.get_unit(unit_raw)
 
         line = locale.get_text(
-            "cart_item_line",
+            "client.cart_item_line",
             name=product_name,
             quantity=quantity,
             price=f"{price:.2f}",
@@ -82,20 +81,20 @@ async def render_cart(
 
     # Итоговая сумма
     summary_text = locale.get_text(
-        "cart_summary_subtotal",
+        "client.cart_summary_subtotal",
         subtotal=f"{subtotal:.2f}",
         currency=currency,
     )
     text_blocks.append(summary_text)
 
     # Адрес
-    addr_text = address if address else locale.get_text("cart_address_not_specified")
-    addr_label = locale.get_text("cart_address_label", address=addr_text)
+    addr_text = address if address else locale.get_text("client.cart_address_not_specified")
+    addr_label = locale.get_text("client.cart_address_label", address=addr_text)
     text_blocks.append(addr_label)
 
     # Комментарий
-    comm_text = comment if comment else locale.get_text("cart_comment_not_specified")
-    comm_label = locale.get_text("cart_comment_label", comment=comm_text)
+    comm_text = comment if comment else locale.get_text("client.cart_comment_not_specified")
+    comm_label = locale.get_text("client.cart_comment_label", comment=comm_text)
     text_blocks.append(comm_label)
 
     # Формируем итоговый текст с правильными переносами

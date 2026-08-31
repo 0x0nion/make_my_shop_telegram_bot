@@ -6,8 +6,7 @@ from aiogram.types import CallbackQuery
 
 from database.models.user import User
 from database.repositories.admin_repo import AdminRepository
-from handlers.admin.utils import get_user_lang
-from keyboards.admin_inline import AdminInlineKb
+from locales.locale import Locale
 from src.core.constants import OrderStatus
 from src.core.ui import UIManager
 
@@ -38,15 +37,13 @@ async def route_orders_main_menu(
     """
     await state.clear()
 
-    lang = get_user_lang(user)
-    kb = AdminInlineKb(lang=lang)
+    lang = user.language
+    locale = Locale(lang)
+    kb = locale.keyboards
 
     status_counts = await admin_repo.get_orders_count_by_statuses()
 
-    text = kb.get_text(
-        "orders_menu_title",
-        "📋 <b>Управление заказами</b>\n\nВыберите категорию для просмотра:"
-    )
+    text = locale.get_text("admin.orders.menu_title")
 
     reply_markup = kb.get_orders_menu_kb(status_counts=status_counts)
 
@@ -110,8 +107,9 @@ async def render_orders_list(
     """
     Универсальная функция отрисовки списка заказов с круговой пагинацией по 10 элементов.
     """
-    lang = get_user_lang(user)
-    kb = AdminInlineKb(lang=lang)
+    lang = user.language
+    locale = Locale(lang)
+    kb = locale.keyboards
 
     # 1. Считаем количество заказов в текущей категории
     status_counts = await admin_repo.get_orders_count_by_statuses()

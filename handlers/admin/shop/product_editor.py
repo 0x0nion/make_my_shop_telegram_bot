@@ -8,9 +8,9 @@ from aiogram.types import CallbackQuery, Message
 
 from database.models.user import User
 from database.repositories.admin_repo import AdminRepository
-from handlers.admin.utils import get_user_lang, self_destruct
-from keyboards.admin_inline import AdminInlineKb
+from handlers.admin.utils import self_destruct
 from locales.currencies import get_currency_symbol
+from locales.locale import Locale
 from locales.units import get_unit_label
 from src.core.ui import UIManager
 from state.admin_states import EditProduct
@@ -35,18 +35,13 @@ async def show_product_card(
     if not product:
         return
 
-    kb = AdminInlineKb(lang=lang)
+    locale = Locale(lang=lang)
 
-    desc_val = product.description or kb.get_text(
-        "no_description", "Описание отсутствует"
-    )
+    desc_val = product.description or locale.get_text("admin.product_editor.no_description")
     unit_val = get_unit_label(product.unit, lang=lang)
     currency_val = get_currency_symbol(getattr(product, "currency", None))
 
-    text = kb.get_text(
-        "product_card_template",
-        "📦 <b>{name}</b>\n\n📝 <i>{description}</i>\n\n💰 <b>Цена:</b> {price} {currency} / {unit}",
-    )
+    text = locale.get_text("admin.product_editor.product_card_template")
     formatted_text = text.format(
         name=product.name,
         description=desc_val,
@@ -56,7 +51,7 @@ async def show_product_card(
     )
 
     category_id = product.category_id if product.category_id else "root"
-    reply_markup = kb.get_product_editor_kb(
+    reply_markup = locale.keyboards.get_product_editor_kb(
         product_id=product_id, category_id=category_id
     )
 
@@ -73,9 +68,10 @@ async def show_product_card(
 async def route_product_card(
         callback: CallbackQuery, admin_repo: AdminRepository, user: User
 ):
+    await callback.answer()
     data_parts = callback.data.split("_")
     product_id = int(data_parts[2]) if len(data_parts) > 2 else 0
-    lang = get_user_lang(user)
+    lang = user.language
 
     await show_product_card(
         event=callback,
@@ -89,18 +85,17 @@ async def route_product_card(
 async def start_edit_product(
         callback: CallbackQuery, state: FSMContext, user: User
 ):
+    await callback.answer()
     data_parts = callback.data.split("_")
     action = data_parts[3] if len(data_parts) > 3 else ""
     product_id = int(data_parts[4]) if len(data_parts) > 4 else 0
 
-    lang = get_user_lang(user)
-    kb = AdminInlineKb(lang=lang)
+    lang = user.language
+    locale = Locale(lang=lang)
 
     if action == "unit":
-        prompt_text = kb.get_text(
-            "prompts.unit", "⚖️ Выберите единицу измерения:"
-        )
-        reply_markup = kb.get_unit_selection_kb(product_id=product_id)
+        prompt_text = locale.get_text("admin.product_editor.unit")
+        reply_markup = locale.keyboards.get_unit_selection_kb(product_id=product_id)
 
         await UIManager.show(
             event=callback,
@@ -118,16 +113,16 @@ async def start_edit_product(
 
     target_state = state_mapping.get(action)
     if not target_state:
-        err_field_text = kb.get_text(
-            "errors.selection_field", "Ошибка выбора поля"
-        )
+        err_field_text = locale.get_text("admin.product_editor.selection_field")
         await callback.answer(err_field_text, show_alert=True)
         return
 
     await state.set_state(target_state)
 
-    prompt_text = kb.get_text(f"prompts.{action}") or kb.get_text(
-        "prompts.default", "Введите данные:"
+    prompt_text = (
+        locale.get_text(f"admin.product_editor.{action}")
+        if locale.has_text(f"admin.product_editor.{action}")
+        else locale.get_text("admin.product_editor.default")
     )
 
     await state.update_data(
@@ -145,10 +140,11 @@ async def start_edit_product(
 async def set_product_unit(
         callback: CallbackQuery, admin_repo: AdminRepository, user: User
 ):
+    await callback.answer()
     parts = callback.data.split("_")
     product_id = int(parts[3]) if len(parts) > 3 else 0
     unit_code = parts[4] if len(parts) > 4 else ""
-    lang = get_user_lang(user)
+    lang = user.language
 
     await admin_repo.update_product_field(
         product_id,
@@ -181,8 +177,8 @@ async def process_edit_input(
     menu_message_id = data.get("menu_message_id")
     curr_state = await state.get_state()
 
-    lang = get_user_lang(user)
-    kb = AdminInlineKb(lang=lang)
+    lang = user.language
+    locale = Locale(lang=lang)
 
     try:
         await message.delete()
@@ -190,9 +186,7 @@ async def process_edit_input(
         pass
 
     if "photo" in curr_state and not message.photo:
-        err_msg = kb.get_text(
-            "errors.not_photo", "❌ Пожалуйста, пришлите изображение."
-        )
+        err_msg = locale.get_text("admin.product_editor.not_photo")
         err = await message.answer(err_msg)
         asyncio.create_task(self_destruct(err))
         return
@@ -200,9 +194,7 @@ async def process_edit_input(
     if "price" in curr_state:
         clean_text = message.text.strip().replace(",", ".", 1)
         if not clean_text.replace(".", "", 1).isdigit():
-            err_msg = kb.get_text(
-                "errors.invalid_price", "❌ Ошибка! Введите корректное число."
-            )
+            err_msg = locale.get_text("admin.product_editor.invalid_price")
             err = await message.answer(err_msg)
             asyncio.create_task(self_destruct(err))
             return

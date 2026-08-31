@@ -4,8 +4,7 @@ from aiogram.types import CallbackQuery
 
 from database.models.user import User
 from database.repositories.admin_repo import AdminRepository
-from handlers.admin.utils import get_user_lang
-from keyboards.admin_inline import AdminInlineKb
+from locales.locale import Locale
 from src.core.ui import UIManager
 
 logger = logging.getLogger(__name__)
@@ -25,8 +24,8 @@ async def render_edit_order_items_ui(
     Функция отрисовки интерфейса редактирования позиций.
     Динамически собирает список товаров в тексте сообщения и прикрепляет клавиатуру.
     """
-    lang = get_user_lang(user)
-    kb = AdminInlineKb(lang=lang)
+    lang = user.language
+    kb = Locale(lang).keyboards
 
     order = await admin_repo.get_order_by_id(order_id)
     if not order:

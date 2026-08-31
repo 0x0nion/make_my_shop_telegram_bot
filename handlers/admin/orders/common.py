@@ -5,8 +5,7 @@ from aiogram.types import CallbackQuery, Message
 
 from database.models.user import User
 from database.repositories.admin_repo import AdminRepository
-from handlers.admin.utils import get_user_lang
-from keyboards.admin_inline import AdminInlineKb
+from locales.locale import Locale
 from src.core.ui import UIManager
 
 logger = logging.getLogger(__name__)
@@ -23,18 +22,19 @@ async def render_order_detail(
 ):
     """
     Универсальная функция рендера карточки заказа с подгрузкой локализованного
-    шаблона из admin_kb.json и сборкой клавиатуры.
+    шаблона из locale.json и сборкой клавиатуры.
     """
-    lang = get_user_lang(user)
-    kb = AdminInlineKb(lang=lang)
+    lang = user.language
+    locale = Locale(lang)
+    kb = locale.keyboards
 
     order = await admin_repo.get_order_by_id(order_id)
     if not order:
-        text_not_found = kb.get_text("admin_order_messages.not_found", "❌ <b>Заказ не найден.</b>")
+        text_not_found = locale.get_text("admin.orders.not_found")
         await UIManager.show(
             event=event,
             text=text_not_found,
-            reply_markup=kb.get_cancel_add_category_kb(f"admin_orders_page:{status}:{page}"),
+            reply_markup=kb.get_cancel_kb(f"admin_orders_page:{status}:{page}"),
             message_id_to_edit=message_id_to_edit,
         )
         return
@@ -65,15 +65,15 @@ async def render_order_detail(
                 f"   └ {qty} {unit} x {price:.2f} $ = <b>{item_sum:.2f} $</b>"
             )
     else:
-        no_items_str = kb.get_text("admin_order_messages.no_items", "<i>Список товаров пуст.</i>")
+        no_items_str = locale.get_text("admin.orders.no_items")
         items_text.append(no_items_str)
 
     items_block = "\n".join(items_text)
 
     # 3. Подготовка текста полей (из модели Order)
-    no_addr_str = kb.get_text("admin_order_messages.no_address", "<i>Не указан</i>")
-    no_comment_str = kb.get_text("admin_order_messages.no_comment", "<i>Отсутствует</i>")
-    no_proof_str = kb.get_text("admin_order_messages.no_payment_proof", "<i>Не предоставлено</i>")
+    no_addr_str = locale.get_text("admin.orders.no_address")
+    no_comment_str = locale.get_text("admin.orders.no_comment")
+    no_proof_str = locale.get_text("admin.orders.no_payment_proof")
 
     delivery_price = float(order.delivery_price) if order.delivery_price else 0.0
     total_price = float(order.total_price) if order.total_price else 0.0
@@ -94,20 +94,7 @@ async def render_order_detail(
         payment_proof_info = no_proof_str
 
     # 4. Формирование основного текста карточки
-    card_template = kb.get_text(
-        "admin_order_messages.detail_card",
-        "📦 <b>Заказ #{order_id}</b>\n"
-        "📅 <b>Дата:</b> {created_at}\n"
-        "Статус: <b>{status}</b> ({is_paid_status})\n\n"
-        "👤 <b>Покупатель:</b> {buyer_info}\n"
-        "📍 <b>Адрес доставки:</b> {delivery_address}\n"
-        "🚚 <b>Стоимость доставки:</b> {delivery_price} $\n\n"
-        "🛒 <b>Состав заказа:</b>\n{items_block}\n\n"
-        "💬 <b>Комментарий пользователя:</b>\n{user_comment}\n\n"
-        "💰 <b>Итого к оплате:</b> <b>{total_price} $</b>\n"
-        "💳 <b>Подтверждение оплаты:</b> {payment_proof_info}\n\n"
-        "💬 <b>Комментарий менеджера:</b>\n{manager_comment}"
-    )
+    card_template = locale.get_text("admin.orders.detail_card")
 
     text = card_template.format(
         order_id=order.id,
@@ -145,7 +132,8 @@ async def build_order_detail_text(
     lang: str = "ru",
 ) -> tuple[str, Optional[Any]]:
     """Формирует текстовое описание заказа для администратора."""
-    kb = AdminInlineKb(lang=lang)
+    locale = Locale(lang)
+    kb = locale.keyboards
     order = await admin_repo.get_order_by_id(order_id)
     if not order:
         return "", None
@@ -174,15 +162,15 @@ async def build_order_detail_text(
                 f"   └ {qty} {unit} x {price:.2f} $ = <b>{item_sum:.2f} $</b>"
             )
     else:
-        no_items_str = kb.get_text("admin_order_messages.no_items", "<i>Список товаров пуст.</i>")
+        no_items_str = locale.get_text("admin.orders.no_items")
         items_text.append(no_items_str)
 
     items_block = "\n".join(items_text)
 
     # 3. Поля заказа
-    no_addr_str = kb.get_text("admin_order_messages.no_address", "<i>Не указан</i>")
-    no_comment_str = kb.get_text("admin_order_messages.no_comment", "<i>Отсутствует</i>")
-    no_proof_str = kb.get_text("admin_order_messages.no_payment_proof", "<i>Не предоставлено</i>")
+    no_addr_str = locale.get_text("admin.orders.no_address")
+    no_comment_str = locale.get_text("admin.orders.no_comment")
+    no_proof_str = locale.get_text("admin.orders.no_payment_proof")
 
     delivery_price = float(order.delivery_price) if order.delivery_price else 0.0
     total_price = float(order.total_price) if order.total_price else 0.0
@@ -203,20 +191,7 @@ async def build_order_detail_text(
     else:
         payment_proof_info = no_proof_str
 
-    card_template = kb.get_text(
-        "admin_order_messages.detail_card",
-        "📦 <b>Заказ #{order_id}</b>\n"
-        "📅 <b>Дата:</b> {created_at}\n"
-        "Статус: <b>{status}</b> ({is_paid_status})\n\n"
-        "👤 <b>Покупатель:</b> {buyer_info}\n"
-        "📍 <b>Адрес доставки:</b> {delivery_address}\n"
-        "🚚 <b>Стоимость доставки:</b> {delivery_price} $\n\n"
-        "🛒 <b>Состав заказа:</b>\n{items_block}\n\n"
-        "💬 <b>Комментарий пользователя:</b>\n{user_comment}\n\n"
-        "💰 <b>Итого к оплате:</b> <b>{total_price} $</b>\n"
-        "💳 <b>Подтверждение оплаты:</b> {payment_proof_info}\n\n"
-        "💬 <b>Комментарий менеджера:</b>\n{manager_comment}"
-    )
+    card_template = locale.get_text("admin.orders.detail_card")
 
     text = card_template.format(
         order_id=order.id,
