@@ -75,7 +75,7 @@ async def build_order_detail_text(
     items_text = []
     items_price = 0.0
     if order.items:
-        for item in order.items:
+        for idx, item in enumerate(order.items, start=1):
             prod_name = item.product.name if item.product else locale.get_text("admin.orders.deleted_product", product_id=item.product_id)
             unit = locale.get_unit(getattr(item.product, "unit", None)) if item.product else locale.get_text("admin.orders.unit_default")
             price = float(item.price_at_purchase)
@@ -85,7 +85,7 @@ async def build_order_detail_text(
             items_text.append(
                 locale.get_text(
                     "admin.orders.item_line",
-                    name=prod_name, qty=qty, unit=unit,
+                    idx=idx, name=prod_name, qty=qty, unit=unit,
                     price=price, currency="$", sum=item_sum,
                 )
             )

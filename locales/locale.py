@@ -191,7 +191,7 @@ class Locale:
 
         currency_sym = getattr(order, "currency_symbol", None) or self.get_currency_symbol()
 
-        for item in getattr(order, "items", []) or []:
+        for idx, item in enumerate(getattr(order, "items", []) or [], start=1):
             product = getattr(item, "product", None)
             product_name = product.name if product else self.get_text(
                 "admin.orders.deleted_product", product_id=getattr(item, "product_id", "?")
@@ -201,12 +201,18 @@ class Locale:
             item_total = quantity * price
             items_price += item_total
 
-            unit_code = getattr(product, "unit", None) if product else None
-            unit_str = self.get_unit(unit_code) if unit_code else ""
-            unit_part = f" {unit_str}" if unit_str else ""
+            unit_str = (
+                self.get_unit(getattr(product, "unit", None))
+                if product
+                else self.get_text("admin.orders.unit_default")
+            )
 
             item_lines.append(
-                f"{product_name} — {quantity}{unit_part} × {price:.2f} {currency_sym} = {item_total:.2f} {currency_sym}"
+                self.get_text(
+                    "admin.orders.item_line",
+                    idx=idx, name=product_name, qty=quantity, unit=unit_str,
+                    price=price, currency=currency_sym, sum=item_total,
+                )
             )
 
         items_block = "\n".join(item_lines) if item_lines else "—"

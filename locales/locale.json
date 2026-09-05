@@ -263,9 +263,9 @@
           "es": "<a href=\"tg://user?id={user_id}\">Usuario {user_id}</a> (ID: <code>{user_id}</code>)"
         },
         "item_line": {
-          "ru": "{name} — {qty} {unit} × {price:.2f} {currency} = {sum:.2f} {currency}",
-          "en": "{name} — {qty} {unit} × {price:.2f} {currency} = {sum:.2f} {currency}",
-          "es": "{name} — {qty} {unit} × {price:.2f} {currency} = {sum:.2f} {currency}"
+          "ru": "{idx}. <b>{name}</b>\n   └ {qty} {unit} x {price:.2f} {currency} = <b>{sum:.2f} {currency}</b>",
+          "en": "{idx}. <b>{name}</b>\n   └ {qty} {unit} x {price:.2f} {currency} = <b>{sum:.2f} {currency}</b>",
+          "es": "{idx}. <b>{name}</b>\n   └ {qty} {unit} x {price:.2f} {currency} = <b>{sum:.2f} {currency}</b>"
         },
         "deleted_product": {
           "ru": "Товар #{product_id}",
