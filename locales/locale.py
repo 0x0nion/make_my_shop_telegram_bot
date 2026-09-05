@@ -1,4 +1,5 @@
 # locales/locale.py
+import html
 import json
 import logging
 from pathlib import Path
@@ -52,7 +53,7 @@ class Locale:
 
     # --- Вспомогательные методы ---
 
-    def _resolve_path(self, path: str) -> Optional[Any]:
+    def _resolve_path(self, path: str, silent: bool = False) -> Optional[Any]:
         keys = path.split(".")
         current: Any = self.locales
 
@@ -60,17 +61,18 @@ class Locale:
             if isinstance(current, dict) and k in current:
                 current = current[k]
             else:
-                logger.critical(
-                    f"[LOCALES] Path '{path}' (segment '{k}') not found in locale.json!"
-                )
+                if not silent:
+                    logger.critical(
+                        f"[LOCALES] Path '{path}' (segment '{k}') not found in locale.json!"
+                    )
                 return None
 
         return current
 
     def _get_localized_value(
-        self, path: str
+        self, path: str, silent: bool = False
     ) -> Optional[Union[str, Dict[str, Any], list]]:
-        data = self._resolve_path(path)
+        data = self._resolve_path(path, silent=silent)
 
         if data is None:
             return None
@@ -94,7 +96,7 @@ class Locale:
         """
         if path.startswith("text."):
             target_path = path
-        elif self._resolve_path(path) is not None:
+        elif self._resolve_path(path, silent=True) is not None:
             target_path = path
         else:
             target_path = f"text.{path}"
@@ -120,18 +122,31 @@ class Locale:
         """True, если по пути существует валидный перевод для текущего языка."""
         if path.startswith("text."):
             target_path = path
-        elif self._resolve_path(path) is not None:
+        elif self._resolve_path(path, silent=True) is not None:
             target_path = path
         else:
             target_path = f"text.{path}"
 
-        value = self._get_localized_value(target_path)
+        value = self._get_localized_value(target_path, silent=True)
         return isinstance(value, str) and value != ""
 
     def get_keyboard_data(self, path: str) -> Optional[Union[Dict[str, Any], list]]:
         """Возвращает сырые данные из массива keyboards в locale.json."""
         target_path = path if path.startswith("keyboards.") else f"keyboards.{path}"
         return self._get_localized_value(target_path)
+
+    def get_order_status_label(self, status: Optional[str]) -> str:
+        """Локализованная подпись статуса заказа (из keyboards.order_status_menu).
+
+        Fallback — исходное значение статуса.
+        """
+        if not status:
+            return "—"
+        buttons = (self.get_keyboard_data("admin.order_status_menu") or {}).get("buttons", {})
+        label = buttons.get(status)
+        if isinstance(label, dict):
+            return label.get(self.lang) or label.get("ru") or label.get("en") or str(status)
+        return str(status)
 
     # --- Валюты и Единицы (из единого locale.json) ---
 
@@ -191,14 +206,15 @@ class Locale:
             unit_part = f" {unit_str}" if unit_str else ""
 
             item_lines.append(
-                f"• {product_name} — {quantity}{unit_part} x {price:.2f} {currency_sym} = {item_total:.2f} {currency_sym}"
+                f"{product_name} — {quantity}{unit_part} × {price:.2f} {currency_sym} = {item_total:.2f} {currency_sym}"
             )
 
         items_block = "\n".join(item_lines) if item_lines else "—"
 
         delivery_address = getattr(order, "delivery_address", None)
+        delivery_address_type = getattr(order, "delivery_address_type", None)
         address_block = (
-            f"📍 {self.get_text('client.order_delivery_label')} {delivery_address}\n\n"
+            f"📍 {self.get_text('client.order_delivery_label')} {self.format_address(delivery_address, delivery_address_type)}\n\n"
             if delivery_address
             else ""
         )
@@ -217,6 +233,13 @@ class Locale:
         )
         delivery_price = float(getattr(order, "delivery_price", 0.0) or 0.0)
 
+        not_specified = self.get_text("client.order_not_specified")
+        address = self.format_address(delivery_address, delivery_address_type) or not_specified
+        comment = user_comment or not_specified
+
+        created_at = getattr(order, "created_at", None)
+        created_at_str = created_at.strftime("%d.%m.%Y %H:%M") if created_at else "—"
+
         template = self.get_text(template_key)
 
         context = {
@@ -225,6 +248,10 @@ class Locale:
             "items": items_block,
             "address_block": address_block,
             "comment_block": comment_block,
+            "address": address,
+            "comment": comment,
+            "created_at": created_at_str,
+            "status": self.get_order_status_label(getattr(order, "status", None)),
             "items_price": items_price,
             "delivery_price": delivery_price,
             "total_price": total_price,
@@ -240,5 +267,11 @@ class Locale:
             )
             return template
 
-    def format_address(self, maps_url: str) -> str:
-        return self.get_text("client.user_address_link", maps_url=maps_url)
+    def format_address(self, value: str | None, addr_type: str | None = None) -> str:
+        """Форматирует адрес для вывода: location → ссылка на карту, text → как есть (с экранированием)."""
+        if not value:
+            return ""
+        value = value.strip()
+        if addr_type == "location":
+            return self.get_text("client.user_address_link", maps_url=value)
+        return html.escape(value)
