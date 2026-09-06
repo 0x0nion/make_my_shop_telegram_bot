@@ -10,6 +10,7 @@ from database.repositories.user_repo import UserRepository
 from handlers.client.cart.render_cart import render_cart
 from locales.locale import Locale
 from src.core.ui import UIManager
+from src.services.address_service import build_location_address, normalize_text_address
 from state.user_states import UserState
 
 user_cart_router = Router()
@@ -41,7 +42,7 @@ async def get_address(
     await UIManager.show(
         event=callback,
         text=locale.get_text("client.user_set_address"),
-        reply_markup=kb.get_kb("cancel"),
+        reply_markup=kb.get_back_kb("cancel_input"),
     )
 
 
@@ -59,21 +60,17 @@ async def process_address(
         await message.delete()
 
     address = None
-
-    #TODO: поменять форматирование
+    addr_type = None
 
     if message.location:
-        latitude = message.location.latitude
-        longitude = message.location.longitude
-        maps_url = (
-            f"https://www.google.com/maps/search/?api=1&query={latitude},{longitude}"
+        address, addr_type = build_location_address(
+            message.location.latitude, message.location.longitude
         )
-        address = maps_url
     elif message.text:
-        address = message.text.strip()
+        address, addr_type = normalize_text_address(message.text)
 
     if address:
-        await state.update_data(delivery_address=address)
+        await state.update_data(delivery_address=address, delivery_address_type=addr_type)
         await state.set_state(None)
         await render_cart(event=message, user_repo=user_repo, state=state)
     else:
@@ -82,7 +79,7 @@ async def process_address(
         await UIManager.show(
             event=message,
             text=f"{locale.get_text('client.user_set_address')}\n\n{locale.get_text('client.user_set_address_error')}",
-            reply_markup=kb.get_kb("cancel"),
+            reply_markup=kb.get_back_kb("cancel_input"),
             message_id_to_edit=cart_msg_id,
         )
 
@@ -102,7 +99,7 @@ async def ask_comment(
     await UIManager.show(
         event=callback,
         text=locale.get_text("client.user_set_comment"),
-        reply_markup=kb.get_kb("cancel"),
+        reply_markup=kb.get_back_kb("cancel_input"),
     )
 
 
@@ -161,11 +158,13 @@ async def checkout_order(
 
     user_data = await state.get_data()
     delivery_address = user_data.get("delivery_address")
+    delivery_address_type = user_data.get("delivery_address_type")
     user_comment = user_data.get("user_comment")
 
     order = await user_repo.create_order_from_cart(
         user_id=user.id,
-        delivery_address=locale.format_address(delivery_address),
+        delivery_address=delivery_address,
+        delivery_address_type=delivery_address_type,
         user_comment=user_comment,
     )
 
@@ -182,7 +181,7 @@ async def checkout_order(
 
     updated_user = await user_repo.get_user_with_cart(user_id=callback.from_user.id)
 
-    orders_count = len(updated_user.orders) if updated_user else 0
+    orders_count = updated_user.active_orders_count if updated_user else 0
     cart_count = len(updated_user.cart) if updated_user else 0
 
     await UIManager.show(

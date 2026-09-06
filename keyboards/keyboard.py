@@ -6,6 +6,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from locales.utils import SafeDict
+from src.core.constants import OrderStatus
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +53,12 @@ class KeyboardFactory:
                         or next(iter(translations.values()), default)
                 )
             else:
-                translated = self.locale.get_text(str(path_or_value), **kwargs)
-                raw_text = translated if translated != "XXX" else str(path_or_value)
+                path_str = str(path_or_value)
+                if self.locale.has_text(path_str):
+                    translated = self.locale.get_text(path_str, **kwargs)
+                    raw_text = translated if translated != "XXX" else path_str
+                else:
+                    raw_text = path_str
 
             if kwargs and isinstance(raw_text, str):
                 try:
@@ -83,7 +88,11 @@ class KeyboardFactory:
         return default
 
     def get_inline(
-            self, path: str, callbacks: Optional[Dict[str, str]] = None, **kwargs
+            self,
+            path: str,
+            callbacks: Optional[Dict[str, str]] = None,
+            exclude: Optional[List[str]] = None,
+            **kwargs
     ) -> InlineKeyboardMarkup:
         """Собирает Inline-клавиатуру по пути в locale.json."""
         kb_data = self.locale.get_keyboard_data(path)
@@ -97,8 +106,11 @@ class KeyboardFactory:
         sizes: List[int] = kb_data.get("sizes", [])
         callbacks_map = callbacks or {}
 
+        exclude_set = set(exclude or [])
         buttons: List[InlineKeyboardButton] = []
         for btn_key, btn_value in buttons_dict.items():
+            if btn_key in exclude_set:
+                continue
             if isinstance(btn_value, dict):
                 callback_data = btn_value.get("callback_data", btn_key)
                 url = btn_value.get("url")
@@ -133,10 +145,14 @@ class KeyboardFactory:
         return builder.as_markup()
 
     def build(
-            self, path: str, callbacks: Optional[Dict[str, str]] = None, **kwargs
+            self,
+            path: str,
+            callbacks: Optional[Dict[str, str]] = None,
+            exclude: Optional[List[str]] = None,
+            **kwargs
     ) -> InlineKeyboardMarkup:
         """Универсальный alias-метод для быстрой сборки клавиатуры."""
-        return self.get_inline(path=path, callbacks=callbacks, **kwargs)
+        return self.get_inline(path=path, callbacks=callbacks, exclude=exclude, **kwargs)
 
     def get_kb(self, key: str, callbacks: Optional[Dict[str, str]] = None, **kwargs):
         """Прямая сборка статической клиентской клавиатуры по ключу (legacy-совместимый API).
@@ -159,6 +175,14 @@ class KeyboardFactory:
         builder.button(text=cancel_text, callback_data=back_callback)
         return builder.as_markup()
 
+    def get_back_kb(self, back_callback: str) -> InlineKeyboardMarkup:
+        """Универсальная клавиатура «⬅️ Назад» с кастомным callback_data."""
+        back_text = self.get_button_text("base.back", default="⬅️ Back")
+
+        builder = InlineKeyboardBuilder()
+        builder.button(text=back_text, callback_data=back_callback)
+        return builder.as_markup()
+
     # ==================================================================
     # Клиентские динамические клавиатуры
     # ==================================================================
@@ -175,8 +199,13 @@ class KeyboardFactory:
             cart=cart_str,
         )
 
-    def get_orders_kb(self, orders: list) -> InlineKeyboardMarkup:
-        """Список активных/прошедших заказов пользователя."""
+    def get_orders_kb(
+        self,
+        orders: list,
+        page: int = 1,
+        total_pages: int = 1,
+    ) -> InlineKeyboardMarkup:
+        """Список всех заказов пользователя с круговой пагинацией."""
         builder = InlineKeyboardBuilder()
 
         order_template = self.get_button_text(
@@ -205,6 +234,26 @@ class KeyboardFactory:
                 )
             )
 
+        # Блок круговой пагинации (как в админ-списке заказов)
+        if orders and total_pages > 1:
+            prev_page = total_pages if page == 1 else page - 1
+            next_page = 1 if page == total_pages else page + 1
+
+            builder.row(
+                InlineKeyboardButton(
+                    text="⬅️",
+                    callback_data=f"client_orders_page:{prev_page}",
+                ),
+                InlineKeyboardButton(
+                    text=f"{page}/{total_pages}",
+                    callback_data="noop",
+                ),
+                InlineKeyboardButton(
+                    text="➡️",
+                    callback_data=f"client_orders_page:{next_page}",
+                ),
+            )
+
         builder.row(
             InlineKeyboardButton(text=back_text, callback_data="client_main")
         )
@@ -231,8 +280,18 @@ class KeyboardFactory:
 
         # Товары в текущей категории
         for product in products:
+            price = float(getattr(product, "price", 0.0) or 0.0)
+            currency = self.locale.get_currency_symbol(getattr(product, "currency", None))
+            btn_text = self.get_button_text(
+                "client.shop_navigation",
+                "product_button",
+                default="{name} — {price:.2f} {currency}",
+                name=product.name,
+                price=price,
+                currency=currency,
+            )
             builder.row(
-                InlineKeyboardButton(text=f"{product.name}", callback_data=f"client_item_{product.id}")
+                InlineKeyboardButton(text=btn_text, callback_data=f"client_item_{product.id}")
             )
 
         # Навигация
@@ -309,7 +368,7 @@ class KeyboardFactory:
 
         return builder.as_markup()
 
-    def get_cart_kb(self, cart_items: list, has_address: bool) -> InlineKeyboardMarkup:
+    def get_cart_kb(self, cart_items: list) -> InlineKeyboardMarkup:
         """Меню корзины с изменением количества (➖ / ➕) и оформлением."""
         texts = self.get_button_text(
             "client.cart_actions",
@@ -334,13 +393,12 @@ class KeyboardFactory:
             InlineKeyboardButton(text=texts["set_comment"], callback_data="set_comment")
         )
 
-        # Оформление доступно только при указанном адресе
-        if has_address:
-            builder.row(
-                InlineKeyboardButton(
-                    text=texts["checkout"], callback_data="checkout_confirm", style="success"
-                )
+        # Оформление доступно всегда (адрес доставки опционален)
+        builder.row(
+            InlineKeyboardButton(
+                text=texts["checkout"], callback_data="checkout_confirm", style="success"
             )
+        )
 
         builder.row(InlineKeyboardButton(text=texts["back"], callback_data="client_main"))
 
@@ -350,9 +408,15 @@ class KeyboardFactory:
         """Выбор способа оплаты конкретного заказа (клиенту)."""
         return self.build("client.order_payment_request", order_id=order_id)
 
-    def get_language_keyboard(self) -> InlineKeyboardMarkup:
-        """Клавиатура выбора языка."""
-        return self.build("client.language_selection")
+    def get_language_keyboard(
+            self, exclude: Optional[List[str]] = None
+    ) -> InlineKeyboardMarkup:
+        """Клавиатура выбора языка.
+
+        exclude — ключи кнопок для скрытия (например, ["back"] на первом
+        запуске, когда возвращаться в меню некуда).
+        """
+        return self.build("client.language_selection", exclude=exclude)
 
     # ==================================================================
     # Админские динамические клавиатуры
@@ -401,13 +465,11 @@ class KeyboardFactory:
 
         builder.adjust(3)
 
-        cancel_text = self.get_button_text(
-            "base.action", "cancel", default="❌ Cancel"
+        back_text = self.get_button_text("base.back", default="⬅️ Back")
+        back_callback = (
+            f"admin_item_{product_id}" if product_id is not None else "admin_cancel_action"
         )
-        cancel_callback = (
-            f"admin_edit_p_cancel_{product_id}" if product_id is not None else "admin_cancel_action"
-        )
-        builder.row(InlineKeyboardButton(text=cancel_text, callback_data=cancel_callback))
+        builder.row(InlineKeyboardButton(text=back_text, callback_data=back_callback))
 
         return builder.as_markup()
 
@@ -421,14 +483,9 @@ class KeyboardFactory:
         значение подставляется индивидуально для каждой кнопки: build() передаёт
         все kwargs каждой кнопке и не может различить счётчики по именам кнопок.
         """
-        from src.core.constants import OrderStatus
+        from src.core.constants import ADMIN_ORDER_STATUS_FILTERS
 
-        status_map = {
-            "admin_order_pending": OrderStatus.PENDING.value,
-            "admin_order_awaiting": OrderStatus.AWAITING_CONFIRMATION.value,
-            "admin_order_processing": OrderStatus.PROCESSING.value,
-            "admin_order_delivering": OrderStatus.DELIVERING.value,
-        }
+        status_map = ADMIN_ORDER_STATUS_FILTERS
         counts = status_counts or {}
 
         buttons = self.locale.get_keyboard_data("admin.orders_menu")
@@ -445,7 +502,7 @@ class KeyboardFactory:
 
             formatted_count = f" ({count})" if count is not None else ""
             text = self.get_button_text(btn_val, default="XXX", count=formatted_count)
-            actual_callback = "admin_mainmenu" if btn_key == "back" else btn_key
+            actual_callback = "admin_main_menu" if btn_key == "back" else btn_key
             out_buttons.append(
                 InlineKeyboardButton(text=text, callback_data=actual_callback)
             )
@@ -492,7 +549,9 @@ class KeyboardFactory:
             builder.row(
                 InlineKeyboardButton(
                     text=button_text,
-                    callback_data=f"admin_order_view:{order.id}",
+                    # Передаём status и current_page, чтобы «Назад» из карточки
+                    # возвращал в тот же список с тем же фильтром и страницей
+                    callback_data=f"admin_order_view:{order.id}:{status}:{current_page}",
                 )
             )
 
@@ -528,77 +587,77 @@ class KeyboardFactory:
             status: str = "all",
             page: int = 1,
     ) -> InlineKeyboardMarkup:
-        """Клавиатура карточки заказа (динамическая, зависит от статуса)."""
+        """Клавиатура карточки заказа (динамическая, зависит от статуса).
+
+        - ``pending``: редактор (принять + правки) + постоянные кнопки, БЕЗ «Запросить оплату».
+        - ``processing`` / ``payment_requested`` (не оплачен и клиент ещё не дал ответ —
+          нет чека на проверке и способ оплаты не выбран): «Запросить оплату» +
+          постоянные кнопки, БЕЗ редактора. Кнопка позволяет админу повторно
+          запрашивать оплату, пока клиент не ответил (чек/хэш или наличные).
+        - ``delivering`` (не оплачен): «Оплачено» — админ подтверждает получение
+          оплаты (например, наличных от клиента курьеру) перед закрытием заказа.
+        - остальные статусы: только постоянные кнопки.
+
+        Постоянные кнопки («Написать покупателю», «Изменить статус») — во всех статусах.
+        """
         builder = InlineKeyboardBuilder()
 
-        if getattr(order, "status", None) == "pending":
-            text = self.get_button_text(
-                "admin.order_detail", "admin_order_accept", default="✅ Accept Order"
-            )
-            builder.row(
-                InlineKeyboardButton(
-                    text=text,
-                    callback_data=f"admin_order_accept:{order.id}:{status}:{page}",
-                )
-            )
+        order_status = getattr(order, "status", None)
+        is_paid = bool(getattr(order, "is_paid", False))
+        proof_type = getattr(order, "payment_proof_type", None)
 
         texts = self.get_button_text(
             "admin.order_detail",
             [
+                "admin_order_accept",
                 "admin_order_contact_client",
                 "admin_order_edit_items",
                 "admin_order_edit_addr",
                 "admin_order_edit_shipping",
                 "admin_order_edit_comment",
                 "admin_order_request_payment",
+                "admin_order_mark_paid",
                 "admin_order_change_status",
                 "back",
             ],
             default="XXX",
         )
 
-        builder.row(
-            InlineKeyboardButton(
-                text=texts["admin_order_contact_client"],
-                callback_data=f"admin_order_contact_client:{order.id}:{status}:{page}",
+        def _row(btn_key: str, callback_key: str) -> None:
+            builder.row(
+                InlineKeyboardButton(
+                    text=texts[btn_key],
+                    callback_data=f"{callback_key}:{order.id}:{status}:{page}",
+                )
             )
-        )
-        builder.row(
-            InlineKeyboardButton(
-                text=texts["admin_order_edit_items"],
-                callback_data=f"admin_order_edit_items:{order.id}:{status}:{page}",
-            )
-        )
-        builder.row(
-            InlineKeyboardButton(
-                text=texts["admin_order_edit_addr"],
-                callback_data=f"admin_order_edit_addr:{order.id}:{status}:{page}",
-            )
-        )
-        builder.row(
-            InlineKeyboardButton(
-                text=texts["admin_order_edit_shipping"],
-                callback_data=f"admin_order_edit_shipping:{order.id}:{status}:{page}",
-            )
-        )
-        builder.row(
-            InlineKeyboardButton(
-                text=texts["admin_order_edit_comment"],
-                callback_data=f"admin_order_edit_comment:{order.id}:{status}:{page}",
-            )
-        )
-        builder.row(
-            InlineKeyboardButton(
-                text=texts["admin_order_request_payment"],
-                callback_data=f"admin_order_request_payment:{order.id}:{status}:{page}",
-            )
-        )
-        builder.row(
-            InlineKeyboardButton(
-                text=texts["admin_order_change_status"],
-                callback_data=f"admin_order_change_status:{order.id}:{status}:{page}",
-            )
-        )
+
+        if order_status == OrderStatus.PENDING.value:
+            # Редактор заказа: принять + правки параметров (без «Запросить оплату»)
+            _row("admin_order_accept", "admin_order_accept")
+            _row("admin_order_edit_items", "admin_order_edit_items")
+            _row("admin_order_edit_addr", "admin_order_edit_addr")
+            _row("admin_order_edit_shipping", "admin_order_edit_shipping")
+            _row("admin_order_edit_comment", "admin_order_edit_comment")
+        elif (
+                order_status in (
+                    OrderStatus.PROCESSING.value,
+                    OrderStatus.PAYMENT_REQUESTED.value,
+                )
+                and not is_paid
+                and not proof_type
+        ):
+            # Заказ ожидает оплаты и клиент ещё не ответил (нет чека на проверке,
+            # не выбран наличный расчёт): админ может запросить/повторно запросить оплату
+            _row("admin_order_request_payment", "admin_order_request_payment")
+        elif order_status == OrderStatus.DELIVERING.value and not is_paid:
+            # Заказ в пути и оплата ещё не подтверждена (типично для наличных):
+            # админ отмечает получение оплаты перед закрытием заказа
+            _row("admin_order_mark_paid", "admin_order_mark_paid")
+
+        # Постоянные кнопки — во всех статусах
+        _row("admin_order_contact_client", "admin_order_contact_client")
+        _row("admin_order_change_status", "admin_order_change_status")
+
         builder.row(
             InlineKeyboardButton(
                 text=texts["back"],
@@ -713,14 +772,26 @@ class KeyboardFactory:
         )
         return builder.as_markup()
 
-    def get_product_editor_kb(self, product_id: int, category_id: int | str) -> InlineKeyboardMarkup:
-        """Управление характеристиками конкретного товара."""
+    def get_product_editor_kb(
+            self,
+            product_id: int,
+            category_id: int | str,
+            has_photo: bool = False,
+    ) -> InlineKeyboardMarkup:
+        """Управление характеристиками конкретного товара.
+
+        Кнопки фото зависят от наличия фото у товара:
+        - без фото: «📸 Добавить фото»;
+        - с фото: «📸 Изменить фото» + «🗑 Удалить фото».
+        """
+        exclude = ["edit_photo"] if has_photo else ["edit_photo_change", "delete_photo"]
         return self.build(
             "admin.product_editor",
             callbacks={
                 "back": f"admin_catalog_{category_id}",
             },
             id=product_id,
+            exclude=exclude,
         )
 
     def get_order_status_kb(
@@ -729,18 +800,15 @@ class KeyboardFactory:
             status: str = "all",
             page: int = 1,
     ) -> InlineKeyboardMarkup:
-        """Выбор нового статуса заказа (processing/delivering/cancelled)."""
-        from src.core.constants import OrderStatus
-
-        status_value_map = {
-            "processing": OrderStatus.PROCESSING.value,
-            "delivering": OrderStatus.DELIVERING.value,
-            "cancelled": OrderStatus.CANCELLED.value,
-        }
+        """Выбор нового статуса заказа (все статусы из enum OrderStatus)."""
+        from src.core.constants import ORDER_STATUS_CODES, ORDER_STATUS_VALUES
 
         buttons = self.locale.get_keyboard_data("admin.order_status_menu")
         btns = buttons.get("buttons", {}) if isinstance(buttons, dict) else {}
         sizes = buttons.get("sizes") if isinstance(buttons, dict) else None
+
+        # Короткий код фильтра (лимит callback_data — 64 байта); "all" остаётся как есть.
+        filter_code = ORDER_STATUS_CODES.get(status, status)
 
         out_buttons: List[InlineKeyboardButton] = []
         for btn_key, btn_val in btns.items():
@@ -748,10 +816,9 @@ class KeyboardFactory:
 
             if btn_key == "back":
                 actual_callback = f"admin_order_view:{order_id}:{status}:{page}"
-            elif btn_key in status_value_map:
-                target_status = status_value_map[btn_key]
+            elif btn_key in ORDER_STATUS_VALUES:
                 actual_callback = (
-                    f"admin_order_set_status:{order_id}:{target_status}:{status}:{page}"
+                    f"admin_order_set_status:{order_id}:{ORDER_STATUS_CODES[btn_key]}:{filter_code}:{page}"
                 )
             else:
                 continue

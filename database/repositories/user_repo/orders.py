@@ -22,6 +22,7 @@ class UserOrderMixin:
             self,
             user_id: int,
             delivery_address: str | None = None,
+            delivery_address_type: str | None = None,
             user_comment: str | None = None
     ) -> Order | None:
         logger.info(f"Creating order from cart for user id={user_id}")
@@ -50,6 +51,7 @@ class UserOrderMixin:
             user_id=user_id,
             total_price=total_price,
             delivery_address=delivery_address,
+            delivery_address_type=delivery_address_type,
             user_comment=user_comment,
             is_paid=False,
             status=OrderStatus.PENDING.value,
@@ -84,6 +86,19 @@ class UserOrderMixin:
             order_by=Order.created_at.desc()
         )
 
+    async def get_user_orders(
+        self, user_id: int, page: int = 1, per_page: int = 10
+    ) -> tuple[list[Order], int]:
+        """Возвращает страницу всех заказов пользователя (новые сверху) и общее количество."""
+        total = await self._order_repo.count(Order.user_id == user_id)
+        orders = await self._order_repo.get_all(
+            Order.user_id == user_id,
+            order_by=Order.created_at.desc(),
+            limit=per_page,
+            offset=(page - 1) * per_page,
+        )
+        return orders, total
+
     async def get_order_with_items(self, order_id: int, user_id: int) -> Order | None:
         options = [selectinload(Order.items).joinedload(OrderItem.product)]
         return await self._order_repo.get_one(
@@ -116,6 +131,20 @@ class UserOrderMixin:
         order.payment_proof = proof_content
         order.status = OrderStatus.AWAITING_CONFIRMATION.value
 
+        await self.session.commit()
+        return order
+
+    async def update_order_status(
+            self,
+            order_id: int,
+            user_id: int,
+            status: str
+    ) -> Order | None:
+        """Обновляет статус заказа. Проверяет принадлежность заказа пользователю."""
+        order = await self.get_order_with_items(order_id, user_id)
+        if not order:
+            return None
+        order.status = status
         await self.session.commit()
         return order
 

@@ -7,7 +7,7 @@ from aiogram.types import CallbackQuery
 from database.models.user import User
 from database.repositories.admin_repo import AdminRepository
 from locales.locale import Locale
-from src.core.constants import OrderStatus
+from src.core.constants import ADMIN_ORDER_STATUS_FILTERS
 from src.core.ui import UIManager
 
 logger = logging.getLogger(__name__)
@@ -18,10 +18,7 @@ PAGE_SIZE = 10
 
 CALLBACK_TO_STATUS = {
     "admin_order_all": "all",
-    "admin_order_pending": OrderStatus.PENDING.value,
-    "admin_order_awaiting": OrderStatus.AWAITING_CONFIRMATION.value,
-    "admin_order_processing": OrderStatus.PROCESSING.value,
-    "admin_order_delivering": OrderStatus.DELIVERING.value,
+    **ADMIN_ORDER_STATUS_FILTERS,
 }
 
 
@@ -141,11 +138,11 @@ async def render_orders_list(
 
     # 3. Формируем текст
     if not orders:
-        text = f"📋 <b>Список заказов ({status})</b>\n\n<i>Заказы не найдены.</i>"
+        text = locale.get_text("admin.orders.list_header", status=status) + "\n\n" + locale.get_text("admin.orders.list_empty")
     else:
-        lines = [f"📋 <b>Список заказов ({status})</b>\n"]
+        lines = [locale.get_text("admin.orders.list_header", status=status) + "\n"]
         for order in orders:
-            lines.append(f"ID: <code>{order.id}</code> | {order.total_price} $ - <b>{order.status}</b>")
+            lines.append(locale.get_text("admin.orders.list_line", id=order.id, price=order.total_price, currency="$", status=order.status))
 
         text = "\n".join(lines)
 

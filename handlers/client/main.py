@@ -31,7 +31,7 @@ async def show_client_main_menu(
     if not text:
         text = locale.get_text("client.user_main")
 
-    orders_count = len(user.orders) if user and user.orders else 0
+    orders_count = user.active_orders_count if user else 0
     cart_count = len(user.cart) if user and user.cart else 0
 
     kb = locale.keyboards
@@ -53,7 +53,9 @@ async def cmd_start(
     state: FSMContext,
     user: User,
 ) -> None:
-    await state.clear()
+    # Сбрасываем только состояние FSM, сохраняя данные корзины
+    # (адрес доставки, комментарий, cart_message_id)
+    await state.set_state(None)
 
     if user and user.language:
         await show_client_main_menu(
@@ -68,7 +70,8 @@ async def cmd_start(
         await UIManager.show(
             event=message,
             text=locale.get_text("client.select_language_title"),
-            reply_markup=kb.get_language_keyboard(),
+            # На первом запуске языка ещё нет — кнопка «Назад» не нужна.
+            reply_markup=kb.get_language_keyboard(exclude=["back"]),
         )
 
 

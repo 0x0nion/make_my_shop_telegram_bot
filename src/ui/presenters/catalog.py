@@ -1,6 +1,59 @@
 from typing import Dict, Optional, Tuple, Any
 from aiogram.types import InlineKeyboardMarkup
 
+# Единый разделитель списка товаров в каталоге (клиент и админ).
+_CATALOG_SEPARATOR = "─" * 15
+
+
+def build_catalog_text(
+        locale,
+        title: str,
+        description: str,
+        products: list,
+) -> str:
+    """Единый формат текста каталога для клиента и админа.
+
+    Формат:
+        {title}
+
+        {description}
+
+        ───────────────
+
+        🔹 {name} - {price} {currency} / шт.
+
+        ───────────────
+        ℹ️ {footer}
+
+    Список товаров (и футер) добавляется только если товары есть.
+    """
+    parts = [title.strip()]
+    if description and description.strip():
+        parts.append(description.strip())
+    base_text = "\n\n".join(parts)
+
+    if not products:
+        return base_text
+
+    lines = []
+    for product in products:
+        price = float(getattr(product, "price", 0.0) or 0.0)
+        currency = locale.get_currency_symbol(getattr(product, "currency", None))
+        line = locale.get_text(
+            "catalog.display.product_line",
+            name=getattr(product, "name", ""),
+            price=f"{price:,.2f}",
+            currency=currency,
+        )
+        lines.append(line)
+
+    products_text = "\n\n".join(lines)
+    footer = locale.get_text("catalog.display.footer")
+    return (
+        f"{base_text}\n\n{_CATALOG_SEPARATOR}\n\n"
+        f"{products_text}\n\n{_CATALOG_SEPARATOR}\n{footer}"
+    )
+
 
 class CatalogMenuPresenter:
     """Отвечает за сборку финального текста и клавиатуры экрана каталога."""
@@ -22,39 +75,26 @@ class CatalogMenuPresenter:
         if current_cat_id:
             if current_cat:
                 cat_name = category_names.get(current_cat_id, current_cat.name)
-                title = locale.get_text("catalog.category_title", name=cat_name)
+                title = locale.get_text("catalog.display.category_title", name=cat_name)
                 description = category_description or ""
             else:
-                title = locale.get_text("catalog.category_not_found")
+                title = locale.get_text("catalog.display.category_not_found")
                 description = ""
         else:
-            title = locale.get_text("catalog.root_menu_title")
-            description = (
-                root_description
-                if root_description and root_description.strip()
-                else locale.get_text("catalog.root_menu_description")
-            )
+            title = locale.get_text("catalog.display.root_title")
+            description = root_description or ""
 
         has_description = bool(description and description.strip())
 
-        # 2. Собираем основной текст
-        body = [title.strip()]
-        if has_description:
-            body.append(description.strip())
+        # 2. Единый текст каталога (общий с клиентом)
+        full_text = build_catalog_text(
+            locale=locale,
+            title=title,
+            description=description,
+            products=db_products,
+        )
 
-        base_text = "\n\n".join(body)
-
-        # 3. Добавляем список товаров, если они есть
-        if db_products:
-            currency = locale.get_currency_symbol()
-            products_text = "\n".join(
-                f"{p.name} - {p.price} {currency}" for p in db_products
-            )
-            full_text = f"{base_text}\n{'_' * 20}\n{products_text}"
-        else:
-            full_text = base_text
-
-        # 4. Собираем клавиатуру
+        # 3. Собираем клавиатуру
         parent_id = current_cat.parent_id if current_cat else None
         reply_markup = locale.keyboards.build_catalog_edit_kb(
             categories=db_categories,

@@ -65,7 +65,7 @@ async def start_order_payment(
         return
 
     instruction_text = locale.get_text("client.payment_instruction")
-    cancel_kb = kb.get_kb("cancel_reply")
+    cancel_kb = kb.get_back_kb("client_cancel_payment_proof")
 
     ui_msg = await UIManager.show(
         event=callback,
@@ -106,12 +106,13 @@ async def process_pay_cash(
     )
 
     if not updated_order:
-        await callback.answer(locale.get_text("order_not_found"), show_alert=True)
+        await callback.answer(locale.get_text("client.order_not_found"), show_alert=True)
         return
 
     # 2. Обновляем статус заказа до 'processing' через репозиторий
     await user_repo.update_order_status(
         order_id=order_id,
+        user_id=callback.from_user.id,
         status=OrderStatus.PROCESSING.value,
     )
 
@@ -119,7 +120,7 @@ async def process_pay_cash(
 
     confirm_msg = await UIManager.show(
         event=callback,
-        text=locale.get_text("payment_cash_accepted"),
+        text=locale.get_text("client.payment_cash_accepted"),
     )
 
     if confirm_msg:
@@ -268,3 +269,21 @@ async def process_invalid_payment_proof(
                 delay=10,
             )
         )
+
+
+@user_payment_router.callback_query(F.data == "client_cancel_payment_proof")
+async def client_cancel_payment_proof(
+    callback: CallbackQuery,
+    state: FSMContext,
+    user: User,
+):
+    """Отмена отправки чека об оплате — возврат к карточке заказа."""
+    await state.clear()
+    locale = Locale(user.language)
+
+    await UIManager.show(
+        event=callback,
+        text=locale.get_text("client.payment_cancelled"),
+        reply_markup=None,
+    )
+    await callback.answer()

@@ -28,8 +28,7 @@ async def render_cart(
     # 1. Если корзина пуста
     if not user or not user.cart:
         text = locale.get_text("client.cart_empty")
-        orders_list = getattr(user, "orders", []) or []
-        main_kb = kb_manager.get_main_kb(orders=len(orders_list), cart=0)
+        main_kb = kb_manager.get_main_kb(orders=user.active_orders_count, cart=0)
 
         sent_msg = await UIManager.show(
             event=event,
@@ -43,6 +42,7 @@ async def render_cart(
 
     # 2. Расчет содержимого корзины
     address = state_data.get("delivery_address")
+    addr_type = state_data.get("delivery_address_type")
     comment = state_data.get("user_comment", "")
 
     subtotal = 0.0
@@ -88,7 +88,7 @@ async def render_cart(
     text_blocks.append(summary_text)
 
     # Адрес
-    addr_text = address if address else locale.get_text("client.cart_address_not_specified")
+    addr_text = locale.format_address(address, addr_type) if address else locale.get_text("client.cart_address_not_specified")
     addr_label = locale.get_text("client.cart_address_label", address=addr_text)
     text_blocks.append(addr_label)
 
@@ -100,10 +100,7 @@ async def render_cart(
     # Формируем итоговый текст с правильными переносами
     text = "\n".join(text_blocks)
 
-    markup = kb_manager.get_cart_kb(
-        cart_items=user.cart,
-        has_address=bool(address),
-    )
+    markup = kb_manager.get_cart_kb(cart_items=user.cart)
 
     sent_msg = await UIManager.show(
         event=event,

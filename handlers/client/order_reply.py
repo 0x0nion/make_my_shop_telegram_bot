@@ -9,8 +9,6 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import (
     CallbackQuery,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
     Message,
 )
 
@@ -41,9 +39,9 @@ async def client_start_reply(
 
     locale = Locale(user.language)
 
-    # Загружаем клавиатуру отмены из locale.json по ключу client.cancel_reply
+    # Клавиатура «Назад» для отмены ввода ответа
     kb = locale.keyboards
-    cancel_kb = kb.get_kb("cancel_reply")
+    cancel_kb = kb.get_back_kb("client_cancel_reply")
 
     # 1. Рендерим меню ввода
     msg = await UIManager.show(
@@ -139,23 +137,16 @@ async def client_send_reply(
         message_id_to_edit=main_message_id,
     )
 
-    # Админскую клавиатуру не трогаем (оставляем оригинал)
-    admin_kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="📦 Открыть заказ",
-                    callback_data=f"admin_order_view:{order_id}:all:1",
-                )
-            ]
-        ]
-    )
-
-    # Уведомление админу через локаль
-    admin_text = locale.get_text("client.admin_notify_client_reply", order_id=order_id)
-
+    # Уведомление админа — на языке админа
     for admin_id in config.ADMIN_ID:
         try:
+            admin_user = await user_repo.get_user(admin_id)
+            admin_lang = admin_user.language if admin_user and admin_user.language else "ru"
+            admin_locale = Locale(admin_lang)
+
+            admin_kb = admin_locale.keyboards.build("admin.order_notification", order_id=order_id)
+            admin_text = admin_locale.get_text("client.admin_notify_client_reply", order_id=order_id)
+
             await message.bot.send_message(
                 chat_id=admin_id,
                 text=admin_text,

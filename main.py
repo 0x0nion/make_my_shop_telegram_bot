@@ -20,6 +20,7 @@ async def main():
         token=config.BOT_TOKEN.get_secret_value(),
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
+    
     dp = Dispatcher(
         storage=MemoryStorage()
     )

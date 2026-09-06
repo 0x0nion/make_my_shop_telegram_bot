@@ -16,6 +16,7 @@ class Order(Base):
     status: Mapped[str] = mapped_column(String(50), default="pending")
 
     delivery_address: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    delivery_address_type: Mapped[str | None] = mapped_column(String(20), nullable=True)  # "location" | "text"
     user_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
     manager_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
     delivery_price: Mapped[float] = mapped_column(Numeric(10, 2), default=0.0)

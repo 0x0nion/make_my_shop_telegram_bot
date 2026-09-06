@@ -32,7 +32,9 @@ async def shop_main(
     state: FSMContext,
 ) -> None:
     """Навигация по каталогу магазина (корневое меню и категории)."""
-    await state.clear()
+    # Сбрасываем только состояние FSM, сохраняя данные корзины
+    # (адрес доставки, комментарий, cart_message_id)
+    await state.set_state(None)
     await callback.answer()
 
     data_parts = callback.data.split("_")

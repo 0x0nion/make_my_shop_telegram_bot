@@ -25,29 +25,44 @@ async def render_edit_order_items_ui(
     Динамически собирает список товаров в тексте сообщения и прикрепляет клавиатуру.
     """
     lang = user.language
-    kb = Locale(lang).keyboards
+    locale = Locale(lang)
+    kb = locale.keyboards
 
     order = await admin_repo.get_order_by_id(order_id)
     if not order:
-        await callback.answer("❌ Заказ не найден", show_alert=True)
+        await callback.answer(locale.get_text("admin.orders.order_not_found"), show_alert=True)
         return
+
+    currency = locale.get_currency_symbol()
 
     # 1. Формируем текстовый список товаров
     items_lines = []
     if order.items:
         for idx, item in enumerate(order.items, start=1):
-            prod_name = item.product.name if item.product else f"Товар #{item.product_id}"
-            unit = getattr(item.product, "unit", "шт.") if item.product else "шт."
+            prod_name = (
+                item.product.name
+                if item.product
+                else locale.get_text("admin.orders.deleted_product", product_id=item.product_id)
+            )
+            unit = locale.get_unit(getattr(item.product, "unit", None))
             price = float(item.price_at_purchase)
             qty = item.quantity
             item_sum = qty * price
 
             items_lines.append(
-                f"{idx}. <b>{prod_name}</b>\n"
-                f"   └ {qty} {unit} × {price:.2f} $ = <b>{item_sum:.2f} $</b>"
+                locale.get_text(
+                    "admin.orders.item_line",
+                    idx=idx,
+                    name=prod_name,
+                    qty=qty,
+                    unit=unit,
+                    price=price,
+                    sum=item_sum,
+                    currency=currency,
+                )
             )
     else:
-        items_lines.append("<i>Список товаров пуст.</i>")
+        items_lines.append(locale.get_text("admin.orders.no_items"))
 
     items_block = "\n".join(items_lines)
     delivery_price = float(order.delivery_price or 0.0)
@@ -55,12 +70,12 @@ async def render_edit_order_items_ui(
 
     # 2. Собираем общий текст
     text = (
-        f"✏️ <b>Редактирование состава заказа #{order.id}</b>\n\n"
-        f"🛒 <b>Текущие товары:</b>\n"
+        f"{locale.get_text('admin.orders.items_title', id=order.id)}\n\n"
+        f"{locale.get_text('admin.orders.items_current')}\n"
         f"{items_block}\n\n"
-        f"🚚 <b>Доставка:</b> {delivery_price:.2f} $\n"
-        f"💰 <b>Итоговая сумма:</b> <b>{total_price:.2f} $</b>\n\n"
-        f"👇 <i>Используйте кнопки ниже для изменения количества (➕ / ➖) или удаления товаров:</i>"
+        f"{locale.get_text('admin.orders.items_delivery', price=f'{delivery_price:.2f}', currency=currency)}\n"
+        f"{locale.get_text('admin.orders.items_total', price=f'{total_price:.2f}', currency=currency)}\n\n"
+        f"{locale.get_text('admin.orders.items_hint')}"
     )
 
     # 3. Генерируем клавиатуру с кнопками

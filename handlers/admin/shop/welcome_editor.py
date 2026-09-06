@@ -58,9 +58,10 @@ async def show_welcome_card(
 
 @welcome_editor_router.callback_query(F.data == "admin_greeting")
 async def route_welcome_card(
-        callback: CallbackQuery, admin_repo: AdminRepository, user: User
+        callback: CallbackQuery, admin_repo: AdminRepository, user: User, state: FSMContext
 ):
     """Открытие меню редактора приветствия по кнопке из настроек магазина."""
+    await state.clear()
     lang = user.language
     await show_welcome_card(event=callback, admin_repo=admin_repo, lang=lang)
     await callback.answer()
@@ -83,7 +84,7 @@ async def start_edit_welcome_text(
     await UIManager.show(
         event=callback,
         text=prompt_text,
-        reply_markup=None,
+        reply_markup=locale.keyboards.get_back_kb("admin_greeting"),
     )
 
 
@@ -104,7 +105,7 @@ async def start_edit_welcome_photo(
     await UIManager.show(
         event=callback,
         text=prompt_text,
-        reply_markup=None,
+        reply_markup=locale.keyboards.get_back_kb("admin_greeting"),
     )
 
 

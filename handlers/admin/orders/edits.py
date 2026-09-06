@@ -1,4 +1,5 @@
 import logging
+from contextlib import suppress
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
@@ -9,6 +10,7 @@ from database.repositories.admin_repo import AdminRepository
 from handlers.admin.orders.common import render_order_detail
 from locales.locale import Locale
 from src.core.ui import UIManager
+from src.services.address_service import build_location_address, normalize_text_address
 from state.admin_states import AdminOrderState
 
 logger = logging.getLogger(__name__)
@@ -43,7 +45,7 @@ async def start_edit_address(
 
     back_callback = f"admin_order_view:{order_id}:{status}:{page}"
     text = locale.get_text("admin.orders.prompt_edit_addr")
-    reply_markup = kb.get_cancel_kb(back_callback=back_callback)
+    reply_markup = kb.get_back_kb(back_callback)
 
     await UIManager.show(
         event=callback,
@@ -52,31 +54,54 @@ async def start_edit_address(
     )
 
 
-@order_edits_router.message(AdminOrderState.edit_address, F.text)
+@order_edits_router.message(AdminOrderState.edit_address)
 async def process_edit_address(
         message: Message,
         state: FSMContext,
         admin_repo: AdminRepository,
         user: User,
 ):
-    new_address = message.text.strip()
+    locale = Locale(user.language)
+    kb = locale.keyboards
+
     data = await state.get_data()
     order_id = data.get("order_id")
     status = data.get("status", "all")
     page = data.get("page", 1)
     last_bot_msg_id = data.get("last_bot_msg_id")
+    back_callback = f"admin_order_view:{order_id}:{status}:{page}"
+
+    with suppress(TelegramBadRequest):
+        await message.delete()
+
+    if message.location:
+        new_address, addr_type = build_location_address(
+            message.location.latitude, message.location.longitude
+        )
+    elif message.text:
+        new_address, addr_type = normalize_text_address(message.text)
+    else:
+        new_address, addr_type = None, None
+
+    if not new_address:
+        await UIManager.show(
+            event=message,
+            text=(
+                f"{locale.get_text('admin.orders.prompt_edit_addr')}\n\n"
+                f"{locale.get_text('admin.orders.prompt_edit_addr_error')}"
+            ),
+            reply_markup=kb.get_back_kb(back_callback),
+            message_id_to_edit=last_bot_msg_id,
+        )
+        return
 
     order = await admin_repo.get_order_by_id(order_id)
     if order:
         order.delivery_address = new_address
+        order.delivery_address_type = addr_type
         await admin_repo.update_order(order)
 
     await state.clear()
-
-    try:
-        await message.delete()
-    except TelegramBadRequest:
-        pass
 
     await render_order_detail(
         event=message,
@@ -116,7 +141,7 @@ async def start_edit_shipping(
 
     back_callback = f"admin_order_view:{order_id}:{status}:{page}"
     text = locale.get_text("admin.orders.prompt_edit_shipping")
-    reply_markup = kb.get_cancel_kb(back_callback=back_callback)
+    reply_markup = kb.get_back_kb(back_callback)
 
     await UIManager.show(
         event=callback,
@@ -136,21 +161,29 @@ async def process_edit_shipping(
     locale = Locale(lang)
     kb = locale.keyboards
 
+    data = await state.get_data()
+    order_id = data.get("order_id")
+    status = data.get("status", "all")
+    page = data.get("page", 1)
+    last_bot_msg_id = data.get("last_bot_msg_id")
+    back_callback = f"admin_order_view:{order_id}:{status}:{page}"
+
+    with suppress(TelegramBadRequest):
+        await message.delete()
+
     text_val = message.text.strip().replace(",", ".")
     try:
         new_cost = float(text_val)
         if new_cost < 0:
             raise ValueError
     except ValueError:
-        err_msg = locale.get_text("admin.orders.invalid_number")
-        await message.answer(err_msg)
+        await UIManager.show(
+            event=message,
+            text=locale.get_text("admin.orders.invalid_number"),
+            reply_markup=kb.get_back_kb(back_callback),
+            message_id_to_edit=last_bot_msg_id,
+        )
         return
-
-    data = await state.get_data()
-    order_id = data.get("order_id")
-    status = data.get("status", "all")
-    page = data.get("page", 1)
-    last_bot_msg_id = data.get("last_bot_msg_id")
 
     order = await admin_repo.get_order_by_id(order_id)
     if order:
@@ -163,11 +196,6 @@ async def process_edit_shipping(
         await admin_repo.update_order(order)
 
     await state.clear()
-
-    try:
-        await message.delete()
-    except TelegramBadRequest:
-        pass
 
     await render_order_detail(
         event=message,
@@ -207,7 +235,7 @@ async def start_edit_comment(
 
     back_callback = f"admin_order_view:{order_id}:{status}:{page}"
     text = locale.get_text("admin.orders.prompt_edit_comment")
-    reply_markup = kb.get_cancel_kb(back_callback=back_callback)
+    reply_markup = kb.get_back_kb(back_callback)
 
     await UIManager.show(
         event=callback,
@@ -230,17 +258,15 @@ async def process_edit_comment(
     page = data.get("page", 1)
     last_bot_msg_id = data.get("last_bot_msg_id")
 
+    with suppress(TelegramBadRequest):
+        await message.delete()
+
     order = await admin_repo.get_order_by_id(order_id)
     if order:
         order.manager_comment = new_comment
         await admin_repo.update_order(order)
 
     await state.clear()
-
-    try:
-        await message.delete()
-    except TelegramBadRequest:
-        pass
 
     await render_order_detail(
         event=message,

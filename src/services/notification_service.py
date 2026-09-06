@@ -2,11 +2,12 @@
 import logging
 
 from aiogram import Bot
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardMarkup
 
 from config import config as app_config
 from database.repositories.admin_repo import AdminRepository
 from handlers.admin.orders.common import build_order_detail_text
+from locales.locale import Locale
 from src.core.constants import PaymentProofType
 
 logger = logging.getLogger(__name__)
@@ -14,20 +15,8 @@ logger = logging.getLogger(__name__)
 
 def get_payment_verify_kb(order_id: int) -> InlineKeyboardMarkup:
     """Клавиатура быстрого подтверждения/отклонения оплаты для администратора."""
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="✅ Подтвердить оплату",
-                    callback_data=f"admin_pay_approve:{order_id}",
-                ),
-                InlineKeyboardButton(
-                    text="❌ Отклонить",
-                    callback_data=f"admin_pay_reject:{order_id}",
-                ),
-            ]
-        ]
-    )
+    locale = Locale("ru")
+    return locale.keyboards.build("admin.payment_verify", order_id=order_id)
 
 
 async def notify_admins_about_payment(
@@ -46,7 +35,7 @@ async def notify_admins_about_payment(
         )
         return
 
-    caption = f"🚨 <b>НОВАЯ ОПЛАТА ПО ЗАКАЗУ #{order_id}</b>\n\n" + text
+    caption = Locale("ru").get_text("notifications.new_payment", order_id=order_id) + text
     reply_markup = get_payment_verify_kb(order_id)
 
     for admin_id in admin_ids:

@@ -8,6 +8,7 @@ from database.models.user import User
 from database.repositories.admin_repo import AdminRepository
 from handlers.admin.utils import parse_id, self_destruct
 from locales.locale import Locale
+from locales.units import DEFAULT_UNIT
 from src.core.ui import UIManager
 from src.services.admin_shop_service import AdminShopService
 from src.ui.presenters.admin import AdminUI
@@ -100,7 +101,7 @@ async def catalog_start_add_category(
     await state.set_state(AdminState.add_category)
 
     back_callback = f"admin_catalog_{raw_id}"
-    reply_markup = locale.keyboards.get_cancel_kb(back_callback=back_callback)
+    reply_markup = locale.keyboards.get_back_kb(back_callback)
 
     await UIManager.show(
         event=callback,
@@ -160,7 +161,7 @@ async def catalog_start_add_description(
     await state.set_state(AdminState.edit_category_description)
 
     back_callback = f"admin_catalog_{raw_id}"
-    reply_markup = locale.keyboards.get_cancel_kb(back_callback=back_callback)
+    reply_markup = locale.keyboards.get_back_kb(back_callback)
 
     await UIManager.show(
         event=callback,
@@ -217,7 +218,7 @@ async def catalog_add_product(
         price=0.0,
         category_id=parent_id,
         image_id=None,
-        unit=locale.get_unit(unit_code=None),
+        unit=DEFAULT_UNIT.value,
         use_temp=True,
         admin_id=callback.from_user.id,
     )

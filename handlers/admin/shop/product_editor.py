@@ -52,7 +52,7 @@ async def show_product_card(
 
     category_id = product.category_id if product.category_id else "root"
     reply_markup = locale.keyboards.get_product_editor_kb(
-        product_id=product_id, category_id=category_id
+        product_id=product_id, category_id=category_id, has_photo=bool(product.image_id)
     )
 
     await UIManager.show(
@@ -66,8 +66,9 @@ async def show_product_card(
 
 @editor_router.callback_query(F.data.startswith("admin_item_"))
 async def route_product_card(
-        callback: CallbackQuery, admin_repo: AdminRepository, user: User
+        callback: CallbackQuery, admin_repo: AdminRepository, user: User, state: FSMContext
 ):
+    await state.clear()
     await callback.answer()
     data_parts = callback.data.split("_")
     product_id = int(data_parts[2]) if len(data_parts) > 2 else 0
@@ -125,14 +126,48 @@ async def start_edit_product(
         else locale.get_text("admin.product_editor.default")
     )
 
-    await state.update_data(
-        product_id=product_id, menu_message_id=callback.message.message_id
-    )
-
-    await UIManager.show(
+    # Сначала рисуем промпт: UIManager может пересоздать сообщение
+    # (например, фото-карточка не редактируется в текст и получает новый ID).
+    # Поэтому menu_message_id сохраняем ПОСЛЕ отрисовки — из реального сообщения.
+    prompt_message = await UIManager.show(
         event=callback,
         text=prompt_text,
-        reply_markup=None,
+        reply_markup=locale.keyboards.get_back_kb(f"admin_item_{product_id}"),
+    )
+
+    await state.update_data(
+        product_id=product_id,
+        menu_message_id=(
+            prompt_message.message_id
+            if prompt_message
+            else callback.message.message_id
+        ),
+    )
+
+
+@editor_router.callback_query(F.data.startswith("admin_del_photo_"))
+async def delete_product_photo(
+        callback: CallbackQuery, admin_repo: AdminRepository, user: User
+):
+    """Удаление фото товара: сбрасываем image_id и перерисовываем карточку."""
+    await callback.answer()
+    parts = callback.data.split("_")
+    product_id = int(parts[3]) if len(parts) > 3 else 0
+    lang = user.language
+
+    await admin_repo.update_product_field(
+        product_id,
+        "image_id",
+        None,
+        use_temp=True,
+        admin_id=callback.from_user.id,
+    )
+
+    await show_product_card(
+        event=callback,
+        product_id=product_id,
+        admin_repo=admin_repo,
+        lang=lang,
     )
 
 

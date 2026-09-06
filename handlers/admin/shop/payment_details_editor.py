@@ -54,9 +54,10 @@ async def show_payment_details_card(
 
 @payment_details_editor_router.callback_query(F.data == "admin_payment_details")
 async def route_payment_details_card(
-    callback: CallbackQuery, admin_repo: AdminRepository, user: User
+    callback: CallbackQuery, admin_repo: AdminRepository, user: User, state: FSMContext
 ):
     """Открытие меню карточки платежных данных."""
+    await state.clear()
     lang = user.language
     await show_payment_details_card(event=callback, admin_repo=admin_repo, lang=lang)
     await callback.answer()
@@ -79,7 +80,7 @@ async def start_edit_payment_text(
     await UIManager.show(
         event=callback,
         text=prompt_text,
-        reply_markup=None,
+        reply_markup=locale.keyboards.get_back_kb("admin_payment_details"),
     )
 
 

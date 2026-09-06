@@ -8,6 +8,7 @@ from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKe
 from database.models.user import User
 from database.repositories.admin_repo import AdminRepository
 from handlers.admin.orders.common import render_order_detail
+from locales.locale import Locale
 from src.core.ui import UIManager
 
 logger = logging.getLogger(__name__)
@@ -22,12 +23,17 @@ class AdminContactStates(StatesGroup):
     waiting_for_message = State()
 
 
-def format_chat_history(chat_history: list | None, page: int = 1) -> tuple[str, InlineKeyboardMarkup | None]:
+def format_chat_history(
+    chat_history: list | None, page: int = 1, locale: Locale | None = None
+) -> tuple[str, list[InlineKeyboardButton] | None]:
     """
     Форматирует историю переписки для отображения с пагинацией.
     """
+    if locale is None:
+        locale = Locale("ru")
+
     if not chat_history:
-        return "<i>История переписки пуста.</i>\n\n", None
+        return locale.get_text("admin.orders.chat_empty") + "\n\n", None
 
     total_messages = len(chat_history)
     total_pages = max(1, (total_messages + MESSAGES_PER_PAGE - 1) // MESSAGES_PER_PAGE)
@@ -37,7 +43,7 @@ def format_chat_history(chat_history: list | None, page: int = 1) -> tuple[str, 
     end_idx = start_idx + MESSAGES_PER_PAGE
     page_messages = chat_history[start_idx:end_idx]
 
-    history_text = "📜 <b>История переписки:</b>\n" + "—" * 20 + "\n"
+    history_text = locale.get_text("admin.orders.chat_title") + "\n" + "—" * 20 + "\n"
 
     for msg in page_messages:
         sender = msg.get("sender")
@@ -45,23 +51,23 @@ def format_chat_history(chat_history: list | None, page: int = 1) -> tuple[str, 
         time_str = msg.get("time", "")
 
         if sender == "admin":
-            author = "🧑‍💻 <b>Администратор</b>"
+            author = locale.get_text("admin.orders.author_admin")
         else:
-            author = "👤 <b>Клиент</b>"
+            author = locale.get_text("admin.orders.author_client")
 
         history_text += f"{author} <i>({time_str})</i>:\n{text}\n\n"
 
-    history_text += "—" * 20 + f"\n📄 Страница {current_page} из {total_pages}\n\n"
+    history_text += "—" * 20 + "\n" + locale.get_text("admin.orders.chat_page", page=current_page, total=total_pages) + "\n\n"
 
     pagination_buttons = []
     if total_pages > 1:
         if current_page > 1:
             pagination_buttons.append(
-                InlineKeyboardButton(text="⬅️ Назад", callback_data=f"admin_chat_page:{current_page - 1}")
+                InlineKeyboardButton(text=locale.get_text("base.back"), callback_data=f"admin_chat_page:{current_page - 1}")
             )
         if current_page < total_pages:
             pagination_buttons.append(
-                InlineKeyboardButton(text="Вперед ➡️", callback_data=f"admin_chat_page:{current_page + 1}")
+                InlineKeyboardButton(text=locale.get_text("base.forward"), callback_data=f"admin_chat_page:{current_page + 1}")
             )
 
     return history_text, pagination_buttons
@@ -72,6 +78,7 @@ async def process_contact_client_start(
     callback: CallbackQuery,
     admin_repo: AdminRepository,
     state: FSMContext,
+    user: User,
 ):
     """
     Запрос у администратора текста для отправки клиенту с отображением истории переписки.
@@ -82,9 +89,11 @@ async def process_contact_client_start(
     status = parts[2] if len(parts) > 2 else "all"
     page = int(parts[3]) if len(parts) > 3 else 1
 
+    locale = Locale(user.language)
+
     order = await admin_repo.get_order_by_id(order_id)
     if not order or not order.user:
-        await callback.answer("❌ Данные пользователя или сам заказ недоступны", show_alert=True)
+        await callback.answer(locale.get_text("admin.orders.data_unavailable"), show_alert=True)
         return
 
     chat_history = order.chat_history or []
@@ -98,24 +107,25 @@ async def process_contact_client_start(
         page=page,
         card_message_id=callback.message.message_id,
         chat_page=initial_chat_page,
+        client_language=order.user.language,
     )
 
-    history_str, nav_buttons = format_chat_history(chat_history, page=initial_chat_page)
+    history_str, nav_buttons = format_chat_history(chat_history, page=initial_chat_page, locale=locale)
 
     keyboard_rows = []
     if nav_buttons:
         keyboard_rows.append(nav_buttons)
 
     keyboard_rows.append(
-        [InlineKeyboardButton(text="❌ Отмена", callback_data=f"admin_order_view:{order_id}:{status}:{page}")]
+        [InlineKeyboardButton(text=locale.get_text("base.cancel"), callback_data=f"admin_order_view:{order_id}:{status}:{page}")]
     )
 
     cancel_kb = InlineKeyboardMarkup(inline_keyboard=keyboard_rows)
 
     text_content = (
-        f"💬 <b>Связь с клиентом (Заказ #{order_id})</b>\n\n"
+        f"{locale.get_text('admin.orders.contact_title', order_id=order_id)}\n\n"
         f"{history_str}"
-        f"Введите текст сообщения, который хотите отправить покупателю:"
+        f"{locale.get_text('admin.orders.contact_input')}"
     )
 
     # Используем UIManager для отрисовки экрана ввода сообщения
@@ -132,17 +142,20 @@ async def process_chat_pagination(
     callback: CallbackQuery,
     state: FSMContext,
     admin_repo: AdminRepository,
+    user: User,
 ):
     """
     Обработка переключения страниц истории переписки в режиме ввода сообщения.
     """
+    locale = Locale(user.language)
+
     data = await state.get_data()
     order_id = data.get("order_id")
     status = data.get("status", "all")
     page = data.get("page", 1)
 
     if not order_id:
-        await callback.answer("❌ Сессия устарела", show_alert=True)
+        await callback.answer(locale.get_text("admin.orders.session_expired"), show_alert=True)
         return
 
     target_chat_page = int(callback.data.split(":")[1])
@@ -151,21 +164,21 @@ async def process_chat_pagination(
     order = await admin_repo.get_order_by_id(order_id)
     chat_history = order.chat_history if order else []
 
-    history_str, nav_buttons = format_chat_history(chat_history, page=target_chat_page)
+    history_str, nav_buttons = format_chat_history(chat_history, page=target_chat_page, locale=locale)
 
     keyboard_rows = []
     if nav_buttons:
         keyboard_rows.append(nav_buttons)
     keyboard_rows.append(
-        [InlineKeyboardButton(text="❌ Отмена", callback_data=f"admin_order_view:{order_id}:{status}:{page}")]
+        [InlineKeyboardButton(text=locale.get_text("base.cancel"), callback_data=f"admin_order_view:{order_id}:{status}:{page}")]
     )
 
     cancel_kb = InlineKeyboardMarkup(inline_keyboard=keyboard_rows)
 
     text_content = (
-        f"💬 <b>Связь с клиентом (Заказ #{order_id})</b>\n\n"
+        f"{locale.get_text('admin.orders.contact_title', order_id=order_id)}\n\n"
         f"{history_str}"
-        f"Введите текст сообщения, который хотите отправить покупателю:"
+        f"{locale.get_text('admin.orders.contact_input')}"
     )
 
     # Используем UIManager для пагинации (автоматически обработает «message is not modified»)
@@ -194,6 +207,7 @@ async def process_send_client_message(
     status = data.get("status", "all")
     page = data.get("page", 1)
     card_message_id = data.get("card_message_id")
+    client_language = data.get("client_language")
 
     await state.clear()
 
@@ -214,16 +228,18 @@ async def process_send_client_message(
 
     await admin_repo.append_order_chat_history(order_id, message_record)
 
+    client_locale = Locale(client_language)
     client_kb = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="💬 Ответить администратору", callback_data=f"client_reply_order:{order_id}")]
+            [InlineKeyboardButton(text=client_locale.get_text("keyboards.client.reply_admin.buttons.client_reply_order"), callback_data=f"client_reply_order:{order_id}")],
+            [InlineKeyboardButton(text=client_locale.get_text("keyboards.client.reply_admin.buttons.client_view_order"), callback_data=f"view_details_order_{order_id}")]
         ]
     )
 
     try:
         await message.bot.send_message(
             chat_id=target_user_id,
-            text=f"💬 <b>Сообщение от администрации по заказу #{order_id}:</b>\n\n{message.text}",
+            text=client_locale.get_text("client.message_from_admin", order_id=order_id, text=message.text),
             reply_markup=client_kb,
         )
     except Exception as e:

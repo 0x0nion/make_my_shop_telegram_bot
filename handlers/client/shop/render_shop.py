@@ -6,6 +6,7 @@ from database.repositories.shop_repo import ShopRepository
 from database.repositories.user_repo import UserRepository
 from locales.locale import Locale
 from src.core.ui import UIManager
+from src.ui.presenters.catalog import build_catalog_text
 from utils.logger import logger
 
 
@@ -54,14 +55,14 @@ async def render_shop_menu(
             )
 
             shop_caption = locale.get_text(
-                "client.shop_category_title", cat_name=cat_name
+                "catalog.display.category_title", name=cat_name
             )
         else:
             logger.warning(f"[SHOP] Category id={current_cat_id} not found.")
-            shop_caption = locale.get_text("client.shop_category_not_found")
+            shop_caption = locale.get_text("catalog.display.category_not_found")
     else:
         # Корневое меню магазина (entity_id = 0)
-        shop_caption = locale.get_text("client.shop_main_menu_title")
+        shop_caption = locale.get_text("catalog.display.root_title")
         category_text = (
             await user_repo.get_locale_text(
                 entity_type="category_description",
@@ -93,39 +94,13 @@ async def render_shop_menu(
         for cat, loc_name in zip(db_categories, loc_names):
             category_names[cat.id] = loc_name or cat.name
 
-    # 4. Формирование итогового текста сообщения
-    body_parts = [shop_caption.strip()]
-    if category_text.strip():
-        body_parts.append(category_text.strip())
-
-    base_text = "\n\n".join(body_parts)
-
-    if db_products:
-        products_lines = []
-        for product in db_products:
-            raw_price = (
-                float(product.price) if product.price is not None else 0.0
-            )
-
-            # Символ валюты берем из объекта товара или используем фоллбэк дефолтной валюты
-            prod_currency_code = getattr(product, "currency", None)
-            currency_sym = locale.get_currency_symbol(prod_currency_code)
-
-            # Безопасное форматирование через SafeDict в get_text
-            line = locale.get_text(
-                "client.shop_product_line",
-                id=product.id,
-                name=product.name,
-                price=f"{raw_price:.2f}",
-                currency=currency_sym,
-            )
-
-            products_lines.append(line)
-
-        products_text = "\n".join(products_lines)
-        text = f"{base_text}\n{'_' * 20}\n{products_text}"
-    else:
-        text = base_text
+    # 4. Формирование итогового текста сообщения (единый формат с админом)
+    text = build_catalog_text(
+        locale=locale,
+        title=shop_caption,
+        description=category_text,
+        products=db_products,
+    )
 
     # 5. Сборка клавиатуры через единый KeyboardFactory
     reply_markup = kb_manager.get_shop_keyboard(

@@ -67,12 +67,17 @@ def get_order_catalog_kb(
                 callback_data=f"admin_order_select_cat:{order_id}:{parent_target}:{status}:{page}"
             )
         )
-    else:
-        # На самом верхнем уровне кнопка "Назад" возвращает в редактор состава заказа
-        cancel_text = locale.get_text("base.cancel")
         builder.row(
             InlineKeyboardButton(
-                text=cancel_text,
+                text=locale.get_text("admin.orders.btn_to_items"),
+                callback_data=f"admin_order_edit_items:{order_id}:{status}:{page}"
+            )
+        )
+    else:
+        # На самом верхнем уровне кнопка "Назад" возвращает в редактор состава заказа
+        builder.row(
+            InlineKeyboardButton(
+                text=back_text,
                 callback_data=f"admin_order_edit_items:{order_id}:{status}:{page}"
             )
         )
@@ -126,12 +131,12 @@ async def render_order_catalog_ui(
                 or ""
             )
 
-            shop_caption = f"📁 <b>Категория: {cat_name}</b>"
+            shop_caption = locale.get_text("admin.orders.catalog_category", name=cat_name)
         else:
-            shop_caption = "📁 <b>Категория не найдена</b>"
+            shop_caption = locale.get_text("admin.orders.catalog_category_not_found")
     else:
-        shop_caption = "🏪 <b>Каталог товаров (Выбор для заказа)</b>"
-        category_text = "Выберите категорию или товар для добавления в заказ."
+        shop_caption = locale.get_text("admin.orders.catalog_root_title")
+        category_text = locale.get_text("admin.orders.catalog_root_desc")
 
     db_categories = await admin_repo.get_categories_by_parent(
         parent_id=current_cat_id, use_temp=False, admin_id=admin_id
@@ -154,7 +159,7 @@ async def render_order_catalog_ui(
     currency = get_currency_symbol()
 
     body_parts = [
-        f"➕ <b>Добавление товара в заказ #{order_id}</b>\n",
+        f"{locale.get_text('admin.orders.add_product_title', order_id=order_id)}\n",
         shop_caption
     ]
     if category_text.strip():
@@ -164,9 +169,17 @@ async def render_order_catalog_ui(
 
     if db_products:
         products_text = "\n".join(
-            [f"• {product.name} — <b>{product.price} {currency}</b>" for product in db_products]
+            [
+                locale.get_text(
+                    "admin.orders.product_line",
+                    name=product.name,
+                    price=product.price,
+                    currency=currency,
+                )
+                for product in db_products
+            ]
         )
-        text = f"{base_text}\n\n<b>Товары в этой категории:</b>\n{products_text}"
+        text = f"{base_text}\n\n{locale.get_text('admin.orders.products_in_cat')}\n{products_text}"
     else:
         text = base_text
 
@@ -212,7 +225,7 @@ async def render_order_product_card_ui(
         product_id, use_temp=False, admin_id=admin_id
     )
     if not product:
-        await callback.answer("❌ Товар не найден", show_alert=True)
+        await callback.answer(locale.get_text("admin.orders.product_not_found"), show_alert=True)
         return
 
     prod_name = (
@@ -235,7 +248,7 @@ async def render_order_product_card_ui(
             admin_id=admin_id,
         )
         or getattr(product, "description", None)
-        or "Описание отсутствует."
+        or locale.get_text("admin.orders.no_description")
     )
 
     currency = get_currency_symbol()
@@ -244,11 +257,17 @@ async def render_order_product_card_ui(
     text_parts = [
         f"📦 <b>{prod_name}</b>\n",
         f"{prod_desc.strip()}\n",
-        f"💵 <b>Цена:</b> {product.price} {currency}",
+        locale.get_text("admin.orders.price_line", price=product.price, currency=currency),
     ]
 
     if hasattr(product, "stock") and product.stock is not None:
-        text_parts.append(f"📊 <b>В наличии:</b> {product.stock} шт.")
+        text_parts.append(
+            locale.get_text(
+                "admin.orders.stock_line",
+                stock=product.stock,
+                unit=locale.get_unit(getattr(product, "unit", None)),
+            )
+        )
 
     if added_msg:
         text_parts.append(f"\n{added_msg}")
@@ -257,7 +276,11 @@ async def render_order_product_card_ui(
 
     builder = InlineKeyboardBuilder()
 
-    btn_add_text = "➕ Добавить ещё 1 шт." if added_msg else "➕ Добавить в заказ"
+    btn_add_text = (
+        locale.get_text("admin.orders.btn_add_one_more")
+        if added_msg
+        else locale.get_text("admin.orders.btn_add_to_order")
+    )
     builder.row(
         InlineKeyboardButton(
             text=btn_add_text,
@@ -275,7 +298,7 @@ async def render_order_product_card_ui(
 
     builder.row(
         InlineKeyboardButton(
-            text="🛒 К составу заказа",
+            text=locale.get_text("admin.orders.btn_to_items"),
             callback_data=f"admin_order_edit_items:{order_id}:{status}:{page}"
         )
     )
@@ -374,12 +397,13 @@ async def process_execute_add_product(
     page = int(parts[4]) if len(parts) > 4 else 1
 
     admin_id = callback.from_user.id
+    locale = Locale(user.language)
 
     order = await admin_repo.get_order_by_id(order_id)
     product = await admin_repo.get_product_by_id(product_id, use_temp=False, admin_id=admin_id)
 
     if not order or not product:
-        await callback.answer("❌ Ошибка: заказ или товар не найден", show_alert=True)
+        await callback.answer(locale.get_text("admin.orders.exec_error"), show_alert=True)
         return
 
     # Безопасная проверка позиции с учетом возможного NULL в product_id
@@ -410,7 +434,7 @@ async def process_execute_add_product(
 
     await admin_repo.update_order(order)
 
-    await callback.answer("✅ Товар добавлен в заказ!", show_alert=False)
+    await callback.answer(locale.get_text("admin.orders.product_added"), show_alert=False)
 
     await render_order_product_card_ui(
         callback=callback,
@@ -420,5 +444,5 @@ async def process_execute_add_product(
         product_id=product_id,
         status=status,
         page=page,
-        added_msg="✅ <b>Товар добавлен в заказ!</b>"
+        added_msg=locale.get_text("admin.orders.product_added_msg")
     )
