@@ -5,6 +5,18 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/),
 версионирование — [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [0.1.1] - 2026-09-11
+
+### Changed
+
+- Администраторы теперь передаются через workflow data (`admin_ids`):
+  `DbSessionMiddleware` принимает опциональный параметр `admin_ids`
+  (нужен для мульти-тенантового хостинга). Self-hosted поведение не
+  изменилось — по умолчанию используется `config.ADMIN_ID`
+- `IsAdminFilter`, уведомления об оплате/отмене и ответ клиента
+  администратору используют инжектированные `admin_ids`
+  (фолбэк на `config.ADMIN_ID`)
+
 ## [0.1.0] - 2026-09-07
 
 ### Added

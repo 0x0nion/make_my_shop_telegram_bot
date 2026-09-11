@@ -23,9 +23,10 @@ async def notify_admins_about_payment(
     bot: Bot,
     admin_repo: AdminRepository,
     order_id: int,
+    admin_ids: list[int] | None = None,
 ):
     """Отправляет карточку заказа с прикреплённым чеком/текстом всем администраторам."""
-    admin_ids: list[int] = app_config.ADMIN_ID
+    admin_ids = admin_ids or app_config.ADMIN_ID
 
     text, order = await build_order_detail_text(admin_repo, order_id)
 
@@ -71,9 +72,10 @@ async def notify_admins_about_payment(
 async def notify_admins_about_cancellation(
     bot: Bot,
     order_id: int,
+    admin_ids: list[int] | None = None,
 ):
     """Уведомляет всех администраторов об отмене заказа клиентом."""
-    for admin_id in app_config.ADMIN_ID:
+    for admin_id in (admin_ids or app_config.ADMIN_ID):
         try:
             await bot.send_message(
                 chat_id=admin_id,

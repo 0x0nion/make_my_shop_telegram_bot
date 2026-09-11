@@ -177,6 +177,7 @@ async def do_cancel_order(
     user_repo: UserRepository,
     user: User,
     bot: Bot,
+    admin_ids: list[int],
 ):
     """Отменяет заказ, уведомляет администраторов и перерисовывает карточку."""
     locale = Locale(user.language)
@@ -202,7 +203,9 @@ async def do_cancel_order(
     )
 
     # Уведомляем администраторов в фоне (не блокируем ответ клиенту)
-    asyncio.create_task(notify_admins_about_cancellation(bot=bot, order_id=order_id))
+    asyncio.create_task(
+        notify_admins_about_cancellation(bot=bot, order_id=order_id, admin_ids=admin_ids)
+    )
 
     # Перерисовываем карточку заказа (кнопка отмены уже не показывается)
     text = locale.format_order(order, template_key="client.user_order_details")

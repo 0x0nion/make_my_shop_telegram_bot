@@ -12,7 +12,6 @@ from aiogram.types import (
     Message,
 )
 
-from shopcrm_bot.config import config
 from shopcrm_core.db.models import User
 from shopcrm_core.db.repositories.user_repo import UserRepository
 from shopcrm_bot.locales import Locale
@@ -96,6 +95,7 @@ async def client_send_reply(
     state: FSMContext,
     user_repo: UserRepository,
     user: User,
+    admin_ids: list[int],
 ):
     """Получает текст от клиента, сохраняет в историю заказа и уведомляет администраторов."""
     locale = Locale(user.language)
@@ -149,7 +149,7 @@ async def client_send_reply(
     )
 
     # Уведомление админа — на языке админа
-    for admin_id in config.ADMIN_ID:
+    for admin_id in admin_ids:
         try:
             admin_user = await user_repo.get_user(admin_id)
             admin_lang = admin_user.language if admin_user and admin_user.language else "ru"

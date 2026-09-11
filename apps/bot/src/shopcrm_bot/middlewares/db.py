@@ -1,4 +1,4 @@
-from typing import Any, Awaitable, Callable, Dict
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject, Message, CallbackQuery, Update
 from sqlalchemy.ext.asyncio import async_sessionmaker
@@ -6,14 +6,18 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.db.repositories.shop_repo import ShopRepository
 from shopcrm_core.db.repositories.user_repo import UserRepository
+from shopcrm_bot.config import config
 from shopcrm_bot.locales import Locale
 from shopcrm_core.services.admin_shop_service import AdminShopService
 
 
 class DbSessionMiddleware(BaseMiddleware):
-    def __init__(self, session_pool: async_sessionmaker):
+    def __init__(self, session_pool: async_sessionmaker, admin_ids: Optional[List[int]] = None):
         super().__init__()
         self.session_pool = session_pool
+        # Мульти-тенантовый хостинг: хостер передаёт админов конкретного
+        # тенанта; self-hosted использует config.ADMIN_ID.
+        self._admin_ids = admin_ids
 
     async def __call__(
         self,
@@ -40,6 +44,9 @@ class DbSessionMiddleware(BaseMiddleware):
             data["user_repo"] = user_repo
             data["shop_repo"] = shop_repo
             data["admin_service"] = admin_shop_service
+            # Админы для контроля доступа и уведомлений:
+            # тенант-специфичные (хостинг) или из конфига (self-hosted).
+            data["admin_ids"] = self._admin_ids if self._admin_ids is not None else config.ADMIN_ID
 
             db_user = None
             user_lang = "en"

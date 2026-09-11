@@ -156,6 +156,7 @@ async def process_payment_proof_input(
     user_repo: UserRepository,
     admin_repo: AdminRepository,
     user: User,
+    admin_ids: list[int],
 ):
     """Единый обработчик скриншота, файла или хэша транзакции."""
     locale = Locale(user.language)
@@ -235,6 +236,7 @@ async def process_payment_proof_input(
             bot=bot,
             admin_repo=admin_repo,
             order_id=order_id,
+            admin_ids=admin_ids,
         )
     )
 
