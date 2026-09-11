@@ -1,0 +1,79 @@
+# handlers/admin/orders/view.py
+import logging
+from aiogram import F, Router
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery
+
+from shopcrm_core.db.models.user import User
+from shopcrm_core.db.repositories.admin_repo import AdminRepository
+from shopcrm_bot.handlers.admin.orders.common import render_order_detail
+from shopcrm_bot.locales import Locale
+from shopcrm_core.constants import OrderStatus
+
+logger = logging.getLogger(__name__)
+
+order_view_router = Router()
+
+
+@order_view_router.callback_query(F.data.startswith("admin_order_view:"))
+async def route_order_view(
+    callback: CallbackQuery,
+    admin_repo: AdminRepository,
+    state: FSMContext,
+    user: User,
+):
+    await state.clear()
+    parts = callback.data.split(":")
+    order_id = int(parts[1])
+    status = parts[2] if len(parts) > 2 else "all"
+    page = int(parts[3]) if len(parts) > 3 else 1
+
+    await render_order_detail(
+        event=callback,
+        admin_repo=admin_repo,
+        user=user,
+        order_id=order_id,
+        status=status,
+        page=page,
+    )
+
+
+@order_view_router.callback_query(F.data.startswith("admin_order_accept:"))
+async def process_accept_order(
+    callback: CallbackQuery,
+    admin_repo: AdminRepository,
+    user: User,
+):
+    """
+    Подтверждение заказа администратором.
+    Заказ переводится в статус PROCESSING (передан в сборку / ожидает курьера).
+    """
+    parts = callback.data.split(":")
+    order_id, status, page = int(parts[1]), parts[2], int(parts[3])
+
+    locale = Locale(user.language)
+
+    order = await admin_repo.get_order_by_id(order_id)
+    if not order:
+        await callback.answer(locale.get_text("admin.orders.order_not_found"), show_alert=True)
+        return
+
+    # Заказ отработан администратором и переходит на стадию подготовки/сборки перед доставкой.
+    # is_paid НЕ ставим: оплата ещё не подтверждена — админ запросит её отдельной кнопкой.
+    order.status = OrderStatus.PROCESSING.value
+
+    await admin_repo.update_order(order)
+    await callback.answer(locale.get_text("admin.orders.order_accepted"), show_alert=True)
+
+    await render_order_detail(
+        event=callback,
+        admin_repo=admin_repo,
+        user=user,
+        order_id=order_id,
+        status=status,
+        page=page,
+    )
+
+
+
+

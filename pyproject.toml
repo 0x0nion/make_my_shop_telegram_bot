@@ -1,0 +1,10 @@
+# SHOPCRM monorepo — конфигурация инструментов (ruff, pytest).
+# Пакеты: packages/core (shopcrm-core), apps/bot (shopcrm-bot).
+# Установка: pip install -e packages/core -e apps/bot
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
