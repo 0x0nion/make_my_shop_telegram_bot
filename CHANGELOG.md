@@ -2,9 +2,6 @@
 
 Все значимые изменения проекта документируются в этом файле.
 
-Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/),
-версионирование — [Semantic Versioning](https://semver.org/lang/ru/).
-
 ## [0.1.0] - 2026-09-07
 
 ### Added
