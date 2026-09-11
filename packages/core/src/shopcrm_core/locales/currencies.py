@@ -65,4 +65,4 @@ def get_currency_label(
         labels = CURRENCY_DATA.get(curr_enum, {})
         return labels.get(lang) or labels.get("en") or labels.get("ru") or currency_code
     except ValueError:
-        return code
+        return currency_code

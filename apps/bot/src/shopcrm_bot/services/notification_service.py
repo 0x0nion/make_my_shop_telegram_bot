@@ -4,7 +4,7 @@ import logging
 from aiogram import Bot
 from aiogram.types import InlineKeyboardMarkup
 
-from shopcrm_core.config import config as app_config
+from shopcrm_bot.config import config as app_config
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.services.order_service import build_order_detail_text
 from shopcrm_bot.locales import Locale
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 def get_payment_verify_kb(order_id: int) -> InlineKeyboardMarkup:
     """Клавиатура быстрого подтверждения/отклонения оплаты для администратора."""
-    locale = Locale("ru")
+    locale = Locale(app_config.NOTIFICATIONS_LANG)
     return locale.keyboards.build("admin.payment_verify", order_id=order_id)
 
 
@@ -35,7 +35,9 @@ async def notify_admins_about_payment(
         )
         return
 
-    caption = Locale("ru").get_text("notifications.new_payment", order_id=order_id) + text
+    caption = Locale(app_config.NOTIFICATIONS_LANG).get_text(
+        "notifications.new_payment", order_id=order_id
+    ) + text
     reply_markup = get_payment_verify_kb(order_id)
 
     for admin_id in admin_ids:
@@ -63,4 +65,23 @@ async def notify_admins_about_payment(
         except Exception as e:
             logger.error(
                 f"Не удалось отправить уведомление об оплате заказа #{order_id} админу {admin_id}: {e}"
+            )
+
+
+async def notify_admins_about_cancellation(
+    bot: Bot,
+    order_id: int,
+):
+    """Уведомляет всех администраторов об отмене заказа клиентом."""
+    for admin_id in app_config.ADMIN_ID:
+        try:
+            await bot.send_message(
+                chat_id=admin_id,
+                text=Locale(app_config.NOTIFICATIONS_LANG).get_text(
+                    "notifications.order_cancelled", order_id=order_id
+                ),
+            )
+        except Exception as e:
+            logger.error(
+                f"Не удалось отправить уведомление об отмене заказа #{order_id} админу {admin_id}: {e}"
             )

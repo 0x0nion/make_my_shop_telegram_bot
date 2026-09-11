@@ -1,5 +1,5 @@
 from sqlalchemy import and_
-from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy.orm import selectinload
 
 from shopcrm_core.db.models import OrderItem, Order
 from shopcrm_core.db.models.cart import CartItem
@@ -65,13 +65,10 @@ class UserOrderMixin:
         # 3. Фиксируем транзакцию
         await self.session.commit()
 
-        # 4. Инвалидируем состояние юзера в сессии
-        self.session.expire(user)
-
-        # 5. Возвращаем созданный заказ со всеми деталями
+        # 4. Возвращаем созданный заказ со всеми деталями
         return await self._order_repo.get_by_id(
             new_order.id,
-            options=[selectinload(Order.items).joinedload(OrderItem.product)]
+            options=[selectinload(Order.items)]
         )
 
     async def get_pending_orders(self, user_id: int) -> list[Order]:
@@ -82,7 +79,7 @@ class UserOrderMixin:
                 Order.is_paid == False,
                 Order.status.notin_([OrderStatus.COMPLETED.value, OrderStatus.CANCELLED.value])
             ),
-            options=[selectinload(Order.items).joinedload(OrderItem.product)],
+            options=[selectinload(Order.items)],
             order_by=Order.created_at.desc()
         )
 
@@ -100,7 +97,7 @@ class UserOrderMixin:
         return orders, total
 
     async def get_order_with_items(self, order_id: int, user_id: int) -> Order | None:
-        options = [selectinload(Order.items).joinedload(OrderItem.product)]
+        options = [selectinload(Order.items)]
         return await self._order_repo.get_one(
             and_(
                 Order.id == order_id,
@@ -145,6 +142,20 @@ class UserOrderMixin:
         if not order:
             return None
         order.status = status
+        await self.session.commit()
+        return order
+
+    async def cancel_order(self, order_id: int, user_id: int) -> Order | None:
+        """
+        Отменяет заказ клиента.
+        Разрешено только владельцу заказа и только в отменяемых статусах
+        (см. OrderStatus.is_cancellable_by_client).
+        """
+        order = await self.get_order_with_items(order_id, user_id)
+        if not order or not OrderStatus.is_cancellable_by_client(order.status):
+            return None
+
+        order.status = OrderStatus.CANCELLED.value
         await self.session.commit()
         return order
 

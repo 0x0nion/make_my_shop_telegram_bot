@@ -24,14 +24,11 @@ class AdminContactStates(StatesGroup):
 
 
 def format_chat_history(
-    chat_history: list | None, page: int = 1, locale: Locale | None = None
+    chat_history: list | None, locale: Locale, page: int = 1
 ) -> tuple[str, list[InlineKeyboardButton] | None]:
     """
     Форматирует историю переписки для отображения с пагинацией.
     """
-    if locale is None:
-        locale = Locale("ru")
-
     if not chat_history:
         return locale.get_text("admin.orders.chat_empty") + "\n\n", None
 

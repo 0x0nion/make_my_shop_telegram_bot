@@ -8,6 +8,7 @@ from aiogram.types import CallbackQuery, Message
 
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
+from shopcrm_core.services.validation import validate_description
 from shopcrm_bot.handlers.admin.utils import self_destruct
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.ui import UIManager
@@ -157,6 +158,12 @@ async def process_welcome_text_input(
     user_data = await state.get_data()
     menu_message_id = user_data.get("menu_message_id")
     lang = user.language
+
+    error = validate_description(new_text, lang=lang)
+    if error:
+        err = await message.answer(error)
+        asyncio.create_task(self_destruct(err))
+        return
 
     try:
         await message.delete()

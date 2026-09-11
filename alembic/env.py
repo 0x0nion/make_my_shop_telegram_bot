@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 # 1. Импортируем ваш экземпляр конфигурации и базовый класс моделей
-from shopcrm_core.config import config as app_config
+from shopcrm_core.config import get_config
 # Импортируем все модели из пакета database.models (благодаря __init__.py они зарегистрируются в Base.metadata)
 from shopcrm_core.db.models import Base  # noqa: F401
 
@@ -21,7 +21,7 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 # Берём URL базы данных прямо из вашего pydantic-конфига
-db_url = app_config.DATABASE_URL
+db_url = get_config().DATABASE_URL
 
 
 def run_migrations_offline() -> None:

@@ -12,7 +12,7 @@ from aiogram.types import (
     Message,
 )
 
-from shopcrm_core.config import config
+from shopcrm_bot.config import config
 from shopcrm_core.db.models import User
 from shopcrm_core.db.repositories.user_repo import UserRepository
 from shopcrm_bot.locales import Locale
@@ -31,13 +31,24 @@ class ClientReplyStates(StatesGroup):
 async def client_start_reply(
     callback: CallbackQuery,
     state: FSMContext,
+    user_repo: UserRepository,
     user: User,
 ):
     """Клиент нажал кнопку "Ответить администратору" под сообщением по заказу."""
-    parts = callback.data.split(":")
-    order_id = int(parts[1])
+    try:
+        parts = callback.data.split(":")
+        order_id = int(parts[1])
+    except (IndexError, ValueError):
+        logger.warning(f"[REPLY HANDLER] Invalid reply callback: {callback.data}")
+        await callback.answer()
+        return
 
+    # Проверяем принадлежность заказа пользователю
     locale = Locale(user.language)
+    order = await user_repo.get_order_with_items(order_id, user.id)
+    if not order:
+        await callback.answer(locale.get_text("client.user_order_not_found"), show_alert=True)
+        return
 
     # Клавиатура «Назад» для отмены ввода ответа
     kb = locale.keyboards

@@ -37,6 +37,7 @@ class Order(Base):
         "OrderItem",
         back_populates="order",
         cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
 
@@ -50,4 +51,4 @@ class OrderItem(Base):
     price_at_purchase: Mapped[float] = mapped_column(Numeric(10, 2))
 
     order: Mapped["Order"] = relationship("Order", back_populates="items")
-    product: Mapped["Product"] = relationship("Product")
+    product: Mapped["Product"] = relationship("Product", lazy="selectin")

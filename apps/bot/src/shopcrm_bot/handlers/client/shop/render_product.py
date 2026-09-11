@@ -18,11 +18,7 @@ def format_product_from_template(product, locale: Locale) -> str:
     desc_val = getattr(product, "description", None) or locale.get_text("client.no_description")
 
     currency_code = getattr(product, "currency", None)
-    currency_val = (
-        locale.get_currency_symbol(currency_code)
-        if currency_code
-        else locale.get_text("client.currency_symbol")
-    )
+    currency_val = locale.get_currency_symbol(currency_code)
 
     price_val = float(getattr(product, "price", 0.0) or 0.0)
 
@@ -51,7 +47,7 @@ async def show_product_card(
     product_id: int,
     shop_repo: ShopRepository,
     bot: Bot,
-    lang: str = "en",
+    lang: str,
     cart_item: int = 0,
     old_message_id: Optional[int] = None,
 ):

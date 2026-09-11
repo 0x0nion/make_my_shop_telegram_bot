@@ -17,6 +17,16 @@ class OrderStatus(str, Enum):
         """Завершен ли заказ окончательно (успешно или с ошибкой)."""
         return status in (cls.COMPLETED.value, cls.CANCELLED.value)
 
+    @classmethod
+    def is_cancellable_by_client(cls, status: str) -> bool:
+        """Может ли клиент отменить заказ самостоятельно (пока он не передан курьеру)."""
+        return status in (
+            cls.PENDING.value,
+            cls.PAYMENT_REQUESTED.value,
+            cls.AWAITING_CONFIRMATION.value,
+            cls.PROCESSING.value,
+        )
+
 
 # Единый источник истины для фильтров меню админ-ордеров:
 # callback-ключ кнопки -> значение статуса в БД.

@@ -1,78 +1,79 @@
 # SHOPCRM
 
-Monorepo CRM-приложения: Telegram-бот (aiogram) + общее ядро + задел под веб-приложение.
+Telegram-бот для управления небольшим магазином: каталог, корзина, заказы, оплата и админ-панель — всё в одном чате.
 
-## Структура
+## Возможности
 
-```
-apps/
-├── bot/                  # Telegram-бот (aiogram)
-│   ├── pyproject.toml    # пакет shopcrm-bot
-│   └── src/shopcrm_bot/
-│       ├── main.py       # точка входа: python -m shopcrm_bot
-│       ├── handlers/     # хэндлеры (admin / client)
-│       ├── middlewares/  # aiogram-мидлвары (сессии БД)
-│       ├── filters/      # фильтры (IsAdminFilter)
-│       ├── keyboards/    # фабрика inline-клавиатур
-│       ├── states/       # FSM-состояния
-│       ├── services/     # бот-сервисы (уведомления в Telegram)
-│       ├── ui/           # UIManager + пресентеры экранов
-│       └── locales.py    # BotLocale = Locale(core) + keyboards
-└── web/                  # плейсхолдер будущего веб-приложения
+- **Каталог товаров** — категории, поиск, карточки с фото и ценой
+- **Корзина** — добавление, изменение количества, удаление
+- **Оформление заказа** — адрес доставки, комментарий, итоговая сумма
+- **Оплата** — прикрепление чека (фото / текст), подтверждение админом
+- **История заказов** — статусы, чат с поддержкой по каждому заказу
+- **Админ-панель** — управление товарами, категориями, статусами заказов
+- **Мультиязычность** — RU / EN (переключается в боте)
 
-packages/
-└── core/                 # общее ядро (без зависимостей от Telegram)
-    ├── pyproject.toml    # пакет shopcrm-core
-    └── src/shopcrm_core/
-        ├── config.py     # настройки (pydantic-settings, .env)
-        ├── constants.py  # доменные константы (статусы, типы)
-        ├── logging.py    # логгер (loguru)
-        ├── db/           # SQLAlchemy: models, repositories, connection
-        ├── locales/      # locale.json + Locale (тексты, валюты, единицы)
-        └── services/     # бизнес-логика (заказы, магазин, адреса)
+## Требования
 
-alembic/                  # миграции БД (версионируются!)
-alembic.ini
-pyproject.toml            # конфиг инструментов (ruff, pytest)
-requirements.txt          # runtime-зависимости (справочно)
-```
-
-## Правило зависимостей
-
-```
-shopcrm-bot  ->  shopcrm-core  ->  (sqlalchemy, pydantic, ...)
-```
-
-- `shopcrm_bot` **может** импортировать `shopcrm_core`.
-- `shopcrm_core` **не должен** импортировать aiogram и любой бот-код.
-- Будущее веб-приложение (`apps/web`) зависит от `shopcrm_core`, но не от `shopcrm_bot`.
+- Python **3.12+**
+- PostgreSQL 14+ (или SQLite для локальной разработки)
 
 ## Установка
 
 ```bash
+# 1. Клонируем
+git clone <repo-url> shopcrm
+cd shopcrm
+
+# 2. Виртуальное окружение
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+
+# 3. Зависимости
 pip install -e packages/core -e apps/bot
-cp .env.example .env   # заполнить BOT_TOKEN, DATABASE_URL, ADMIN_ID
+
+# 4. Конфигурация
+cp .env.example .env
+# Откройте .env и заполните значения
 ```
+
+## Конфигурация
+
+Все настройки задаются через переменные окружения (файл `.env`):
+
+| Переменная      | Описание                                      | Пример / по умолчанию          |
+|-----------------|-----------------------------------------------|--------------------------------|
+| `BOT_TOKEN`     | Токен Telegram-бота (от @BotFather)           | —                              |
+| `DATABASE_URL`  | Строка подключения БД (async)                 | `postgresql+asyncpg://user:pass@localhost/shopcrm` |
+| `ADMIN_ID`      | Telegram ID администраторов (список)          | `[123456789]`                  |
+| `LOG_LEVEL`     | Уровень логирования                           | `INFO`                         |
+| `DEBUG`         | Режим отладки                                 | `false`                        |
+| `FSM_STORAGE`   | Хранилище FSM: `memory` или `redis`           | `memory`                       |
+| `REDIS_URL`     | URL Redis (только при `FSM_STORAGE=redis`)    | `redis://localhost:6379/0`     |
+| `LOGS_DIR`      | Каталог для лог-файлов                        | `logs`                         |
 
 ## Запуск
 
 ```bash
-# миграции
+# 1. Миграции БД
 alembic upgrade head
 
-# бот
+# 2. Бот
 python -m shopcrm_bot
 ```
 
-## Переменные окружения
+Бот стартует в режиме long polling. Для остановки — `Ctrl+C`.
 
-| Переменная   | Описание                                    | По умолчанию |
-|--------------|---------------------------------------------|--------------|
-| `BOT_TOKEN`  | Токен Telegram-бота                         | —            |
-| `DATABASE_URL` | Строка подключения БД (async)             | —            |
-| `ADMIN_ID`   | ID администраторов (список через запятую)   | —            |
-| `LOG_LEVEL`  | Уровень логирования                         | `INFO`       |
-| `DEBUG`      | Режим отладки                               | `False`      |
+## Схема БД
+
+- **Продакшен / внешние сервисы** — схема управляется миграциями: `alembic upgrade head`.
+  Цепочка миграций синхронизирована с моделями `shopcrm_core` (autogenerate).
+- **Локальная разработка** — при `DEBUG=true` бот сам создаёт/дополняет таблицы
+  через `create_all` (миграции не обязательны).
+- **Внешний сервис** (админ-панель и т.п.) — `shopcrm-core` используется как
+  библиотека: движок и сессии создаются фабриками из `shopcrm_core.db.connection`,
+  а метаданные для собственных миграций — через `shopcrm_core.db.get_metadata()`.
+
+## Лицензия
+
+[MIT](LICENSE)
 

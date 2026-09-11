@@ -57,7 +57,13 @@ async def start_order_payment(
     locale = Locale(user.language)
     kb = locale.keyboards
 
-    order_id = int(callback.data.split(":")[1])
+    try:
+        order_id = int(callback.data.split(":")[1])
+    except (IndexError, ValueError):
+        logger.warning(f"[PAYMENT HANDLER] Invalid order callback: {callback.data}")
+        await callback.answer()
+        return
+
     order = await user_repo.get_order_with_items(order_id, callback.from_user.id)
 
     if not order or order.is_paid or OrderStatus.is_final(order.status):
@@ -95,7 +101,12 @@ async def process_pay_cash(
     """Вызывается при выборе оплаты наличными курьеру."""
     locale = Locale(user.language)
 
-    order_id = int(callback.data.split(":")[1])
+    try:
+        order_id = int(callback.data.split(":")[1])
+    except (IndexError, ValueError):
+        logger.warning(f"[PAYMENT HANDLER] Invalid cash callback: {callback.data}")
+        await callback.answer()
+        return
 
     # 1. Записываем тип и маркер подтверждения
     updated_order = await user_repo.attach_payment_proof(

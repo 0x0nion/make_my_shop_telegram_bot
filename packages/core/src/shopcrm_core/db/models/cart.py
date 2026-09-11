@@ -13,4 +13,4 @@ class CartItem(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey(column="users.id", ondelete="CASCADE"))
     product_id: Mapped[int] = mapped_column(ForeignKey(column="products.id", ondelete="CASCADE"))
     quantity: Mapped[int] = mapped_column(default=1)
-    product: Mapped["Product"] = relationship("Product")
+    product: Mapped["Product"] = relationship("Product", lazy="selectin")

@@ -1,4 +1,5 @@
 # handlers/client/cart/cart.py
+import logging
 from contextlib import suppress
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
@@ -12,6 +13,8 @@ from shopcrm_bot.locales import Locale
 from shopcrm_bot.ui import UIManager
 from shopcrm_core.services.address_service import build_location_address, normalize_text_address
 from shopcrm_bot.states.user_states import UserState
+
+logger = logging.getLogger(__name__)
 
 user_cart_router = Router()
 
@@ -135,12 +138,19 @@ async def update_quantity(
     user_repo: UserRepository,
     state: FSMContext,
 ):
-    action, product_id = callback.data.split("_")
+    try:
+        action, product_id_str = callback.data.split("_")
+        product_id = int(product_id_str)
+    except (ValueError, IndexError):
+        logger.warning(f"[CART HANDLER] Invalid quantity callback: {callback.data}")
+        await callback.answer()
+        return
+
     change = 1 if action == "inc" else -1
 
     await user_repo.update_cart_item(
         user_id=callback.from_user.id,
-        product_id=int(product_id),
+        product_id=product_id,
         change=change,
     )
     await render_cart(event=callback, user_repo=user_repo, state=state)

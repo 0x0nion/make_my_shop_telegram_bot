@@ -226,6 +226,7 @@ class KeyboardFactory:
                 id=order.id,
                 date=date_str,
                 price=float(getattr(order, "total_price", 0.0)),
+                currency=self.locale.get_currency_symbol(),
             )
             builder.row(
                 InlineKeyboardButton(
@@ -256,6 +257,29 @@ class KeyboardFactory:
 
         builder.row(
             InlineKeyboardButton(text=back_text, callback_data="client_main")
+        )
+        return builder.as_markup()
+
+    def get_client_order_detail_kb(self, order_id: int, cancellable: bool) -> InlineKeyboardMarkup:
+        """Клавиатура карточки заказа клиента: условная отмена + возврат к списку."""
+        builder = InlineKeyboardBuilder()
+
+        if cancellable:
+            cancel_text = self.get_button_text(
+                "client.order_detail", "cancel_order", default="❌ Cancel Order"
+            )
+            builder.row(
+                InlineKeyboardButton(
+                    text=cancel_text,
+                    callback_data=f"client_order_cancel:{order_id}",
+                )
+            )
+
+        back_text = self.get_button_text(
+            "client.back_to_orders", "client_orders", default="🔙 Back to list"
+        )
+        builder.row(
+            InlineKeyboardButton(text=back_text, callback_data="client_orders")
         )
         return builder.as_markup()
 
@@ -537,6 +561,9 @@ class KeyboardFactory:
             "text.admin.orders.list_button", default="#{id}"
         )
         back_text = self.get_button_text("base.back", default="⬅️ Back")
+        export_text = self.get_button_text(
+            "text.admin.orders.export_csv_button", default="📤 Export CSV"
+        )
 
         for order in orders:
             button_text = self.get_button_text(
@@ -574,6 +601,14 @@ class KeyboardFactory:
                     callback_data=f"admin_orders_page:{status}:{next_page}",
                 ),
             )
+
+        # Экспорт текущего отфильтрованного списка в CSV
+        builder.row(
+            InlineKeyboardButton(
+                text=export_text,
+                callback_data=f"admin_orders_export:{status}",
+            )
+        )
 
         builder.row(
             InlineKeyboardButton(text=back_text, callback_data="admin_orders")

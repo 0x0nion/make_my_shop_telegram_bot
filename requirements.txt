@@ -11,3 +11,4 @@ pydantic-settings>=2.0
 loguru>=0.7
 deep-translator>=1.11
 aiofiles>=24.1
+redis>=5.0

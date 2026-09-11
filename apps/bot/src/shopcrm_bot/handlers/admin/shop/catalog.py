@@ -11,6 +11,7 @@ from shopcrm_bot.locales import Locale
 from shopcrm_core.locales.units import DEFAULT_UNIT
 from shopcrm_bot.ui import UIManager
 from shopcrm_core.services.admin_shop_service import AdminShopService
+from shopcrm_core.services.validation import validate_name
 from shopcrm_bot.ui.presenters.admin import AdminUI
 from shopcrm_bot.states.admin_states import AdminState
 
@@ -287,6 +288,12 @@ async def process_add_category(
     user_data = await state.get_data()
     parent_id = user_data.get("parent_id")
     menu_message_id = user_data.get("menu_message_id", None)
+
+    error = validate_name(category_name, lang=user.language)
+    if error:
+        err = await message.answer(error)
+        await self_destruct(message=err, seconds=3)
+        return
 
     await admin_repo.create_category(
         name=category_name,

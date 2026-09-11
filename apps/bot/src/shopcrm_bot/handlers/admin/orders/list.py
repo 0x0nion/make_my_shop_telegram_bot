@@ -1,13 +1,15 @@
+import io
 import logging
 import math
-from aiogram import F, Router
+from aiogram import Bot, F, Router
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, InputFile
 
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_bot.locales import Locale
 from shopcrm_core.constants import ADMIN_ORDER_STATUS_FILTERS
+from shopcrm_bot.services.csv_export_service import build_export_filename, build_orders_csv
 from shopcrm_bot.ui import UIManager
 
 logger = logging.getLogger(__name__)
@@ -142,7 +144,7 @@ async def render_orders_list(
     else:
         lines = [locale.get_text("admin.orders.list_header", status=status) + "\n"]
         for order in orders:
-            lines.append(locale.get_text("admin.orders.list_line", id=order.id, price=order.total_price, currency="$", status=order.status))
+            lines.append(locale.get_text("admin.orders.list_line", id=order.id, price=order.total_price, currency=locale.get_currency_symbol(), status=order.status))
 
         text = "\n".join(lines)
 
@@ -160,6 +162,39 @@ async def render_orders_list(
         reply_markup=reply_markup,
     )
     await callback.answer()
+
+
+@orders_list_router.callback_query(F.data.startswith("admin_orders_export:"))
+async def export_orders_csv(
+        callback: CallbackQuery,
+        admin_repo: AdminRepository,
+        user: User,
+        bot: Bot,
+):
+    """
+    Экспортирует текущий отфильтрованный список заказов в CSV-файл.
+    Callback data format: admin_orders_export:{status}
+    """
+    parts = callback.data.split(":")
+    status = parts[1] if len(parts) > 1 else "all"
+
+    locale = Locale(user.language)
+
+    orders = await admin_repo.get_orders_by_status(status=status)
+    if not orders:
+        await callback.answer(locale.get_text("admin.orders.export_empty"), show_alert=True)
+        return
+
+    csv_content = build_orders_csv(orders)
+    filename = build_export_filename(status)
+
+    await callback.answer()
+    # utf-8-sig (BOM) — чтобы Excel корректно открывал кириллицу
+    await bot.send_document(
+        chat_id=user.id,
+        document=InputFile(io.BytesIO(csv_content.encode("utf-8-sig")), filename=filename),
+        caption=locale.get_text("admin.orders.export_done", count=len(orders)),
+    )
 
 
 @orders_list_router.callback_query(F.data == "noop")

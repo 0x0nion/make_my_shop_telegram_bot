@@ -1,4 +1,6 @@
 # handlers/client/main.py
+import logging
+
 from aiogram import F, Router
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
@@ -6,8 +8,11 @@ from aiogram.types import CallbackQuery, Message
 
 from shopcrm_core.db.models import User
 from shopcrm_core.db.repositories.user_repo import UserRepository
+from shopcrm_bot.handlers.admin.utils import SUPPORTED_LANGUAGES
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.ui import UIManager
+
+logger = logging.getLogger(__name__)
 
 client_main_router = Router()
 
@@ -112,8 +117,15 @@ async def select_language(
     callback: CallbackQuery,
     user_repo: UserRepository,
 ) -> None:
-    await callback.answer()
     lang_code = callback.data.split("_")[-1]
+
+    # Валидация: разрешены только поддерживаемые языки
+    if lang_code not in SUPPORTED_LANGUAGES:
+        logger.warning(f"[MAIN HANDLER] Invalid language code: {lang_code}")
+        await callback.answer()
+        return
+
+    await callback.answer()
 
     user = await user_repo.update_language(
         user_id=callback.from_user.id,

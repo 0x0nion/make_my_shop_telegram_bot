@@ -1,12 +1,15 @@
 # handlers/client/order/order.py
+import asyncio
 import logging
 
-from aiogram import F, Router
-from aiogram.types import CallbackQuery
+from aiogram import Bot, F, Router
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 
+from shopcrm_core.constants import OrderStatus
 from shopcrm_core.db.models import User
 from shopcrm_core.db.repositories.user_repo import UserRepository
 from shopcrm_bot.locales import Locale
+from shopcrm_bot.services.notification_service import notify_admins_about_cancellation
 from shopcrm_bot.ui import UIManager
 
 logger = logging.getLogger(__name__)
@@ -14,13 +17,6 @@ user_order_router = Router()
 
 # Количество заказов на одной странице списка
 ORDERS_PER_PAGE = 10
-
-
-def _build_buyer_info(locale: Locale, user: User) -> str:
-    """Строка покупателя для карточки заказа (username или ID)."""
-    if getattr(user, "username", None):
-        return locale.get_text("admin.orders.buyer_name", username=user.username, user_id=user.id)
-    return locale.get_text("admin.orders.buyer_id", user_id=user.id)
 
 
 async def _show_orders_page(
@@ -75,7 +71,12 @@ async def show_orders_page(
     user: User,
 ):
     """Пагинация списка заказов пользователя."""
-    page = int(callback.data.split(":")[1])
+    try:
+        page = int(callback.data.split(":")[1])
+    except (IndexError, ValueError):
+        logger.warning(f"[ORDER HANDLER] Invalid page callback: {callback.data}")
+        await callback.answer()
+        return
     await _show_orders_page(callback, user_repo, user, page=page)
 
 
@@ -89,7 +90,13 @@ async def view_order_details(
     locale = Locale(user.language)
     kb_manager = locale.keyboards
 
-    order_id = int(callback.data.split("_")[-1])
+    try:
+        order_id = int(callback.data.split("_")[-1])
+    except (IndexError, ValueError):
+        logger.warning(f"[ORDER HANDLER] Invalid order callback: {callback.data}")
+        await callback.answer()
+        return
+
     order = await user_repo.get_order_with_items(order_id, user.id)
 
     if not order:
@@ -102,10 +109,107 @@ async def view_order_details(
     text = locale.format_order(
         order,
         template_key="client.user_order_details",
-        buyer_info=_build_buyer_info(locale, user),
     )
-    reply_markup = kb_manager.get_kb("back_to_orders")
+    reply_markup = kb_manager.get_client_order_detail_kb(
+        order_id=order.id,
+        cancellable=OrderStatus.is_cancellable_by_client(order.status),
+    )
 
+    await UIManager.show(
+        event=callback,
+        text=text,
+        reply_markup=reply_markup,
+    )
+
+
+@user_order_router.callback_query(F.data.startswith("client_order_cancel:"))
+async def confirm_cancel_order(
+    callback: CallbackQuery,
+    user_repo: UserRepository,
+    user: User,
+):
+    """Показывает подтверждение отмены заказа (только для отменяемых статусов)."""
+    locale = Locale(user.language)
+
+    try:
+        order_id = int(callback.data.split(":")[1])
+    except (IndexError, ValueError):
+        logger.warning(f"[ORDER HANDLER] Invalid cancel callback: {callback.data}")
+        await callback.answer()
+        return
+
+    order = await user_repo.get_order_with_items(order_id, user.id)
+    if not order:
+        await callback.answer(
+            text=locale.get_text("client.user_order_not_found"),
+            show_alert=True,
+        )
+        return
+
+    if not OrderStatus.is_cancellable_by_client(order.status):
+        await callback.answer(
+            text=locale.get_text("client.order_cancel_denied"),
+            show_alert=True,
+        )
+        return
+
+    confirm_kb = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(
+            text=locale.get_text("client.cancel_order_confirm_yes"),
+            callback_data=f"client_order_cancel_confirm:{order_id}",
+        ),
+        InlineKeyboardButton(
+            text=locale.get_text("client.cancel_order_confirm_no"),
+            callback_data=f"view_details_order_{order_id}",
+        ),
+    ]])
+
+    await UIManager.show(
+        event=callback,
+        text=locale.get_text("client.cancel_order_confirm_prompt", order_id=order_id),
+        reply_markup=confirm_kb,
+    )
+
+
+@user_order_router.callback_query(F.data.startswith("client_order_cancel_confirm:"))
+async def do_cancel_order(
+    callback: CallbackQuery,
+    user_repo: UserRepository,
+    user: User,
+    bot: Bot,
+):
+    """Отменяет заказ, уведомляет администраторов и перерисовывает карточку."""
+    locale = Locale(user.language)
+
+    try:
+        order_id = int(callback.data.split(":")[1])
+    except (IndexError, ValueError):
+        logger.warning(f"[ORDER HANDLER] Invalid cancel confirm callback: {callback.data}")
+        await callback.answer()
+        return
+
+    order = await user_repo.cancel_order(order_id, user.id)
+    if not order:
+        await callback.answer(
+            text=locale.get_text("client.order_cancel_denied"),
+            show_alert=True,
+        )
+        return
+
+    await callback.answer(
+        text=locale.get_text("client.order_cancelled", order_id=order_id),
+        show_alert=True,
+    )
+
+    # Уведомляем администраторов в фоне (не блокируем ответ клиенту)
+    asyncio.create_task(notify_admins_about_cancellation(bot=bot, order_id=order_id))
+
+    # Перерисовываем карточку заказа (кнопка отмены уже не показывается)
+    text = locale.format_order(order, template_key="client.user_order_details")
+    reply_markup = locale.keyboards.get_client_order_detail_kb(
+        order_id=order.id,
+        cancellable=False,
+    )
     await UIManager.show(
         event=callback,
         text=text,

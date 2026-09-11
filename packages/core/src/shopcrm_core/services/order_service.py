@@ -41,7 +41,7 @@ async def build_order_detail_text(
                 locale.get_text(
                     "admin.orders.item_line",
                     idx=idx, name=prod_name, qty=qty, unit=unit,
-                    price=price, currency="$", sum=item_sum,
+                    price=price, currency=locale.get_currency_symbol(), sum=item_sum,
                 )
             )
     else:
@@ -90,6 +90,7 @@ async def build_order_detail_text(
         items_price=f"{items_price:.2f}",
         delivery_price=f"{delivery_price:.2f}",
         total_price=f"{total_price:.2f}",
+        currency=locale.get_currency_symbol(),
         payment_proof_info=payment_proof_info,
         manager_comment=manager_comment,
     )

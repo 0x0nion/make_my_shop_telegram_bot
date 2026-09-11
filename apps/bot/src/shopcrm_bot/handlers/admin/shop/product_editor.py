@@ -8,6 +8,11 @@ from aiogram.types import CallbackQuery, Message
 
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
+from shopcrm_core.services.validation import (
+    validate_description,
+    validate_name,
+    validate_price,
+)
 from shopcrm_bot.handlers.admin.utils import self_destruct
 from shopcrm_core.locales.currencies import get_currency_symbol
 from shopcrm_bot.locales import Locale
@@ -23,7 +28,7 @@ async def show_product_card(
         event: Message | CallbackQuery,
         product_id: int,
         admin_repo: AdminRepository,
-        lang: str = "en",
+        lang: str,
         message_id_to_edit: int | None = None,
 ):
     """Единый метод отображения карточки товара с использованием UIManager."""
@@ -227,16 +232,15 @@ async def process_edit_input(
         return
 
     if "price" in curr_state:
-        clean_text = message.text.strip().replace(",", ".", 1)
-        if not clean_text.replace(".", "", 1).isdigit():
-            err_msg = locale.get_text("admin.product_editor.invalid_price")
-            err = await message.answer(err_msg)
+        price, error = validate_price(message.text, lang=lang)
+        if error:
+            err = await message.answer(error)
             asyncio.create_task(self_destruct(err))
             return
         await admin_repo.update_product_field(
             pid,
             "price",
-            float(clean_text),
+            price,
             use_temp=True,
             admin_id=message.from_user.id,
         )
@@ -251,10 +255,20 @@ async def process_edit_input(
         )
     else:
         field = "name" if "name" in curr_state else "description"
+        raw_value = message.text.strip()
+        error = (
+            validate_name(raw_value, lang=lang)
+            if field == "name"
+            else validate_description(raw_value, lang=lang)
+        )
+        if error:
+            err = await message.answer(error)
+            asyncio.create_task(self_destruct(err))
+            return
         await admin_repo.update_product_field(
             pid,
             field,
-            message.text.strip(),
+            raw_value,
             use_temp=True,
             admin_id=message.from_user.id,
         )

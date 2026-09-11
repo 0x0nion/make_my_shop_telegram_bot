@@ -1,7 +1,6 @@
 from typing import Any
 from sqlalchemy.orm import selectinload
 
-from shopcrm_core.db.models.cart import CartItem
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.base_repo import BaseRepository
 from shopcrm_core.logging import logger
@@ -18,7 +17,7 @@ class UserAccountMixin:
 
     async def get_user_with_cart(self, user_id: int) -> User | None:
         options = [
-            selectinload(User.cart).selectinload(CartItem.product),
+            selectinload(User.cart),
             selectinload(User.orders)
         ]
         return await self._user_repo.get_by_id(user_id, options=options)

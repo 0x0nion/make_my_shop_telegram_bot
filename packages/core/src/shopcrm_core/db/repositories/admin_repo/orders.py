@@ -4,7 +4,7 @@ from typing import Sequence
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload, joinedload
 
-from shopcrm_core.db.models.order import Order, OrderItem
+from shopcrm_core.db.models.order import Order
 from shopcrm_core.db.repositories.base_repo import BaseRepository
 from shopcrm_core.logging import logger
 
@@ -39,7 +39,7 @@ class AdminOrdersMixin:
         """
         options = [
             joinedload(Order.user),
-            selectinload(Order.items).joinedload(OrderItem.product)
+            selectinload(Order.items)
         ]
 
         expressions = []
@@ -72,7 +72,7 @@ class AdminOrdersMixin:
         """
         options = [
             joinedload(Order.user),
-            selectinload(Order.items).joinedload(OrderItem.product)
+            selectinload(Order.items)
         ]
         repo = self._get_order_repo()
         return await repo.get_by_id(order_id, options=options)
