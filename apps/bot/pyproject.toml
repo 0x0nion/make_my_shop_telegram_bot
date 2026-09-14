@@ -1,11 +1,12 @@
 [project]
 name = "shopcrm-bot"
-version = "0.1.1"
+version = "0.1.2"
 description = "SHOPCRM Telegram bot (aiogram)"
 requires-python = ">=3.11"
 dependencies = [
     "shopcrm-core",
-    "aiogram>=3.29",
+    # [redis] — нужен для FSM_STORAGE=redis (aiogram.fsm.storage.redis)
+    "aiogram[redis]>=3.29",
 ]
 
 [build-system]

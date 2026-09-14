@@ -204,7 +204,9 @@ async def do_cancel_order(
 
     # Уведомляем администраторов в фоне (не блокируем ответ клиенту)
     asyncio.create_task(
-        notify_admins_about_cancellation(bot=bot, order_id=order_id, admin_ids=admin_ids)
+        notify_admins_about_cancellation(
+            bot=bot, user_repo=user_repo, order_id=order_id, admin_ids=admin_ids
+        )
     )
 
     # Перерисовываем карточку заказа (кнопка отмены уже не показывается)

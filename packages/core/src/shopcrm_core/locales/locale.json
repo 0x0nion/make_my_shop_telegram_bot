@@ -685,11 +685,6 @@
         "en": "No description available",
         "es": "Sin descripción"
       },
-      "manager_url": {
-        "ru": "https://t.me/username",
-        "en": "https://t.me/username",
-        "es": "https://t.me/username"
-      },
       "product_added_to_cart": {
         "ru": "🛒 Товар добавлен в корзину!",
         "en": "🛒 Product added to cart!",

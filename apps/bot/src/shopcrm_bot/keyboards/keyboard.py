@@ -35,7 +35,7 @@ class KeyboardFactory:
         2. Список:     get_button_text("admin.catalog_navigation", ["back", "save_changes"]) -> dict
         3. Напрямую:   get_button_text({"ru": "Кнопка", "en": "Button"}) -> "Кнопка"
         """
-        lang = getattr(self.locale, "lang", "ru")
+        lang = getattr(self.locale, "lang", "en")
 
         # 1. Если передали готовое значение кнопки (dict или str-ключ напрямую)
         if btn_key is None:
@@ -341,7 +341,7 @@ class KeyboardFactory:
             prev_id: Optional[int],
             next_id: Optional[int],
             cart_item: int = 0,
-            manager_url: str = "https://t.me/@el_mex",
+            manager_url: Optional[str] = None,
     ) -> InlineKeyboardMarkup:
         """Карточка конкретного товара с пагинацией (⬅️ ➡️), кнопкой корзины и менеджером."""
         texts = self.get_button_text(
@@ -382,8 +382,9 @@ class KeyboardFactory:
             InlineKeyboardButton(text=cart_text, callback_data="client_cart", style="primary")
         )
 
-        # Ряд: Связь с менеджером
-        builder.row(InlineKeyboardButton(text=texts["manager"], url=manager_url))
+        # Ряд: Связь с менеджером (только если URL задан в MANAGER_URL)
+        if manager_url:
+            builder.row(InlineKeyboardButton(text=texts["manager"], url=manager_url))
 
         # Ряд: Назад к категории
         builder.row(

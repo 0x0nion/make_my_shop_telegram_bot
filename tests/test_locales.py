@@ -70,11 +70,11 @@ class TestLocaleCoverage:
         assert isinstance(text, str)
         assert text != "XXX"
 
-    def test_get_text_fallback_to_ru(self):
-        """Если язык не найден — fallback на ru."""
+    def test_get_text_fallback_to_en(self):
+        """Если язык не найден — fallback на en."""
         # Создаём локаль с несуществующим языком
         loc = Locale(lang="fr")
-        # Должен вернуться ru-вариант (fallback chain: lang → ru → en)
+        # Должен вернуться en-вариант (fallback chain: lang → en)
         text = loc.get_text("text.client.user_main")
         assert isinstance(text, str)
         assert text != "XXX"
@@ -160,7 +160,7 @@ class TestCurrencies:
         assert get_currency_label("RUB", "en") == "Ruble (₽)"
 
     def test_label_default_currency(self):
-        assert get_currency_label() == "Доллар ($)"
+        assert get_currency_label() == "US Dollar ($)"
         assert get_currency_label("USD", "ru") == "Доллар ($)"
 
     def test_label_unknown_code_returns_code(self):

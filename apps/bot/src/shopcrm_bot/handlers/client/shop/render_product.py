@@ -7,6 +7,7 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import Message
 
 from shopcrm_core.db.repositories.shop_repo import ShopRepository
+from shopcrm_bot.config import config
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.ui import UIManager
 from shopcrm_core.logging import logger
@@ -72,7 +73,7 @@ async def show_product_card(
     kb_manager = locale.keyboards
 
     text = format_product_from_template(product=product, locale=locale)
-    manager_url = locale.get_text("client.manager_url")
+    manager_url = config.MANAGER_URL or None
 
     reply_markup = kb_manager.get_product_card_kb(
         product_id=current_id,

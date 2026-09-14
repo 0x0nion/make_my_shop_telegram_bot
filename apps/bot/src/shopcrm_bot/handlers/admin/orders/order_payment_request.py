@@ -20,9 +20,9 @@ admin_payment_request_router = Router()
 # --- Вспомогательные функции ---
 
 def _get_client_lang(client_user: Optional[User]) -> str:
-    """Возвращает язык клиента из БД с дефолтом на 'ru'."""
+    """Возвращает язык клиента из БД с дефолтом на 'en'."""
     if not client_user or not client_user.language:
-        return "ru"
+        return "en"
     return client_user.language
 
 

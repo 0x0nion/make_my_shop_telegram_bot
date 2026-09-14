@@ -22,7 +22,7 @@ ENTITY_TYPE_PAYMENT_DETAILS = "payment_details"
 async def show_payment_details_card(
     event: Message | CallbackQuery,
     admin_repo: AdminRepository,
-    lang: str = "ru",
+    lang: str = "en",
     message_id_to_edit: int | None = None,
 ):
     """Отображение карточки с текущими платежными данными."""

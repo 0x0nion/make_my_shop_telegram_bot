@@ -15,8 +15,8 @@ class UserLocaleMixin:
             self,
             entity_type: str,
             entity_id: int = 0,
-            lang_code: str = "ru",
-            default_lang: str = "ru"
+            lang_code: str = "en",
+            default_lang: str = "en"
     ) -> Optional[str]:
         """Получение одного текста с автоматическим фолбэком на язык по умолчанию."""
         # Запрашиваем сразу и целевой, и дефолтный язык за 1 запрос
@@ -39,7 +39,7 @@ class UserLocaleMixin:
         fallback_locale = next((loc for loc in locales if loc.language_code == default_lang), None)
         return fallback_locale.text if fallback_locale else None
 
-    async def get_welcome_card(self, lang_code: str = "ru") -> tuple[str, Optional[str]]:
+    async def get_welcome_card(self, lang_code: str = "en") -> tuple[str, Optional[str]]:
         """
         Загружает приветственный текст и фото за 1 эффективный запрос к БД.
         """
@@ -47,7 +47,7 @@ class UserLocaleMixin:
         locales = await self._locale_repo.get_all(
             LocaleText.entity_type.in_(["welcome_message", "welcome_photo"]),
             LocaleText.entity_id == 0,
-            LocaleText.language_code.in_([lang_code, "ru"])
+            LocaleText.language_code.in_([lang_code, "en"])
         )
 
         # Функция-помощник для извлечения значения из полученного списка
@@ -56,12 +56,12 @@ class UserLocaleMixin:
             match = next((l for l in locales if l.entity_type == entity_type and l.language_code == lang_code), None)
             if match and match.text:
                 return match.text
-            # Пробуем найти дефолтный язык (ru)
-            match_fallback = next((l for l in locales if l.entity_type == entity_type and l.language_code == "ru"),
+            # Пробуем найти дефолтный язык (en)
+            match_fallback = next((l for l in locales if l.entity_type == entity_type and l.language_code == "en"),
                                   None)
             return match_fallback.text if match_fallback else None
 
-        text = extract_text("welcome_message") or "👋 Добро пожаловать в наш магазин!"
+        text = extract_text("welcome_message") or ""
         photo_id = extract_text("welcome_photo")
 
         # Простая проверка: очищаем только пустые строки или явные пробелы

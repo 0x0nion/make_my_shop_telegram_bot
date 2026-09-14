@@ -6,6 +6,7 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.base import BaseStorage
 from aiogram.fsm.storage.memory import MemoryStorage
 
+from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.exc import OperationalError
 
@@ -51,6 +52,27 @@ async def _init_db_with_retry(engine: AsyncEngine) -> None:
     )
 
 
+async def _check_schema(engine: AsyncEngine) -> None:
+    """Fail-fast: проверяет, что схема БД существует (таблица ``users``).
+
+    Если схема не создана (миграции не выполнены), падает с понятной
+    подсказкой вместо ``OperationalError: no such table`` при первом апдейте.
+    В режиме ``DEBUG=True`` схема создаётся автоматически (``create_all``),
+    поэтому проверка проходит.
+    """
+    async with engine.connect() as conn:
+        def _table_names(sync_conn):
+            return inspect(sync_conn).get_table_names()
+
+        tables = await conn.run_sync(_table_names)
+
+    if "users" not in tables:
+        raise RuntimeError(
+            "Схема БД не найдена (отсутствует таблица 'users'). "
+            "Выполни миграции: alembic upgrade head"
+        )
+
+
 async def main():
     setup_logging(level=config.LOG_LEVEL, logs_dir=config.LOGS_DIR)
 
@@ -58,6 +80,7 @@ async def main():
     session_factory = create_session_factory(engine)
 
     await _init_db_with_retry(engine)
+    await _check_schema(engine)
 
     bot = Bot(
         token=config.BOT_TOKEN.get_secret_value(),
@@ -76,6 +99,7 @@ async def main():
         await dp.start_polling(bot)
     finally:
         await bot.session.close()
+        await engine.dispose()
         shutdown_logging()
 
 

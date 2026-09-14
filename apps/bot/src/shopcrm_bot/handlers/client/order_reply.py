@@ -152,7 +152,7 @@ async def client_send_reply(
     for admin_id in admin_ids:
         try:
             admin_user = await user_repo.get_user(admin_id)
-            admin_lang = admin_user.language if admin_user and admin_user.language else "ru"
+            admin_lang = admin_user.language if admin_user and admin_user.language else "en"
             admin_locale = Locale(admin_lang)
 
             admin_kb = admin_locale.keyboards.build("admin.order_notification", order_id=order_id)

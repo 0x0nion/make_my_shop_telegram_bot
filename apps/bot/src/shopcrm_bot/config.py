@@ -25,8 +25,10 @@ class Settings(CoreSettings):
     FSM_STORAGE: str = "memory"
     # Redis connection URL, used only when FSM_STORAGE == "redis".
     REDIS_URL: str = "redis://localhost:6379/0"
-    # Language for admin notifications (order cards, payment alerts): ru/en/es.
-    NOTIFICATIONS_LANG: str = "ru"
+
+    # URL of the shop manager (Telegram profile) for the "Manager" button
+    # on the product card. If empty, the button is hidden.
+    MANAGER_URL: str = ""
 
     @field_validator("ADMIN_ID")
     @classmethod

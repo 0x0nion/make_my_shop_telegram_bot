@@ -235,6 +235,7 @@ async def process_payment_proof_input(
         notify_admins_about_payment(
             bot=bot,
             admin_repo=admin_repo,
+            user_repo=user_repo,
             order_id=order_id,
             admin_ids=admin_ids,
         )

@@ -28,7 +28,7 @@ async def show_client_main_menu(
     Текст и медиа подгружаются из БД. Если приветствие в БД пустое, используется
     дефолтный текст из локали.
     """
-    lang = user.language if user and user.language else "ru"
+    lang = user.language if user and user.language else "en"
     locale = Locale(lang)
 
     text, photo_id = await user_repo.get_welcome_card(lang_code=lang)

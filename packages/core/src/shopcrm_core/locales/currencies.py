@@ -57,7 +57,7 @@ def get_currency_symbol(currency_code: str | None = None) -> str:
 
 
 def get_currency_label(
-    currency_code: str | None = DEFAULT_CURRENCY.value, lang: str = "ru"
+    currency_code: str | None = DEFAULT_CURRENCY.value, lang: str = "en"
 ) -> str:
     """Возвращает локализованное название валюты."""
     try:

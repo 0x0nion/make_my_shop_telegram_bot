@@ -19,9 +19,9 @@ async def render_cart(
     # Загружаем пользователя вместе с корзиной и заказами
     user = await user_repo.get_user_with_cart(user_id=event.from_user.id)
 
-    # 1. Если пользователь не найден — показываем пустую корзину
+    # 1. Если пользователь не найден — показываем пустую корзину (EN по умолчанию)
     if not user:
-        locale = Locale(event.from_user.language_code or "ru")
+        locale = Locale("en")
         kb_manager = locale.keyboards
         text = locale.get_text("client.cart_empty")
         main_kb = kb_manager.get_main_kb(orders=0, cart=0)

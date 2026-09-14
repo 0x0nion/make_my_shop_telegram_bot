@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 async def show_welcome_card(
         event: Message | CallbackQuery,
         admin_repo: AdminRepository,
-        lang: str = "ru",
+        lang: str = "en",
         message_id_to_edit: int | None = None,
 ):
     """Отображение актуального приветственного сообщения и фото напрямую из постоянной базы."""

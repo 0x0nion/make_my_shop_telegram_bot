@@ -24,7 +24,7 @@ UNIT_LABELS: dict[ProductUnit, dict[str, str]] = {
 DEFAULT_UNIT = ProductUnit.PIECE
 
 
-def get_unit_label(unit_code: str | None = None, lang: str = "ru") -> str:
+def get_unit_label(unit_code: str | None = None, lang: str = "en") -> str:
     """Безопасно возвращает локализованную метку единицы измерения."""
     if not unit_code:
         unit_code = DEFAULT_UNIT.value

@@ -8,7 +8,7 @@ from shopcrm_core.locales.locale import Locale
 async def build_order_detail_text(
     admin_repo: AdminRepository,
     order_id: int,
-    lang: str = "ru",
+    lang: str = "en",
 ) -> tuple[str, Optional[Any]]:
     """Формирует текстовое описание заказа для администратора."""
     locale = Locale(lang)

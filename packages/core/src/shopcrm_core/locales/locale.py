@@ -71,7 +71,7 @@ class Locale:
             return None
 
         if isinstance(data, dict):
-            value = data.get(self.lang) or data.get("ru") or data.get("en")
+            value = data.get(self.lang) or data.get("en")
             if value is not None:
                 return value
 
@@ -138,7 +138,7 @@ class Locale:
         buttons = (self.get_keyboard_data("admin.order_status_menu") or {}).get("buttons", {})
         label = buttons.get(status)
         if isinstance(label, dict):
-            return label.get(self.lang) or label.get("ru") or label.get("en") or str(status)
+            return label.get(self.lang) or label.get("en") or str(status)
         return str(status)
 
     # --- Валюты и Единицы (из единого locale.json) ---
@@ -147,7 +147,7 @@ class Locale:
         code = unit_code or self.locales.get("units", {}).get("default", "pc")
         data = self.locales.get("units", {}).get(code)
         if isinstance(data, dict):
-            return data.get(self.lang) or data.get("ru") or data.get("en") or code
+            return data.get(self.lang) or data.get("en") or code
         return str(code)
 
     def get_currency_symbol(self, currency_code: Optional[str] = None) -> str:
@@ -163,7 +163,6 @@ class Locale:
         if isinstance(data, dict):
             return (
                 data.get(self.lang)
-                or data.get("ru")
                 or data.get("en")
                 or data.get("symbol", code)
             )

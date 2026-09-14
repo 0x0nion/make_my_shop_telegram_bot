@@ -49,8 +49,8 @@ cp .env.example .env
 | `DEBUG`         | Режим отладки                                 | `false`                        |
 | `FSM_STORAGE`   | Хранилище FSM: `memory` или `redis`           | `memory`                       |
 | `REDIS_URL`     | URL Redis (только при `FSM_STORAGE=redis`)    | `redis://localhost:6379/0`     |
+| `MANAGER_URL`   | URL менеджера (кнопка в карточке товара); если пусто — кнопка скрыта | `https://t.me/your_manager` |
 | `LOGS_DIR`      | Каталог для лог-файлов                        | `logs`                         |
-| `NOTIFICATIONS_LANG` | Язык админ-уведомлений (`ru`/`en`/`es`)   | `ru`                           |
 
 ## Запуск
 
