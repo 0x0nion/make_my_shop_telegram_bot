@@ -8,6 +8,7 @@ from shopcrm_core.db.repositories.shop_repo import ShopRepository
 from shopcrm_core.db.repositories.user_repo import UserRepository
 from shopcrm_bot.config import config
 from shopcrm_bot.locales import Locale
+from shopcrm_bot.services.commands_service import ensure_bot_commands
 from shopcrm_core.services.admin_shop_service import AdminShopService
 
 
@@ -58,6 +59,17 @@ class DbSessionMiddleware(BaseMiddleware):
 
             data["user"] = db_user
             data["locale"] = Locale(lang=user_lang)
+
+            # Выставляем команды меню: /admin — только админам (per-chat scope).
+            # Для не-админов глобальный scope (только /start) уже действует,
+            # но перестановка нужна, если права админа были сняты.
+            if tg_user is not None:
+                await ensure_bot_commands(
+                    bot=data["bot"],
+                    chat_id=actual_event.chat.id,
+                    is_admin=tg_user.id in data["admin_ids"],
+                    lang=user_lang,
+                )
 
             try:
                 return await handler(event, data)

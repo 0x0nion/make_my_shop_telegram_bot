@@ -1147,9 +1147,24 @@
         "ru": "Вперед ➡️",
         "en": "Forward ➡️",
         "es": "Adelante ➡️"
+      },
+      "cmd_start_desc": {
+        "ru": "Перезапустить меню",
+        "en": "Restart the menu",
+        "es": "Reiniciar el menú"
+      },
+      "cmd_admin_desc": {
+        "ru": "Админ-панель",
+        "en": "Admin panel",
+        "es": "Panel de administración"
       }
     },
     "notifications": {
+      "new_order": {
+        "ru": "🛒 <b>НОВЫЙ ЗАКАЗ #{order_id}</b>\n\n",
+        "en": "🛒 <b>NEW ORDER #{order_id}</b>\n\n",
+        "es": "🛒 <b>¡NUEVO PEDIDO #{order_id}!</b>\n\n"
+      },
       "new_payment": {
         "ru": "🚨 <b>НОВАЯ ОПЛАТА ПО ЗАКАЗУ #{order_id}</b>\n\n",
         "en": "🚨 <b>NEW PAYMENT FOR ORDER #{order_id}</b>\n\n",
@@ -1590,6 +1605,19 @@
             "es": "💬 Abrir chat",
             "ru": "💬 Открыть чат",
             "callback_data": "admin_order_contact_client:{order_id}:all:1"
+          }
+        },
+        "sizes": [
+          1
+        ]
+      },
+      "new_order": {
+        "buttons": {
+          "admin_order_view": {
+            "ru": "📋 Перейти к заказу",
+            "en": "📋 View order",
+            "es": "📋 Ver pedido",
+            "callback_data": "admin_order_view:{order_id}"
           }
         },
         "sizes": [

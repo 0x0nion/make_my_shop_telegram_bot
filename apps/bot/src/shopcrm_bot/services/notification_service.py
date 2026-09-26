@@ -77,6 +77,52 @@ async def notify_admins_about_payment(
             )
 
 
+async def notify_admins_about_new_order(
+    bot: Bot,
+    admin_repo: AdminRepository,
+    user_repo: UserRepository,
+    order_id: int,
+    admin_ids: list[int] | None = None,
+):
+    """Отправляет карточку нового заказа всем администраторам.
+
+    Уведомление содержит детали заказа (покупатель, состав, итог, адрес)
+    и кнопку «Перейти к заказу» (callback ``admin_order_view:{order_id}``).
+    Каждый администратор получает уведомление на своём сохранённом языке
+    (EN — по умолчанию, если язык не задан).
+    """
+    admin_ids = admin_ids or app_config.ADMIN_ID
+
+    for admin_id in admin_ids:
+        try:
+            admin_user = await user_repo.get_user(admin_id)
+            admin_lang = admin_user.language if admin_user and admin_user.language else "en"
+
+            text, order = await build_order_detail_text(admin_repo, order_id, lang=admin_lang)
+            if not order:
+                logger.warning(
+                    f"Заказ #{order_id} не найден при отправке уведомления администраторам."
+                )
+                return
+
+            caption = Locale(admin_lang).get_text(
+                "notifications.new_order", order_id=order_id
+            ) + text
+            reply_markup = Locale(admin_lang).keyboards.build(
+                "admin.new_order", order_id=order_id
+            )
+
+            await bot.send_message(
+                chat_id=admin_id,
+                text=caption,
+                reply_markup=reply_markup,
+            )
+        except Exception as e:
+            logger.error(
+                f"Не удалось отправить уведомление о новом заказе #{order_id} админу {admin_id}: {e}"
+            )
+
+
 async def notify_admins_about_cancellation(
     bot: Bot,
     user_repo: UserRepository,

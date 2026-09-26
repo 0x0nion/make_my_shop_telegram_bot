@@ -22,6 +22,7 @@ from shopcrm_bot.config import config
 from shopcrm_bot.errors import register_error_handlers
 from shopcrm_bot.handlers import routers as all_routers
 from shopcrm_bot.middlewares.db import DbSessionMiddleware
+from shopcrm_bot.services.commands_service import build_commands
 
 
 def _create_storage() -> BaseStorage:
@@ -86,6 +87,10 @@ async def main():
         token=config.BOT_TOKEN.get_secret_value(),
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
+
+    # Глобальное меню команд: /start для всех.
+    # /admin выставляется per-chat только администраторам (middlewares/db.py).
+    await bot.set_my_commands(build_commands(is_admin=False))
 
     dp = Dispatcher(storage=_create_storage())
 

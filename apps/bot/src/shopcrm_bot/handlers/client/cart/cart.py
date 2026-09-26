@@ -1,15 +1,18 @@
 # handlers/client/cart/cart.py
+import asyncio
 import logging
 from contextlib import suppress
-from aiogram import F, Router
+from aiogram import Bot, F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from shopcrm_core.db.models import User
+from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.db.repositories.user_repo import UserRepository
 from shopcrm_bot.handlers.client.cart.render_cart import render_cart
 from shopcrm_bot.locales import Locale
+from shopcrm_bot.services.notification_service import notify_admins_about_new_order
 from shopcrm_bot.ui import UIManager
 from shopcrm_core.services.address_service import build_location_address, normalize_text_address
 from shopcrm_bot.states.user_states import UserState
@@ -159,9 +162,12 @@ async def update_quantity(
 @user_cart_router.callback_query(F.data == "checkout_confirm")
 async def checkout_order(
         callback: CallbackQuery,
+        bot: Bot,
         user_repo: UserRepository,
+        admin_repo: AdminRepository,
         state: FSMContext,
         user: User,
+        admin_ids: list[int],
 ):
     locale = Locale(user.language)
     kb = locale.keyboards
@@ -186,6 +192,17 @@ async def checkout_order(
         return
 
     await state.clear()
+
+    # Уведомляем администраторов о новом заказе в фоне (не блокируем ответ клиенту)
+    asyncio.create_task(
+        notify_admins_about_new_order(
+            bot=bot,
+            admin_repo=admin_repo,
+            user_repo=user_repo,
+            order_id=order.id,
+            admin_ids=admin_ids,
+        )
+    )
 
     success_text = locale.format_order(order)
 
