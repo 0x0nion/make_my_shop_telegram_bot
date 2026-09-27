@@ -13,7 +13,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from aiogram.types import BotCommandScopeChat, Chat, Message, User as TgUser
+from aiogram.types import BotCommandScopeChat, CallbackQuery, Chat, Message, User as TgUser
 
 from shopcrm_bot.services import commands_service
 from shopcrm_bot.services.commands_service import build_commands, ensure_bot_commands
@@ -164,3 +164,58 @@ class TestMiddlewareSetsCommands:
 
         ensure_mock.assert_awaited_once()
         assert ensure_mock.await_args.kwargs["is_admin"] is False
+
+    def _make_callback_query(self, user_id: int, chat_id: int) -> CallbackQuery:
+        """CallbackQuery с сообщением в чате, id которого != id пользователя."""
+        return CallbackQuery(
+            id="cb1",
+            from_user=TgUser(id=user_id, is_bot=False, first_name="Test"),
+            chat_instance="ci1",
+            message=self._make_message(chat_id),
+            data="test",
+        )
+
+    async def test_callback_query_uses_message_chat(self, monkeypatch):
+        """Регрессия: у CallbackQuery нет .chat — берём message.chat.id."""
+        from shopcrm_bot.config import config
+
+        admin_id = config.ADMIN_ID[0]
+        chat_id = admin_id + 1000  # chat_id != user_id, чтобы не спутать
+        mw, ensure_mock = self._make_middleware(
+            monkeypatch, SimpleNamespace(id=admin_id, language="ru")
+        )
+
+        async def handler(event, data):
+            return "ok"
+
+        result = await mw(
+            handler, self._make_callback_query(admin_id, chat_id), {"bot": AsyncMock()}
+        )
+
+        assert result == "ok"
+        ensure_mock.assert_awaited_once()
+        kwargs = ensure_mock.await_args.kwargs
+        assert kwargs["chat_id"] == chat_id
+        assert kwargs["is_admin"] is True
+
+    async def test_callback_query_without_message_does_not_crash(self, monkeypatch):
+        """CallbackQuery с message=None (удалённое сообщение) — без падения."""
+        from shopcrm_bot.config import config
+
+        admin_id = config.ADMIN_ID[0]
+        mw, ensure_mock = self._make_middleware(
+            monkeypatch, SimpleNamespace(id=admin_id, language="ru")
+        )
+
+        async def handler(event, data):
+            return "ok"
+
+        cq = CallbackQuery(
+            id="cb2",
+            from_user=TgUser(id=admin_id, is_bot=False, first_name="Test"),
+            chat_instance="ci2",
+        )
+        result = await mw(handler, cq, {"bot": AsyncMock()})
+
+        assert result == "ok"
+        ensure_mock.assert_not_awaited()

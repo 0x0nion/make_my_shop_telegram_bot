@@ -63,13 +63,19 @@ class DbSessionMiddleware(BaseMiddleware):
             # Выставляем команды меню: /admin — только админам (per-chat scope).
             # Для не-админов глобальный scope (только /start) уже действует,
             # но перестановка нужна, если права админа были сняты.
+            # Чат берём аккуратно: у Message он в .chat, у CallbackQuery —
+            # в .message.chat (и message может быть None для удалённых).
             if tg_user is not None:
-                await ensure_bot_commands(
-                    bot=data["bot"],
-                    chat_id=actual_event.chat.id,
-                    is_admin=tg_user.id in data["admin_ids"],
-                    lang=user_lang,
-                )
+                chat = getattr(actual_event, "chat", None)
+                if chat is None and isinstance(actual_event, CallbackQuery) and actual_event.message:
+                    chat = actual_event.message.chat
+                if chat is not None:
+                    await ensure_bot_commands(
+                        bot=data["bot"],
+                        chat_id=chat.id,
+                        is_admin=tg_user.id in data["admin_ids"],
+                        lang=user_lang,
+                    )
 
             try:
                 return await handler(event, data)
