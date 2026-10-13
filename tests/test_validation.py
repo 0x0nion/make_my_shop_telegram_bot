@@ -44,7 +44,7 @@ class TestValidateDescription:
 
 
 class TestValidatePrice:
-    """Валидация цены (положительное число)."""
+    """Валидация цены (положительное число, до 18 знаков)."""
 
     def test_valid_price(self):
         price, error = validate_price("10.50", lang="ru")
@@ -71,6 +71,21 @@ class TestValidatePrice:
         assert price is None
         assert error is not None
         assert error != "XXX"
+
+    def test_crypto_price_18_decimals_ok(self):
+        price, error = validate_price("0.123456789012345678", lang="ru")
+        assert error is None
+        assert price == 0.123456789012345678
+
+    def test_price_19_decimals_rejected(self):
+        price, error = validate_price("0.1234567890123456789", lang="ru")
+        assert price is None
+        assert error is not None
+
+    def test_crypto_small_value_ok(self):
+        price, error = validate_price("0.00000001", lang="ru")
+        assert error is None
+        assert price == 0.00000001
 
 
 class TestLocaleKeysPresent:

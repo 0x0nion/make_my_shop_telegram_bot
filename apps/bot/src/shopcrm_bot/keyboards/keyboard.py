@@ -7,6 +7,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from shopcrm_core.locales.utils import SafeDict
 from shopcrm_core.constants import OrderStatus
+from shopcrm_core.utils import format_price
 
 logger = logging.getLogger(__name__)
 
@@ -225,7 +226,7 @@ class KeyboardFactory:
                 order_template,
                 id=order.id,
                 date=date_str,
-                price=float(getattr(order, "total_price", 0.0)),
+                price=format_price(getattr(order, "total_price", 0) or 0),
                 currency=self.locale.get_currency_symbol(),
             )
             builder.row(
@@ -260,8 +261,14 @@ class KeyboardFactory:
         )
         return builder.as_markup()
 
-    def get_client_order_detail_kb(self, order_id: int, cancellable: bool) -> InlineKeyboardMarkup:
-        """Клавиатура карточки заказа клиента: условная отмена + возврат к списку."""
+    def get_client_order_detail_kb(
+        self, order_id: int, cancellable: bool, can_reply: bool = True
+    ) -> InlineKeyboardMarkup:
+        """Клавиатура карточки заказа клиента: условная отмена + написать менеджеру + возврат к списку.
+
+        :param can_reply: показывать ли кнопку «Написать менеджеру»
+            (``False`` для отменённых заказов — чат по ним закрыт).
+        """
         builder = InlineKeyboardBuilder()
 
         if cancellable:
@@ -272,6 +279,19 @@ class KeyboardFactory:
                 InlineKeyboardButton(
                     text=cancel_text,
                     callback_data=f"client_order_cancel:{order_id}",
+                )
+            )
+
+        # Кнопка «Написать менеджеру» — открывает чат переписки по заказу
+        # (тот же callback, что и кнопка в сообщении от администратора).
+        if can_reply:
+            reply_text = self.get_button_text(
+                "client.reply_admin", "client_reply_order", default="💬 Write to manager"
+            )
+            builder.row(
+                InlineKeyboardButton(
+                    text=reply_text,
+                    callback_data=f"client_reply_order:{order_id}",
                 )
             )
 
@@ -290,9 +310,15 @@ class KeyboardFactory:
             current_cat_id: Optional[int],
             parent_id: Optional[int],
             category_names: Optional[Dict[int, str]] = None,
+            product_names: Optional[Dict[int, str]] = None,
     ) -> InlineKeyboardMarkup:
-        """Иерархическое меню каталога (Категории + Товары + Навигация назад)."""
+        """Иерархическое меню каталога (Категории + Товары + Навигация назад).
+
+        :param product_names: словарь product_id -> локализованное название
+            (entity_type='product_name'); при отсутствии — fallback на product.name
+        """
         category_names = category_names or {}
+        product_names = product_names or {}
         builder = InlineKeyboardBuilder()
 
         # Категории
@@ -304,14 +330,14 @@ class KeyboardFactory:
 
         # Товары в текущей категории
         for product in products:
-            price = float(getattr(product, "price", 0.0) or 0.0)
+            price = getattr(product, "price", 0) or 0
             currency = self.locale.get_currency_symbol(getattr(product, "currency", None))
             btn_text = self.get_button_text(
                 "client.shop_navigation",
                 "product_button",
-                default="{name} — {price:.2f} {currency}",
-                name=product.name,
-                price=price,
+                default="{name} — {price} {currency}",
+                name=product_names.get(product.id) or product.name,
+                price=format_price(price),
                 currency=currency,
             )
             builder.row(
@@ -393,19 +419,31 @@ class KeyboardFactory:
 
         return builder.as_markup()
 
-    def get_cart_kb(self, cart_items: list) -> InlineKeyboardMarkup:
-        """Меню корзины с изменением количества (➖ / ➕) и оформлением."""
+    def get_cart_kb(
+            self,
+            cart_items: list,
+            product_names: Optional[Dict[int, str]] = None,
+    ) -> InlineKeyboardMarkup:
+        """Меню корзины с изменением количества (➖ / ➕) и оформлением.
+
+        :param product_names: словарь product_id -> локализованное название
+            (entity_type='product_name'); при отсутствии — fallback на product.name
+        """
         texts = self.get_button_text(
             "client.cart_actions",
             ["set_address", "set_comment", "checkout", "back"],
             default="XXX",
         )
+        product_names = product_names or {}
 
         builder = InlineKeyboardBuilder()
 
         # Позиции корзины
         for item in cart_items:
-            product_name = item.product.name if getattr(item, "product", None) else "Product"
+            product_name = (
+                product_names.get(item.product_id)
+                or (item.product.name if getattr(item, "product", None) else "Product")
+            )
             builder.row(
                 InlineKeyboardButton(text=product_name, callback_data=f"client_item_{item.product_id}"),
                 InlineKeyboardButton(text="➖", callback_data=f"dec_{item.product_id}", style="danger"),
@@ -455,6 +493,7 @@ class KeyboardFactory:
             parent_id: Optional[int],
             category_names: Optional[Dict[int, str]] = None,
             has_description: bool = False,
+            product_names: Optional[Dict[int, str]] = None,
     ) -> InlineKeyboardMarkup:
         """Динамический конструктор управления категориями и товарами магазина."""
         from shopcrm_bot.keyboards.admin import build_catalog_edit_kb
@@ -467,6 +506,7 @@ class KeyboardFactory:
             parent_id=parent_id,
             category_names=category_names,
             has_description=has_description,
+            product_names=product_names,
         )
 
     def get_unit_selection_kb(self, product_id: int | None = None) -> InlineKeyboardMarkup:
@@ -708,21 +748,25 @@ class KeyboardFactory:
             order,
             status: str = "all",
             page: int = 1,
+            product_names: Optional[Dict[int, str]] = None,
     ) -> InlineKeyboardMarkup:
-        """Редактор состава заказа (➖/➕ по позициям, добавление, назад)."""
+        """Редактор состава заказа (➖/➕ по позициям, добавление, назад).
+
+        :param product_names: словарь product_id -> локализованное название
+            (entity_type='product_name'); при отсутствии — fallback на product.name
+        """
         builder = InlineKeyboardBuilder()
 
         unit_default = self.locale.get_unit(None)
 
         if order.items:
             for item in order.items:
-                prod_name = (
-                    item.product.name
-                    if item.product
-                    else self.locale.get_text(
+                if item.product:
+                    prod_name = (product_names or {}).get(item.product_id) or item.product.name
+                else:
+                    prod_name = self.locale.get_text(
                         "admin.orders.deleted_product", product_id=item.product_id
                     )
-                )
                 unit = (
                     self.locale.get_unit(getattr(item.product, "unit", None))
                     if item.product

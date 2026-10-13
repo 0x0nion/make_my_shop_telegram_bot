@@ -3,11 +3,14 @@ import asyncio
 import logging
 
 from aiogram import Bot, F, Router
+from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 
 from shopcrm_core.constants import OrderStatus
 from shopcrm_core.db.models import User
 from shopcrm_core.db.repositories.user_repo import UserRepository
+from shopcrm_core.services.order_service import get_user_order_product_names
+from shopcrm_bot.handlers.client.order_reply import ClientReplyStates
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.services.notification_service import notify_admins_about_cancellation
 from shopcrm_bot.ui import UIManager
@@ -17,6 +20,17 @@ user_order_router = Router()
 
 # Количество заказов на одной странице списка
 ORDERS_PER_PAGE = 10
+
+
+async def _clear_reply_state(state: FSMContext) -> None:
+    """Сбрасывает FSM-состояние ввода ответа, если пользователь ушёл из чата по навигации.
+
+    Без этого следующий текст клиента был бы ошибочно принят за ответ
+    по заказу (кнопки «Назад к списку» / «Посмотреть заказ» доступны
+    и во время ожидания ответа).
+    """
+    if await state.get_state() == ClientReplyStates.waiting_for_reply.state:
+        await state.clear()
 
 
 async def _show_orders_page(
@@ -57,16 +71,19 @@ async def _show_orders_page(
 @user_order_router.callback_query(F.data == "client_orders")
 async def show_orders(
     callback: CallbackQuery,
+    state: FSMContext,
     user_repo: UserRepository,
     user: User,
 ):
     """Отображает список всех заказов пользователя (первая страница)."""
+    await _clear_reply_state(state)
     await _show_orders_page(callback, user_repo, user, page=1)
 
 
 @user_order_router.callback_query(F.data.startswith("client_orders_page:"))
 async def show_orders_page(
     callback: CallbackQuery,
+    state: FSMContext,
     user_repo: UserRepository,
     user: User,
 ):
@@ -77,18 +94,21 @@ async def show_orders_page(
         logger.warning(f"[ORDER HANDLER] Invalid page callback: {callback.data}")
         await callback.answer()
         return
+    await _clear_reply_state(state)
     await _show_orders_page(callback, user_repo, user, page=page)
 
 
 @user_order_router.callback_query(F.data.startswith("view_details_order_"))
 async def view_order_details(
     callback: CallbackQuery,
+    state: FSMContext,
     user_repo: UserRepository,
     user: User,
 ):
     """Отображает подробную информацию по конкретному заказу."""
     locale = Locale(user.language)
     kb_manager = locale.keyboards
+    await _clear_reply_state(state)
 
     try:
         order_id = int(callback.data.split("_")[-1])
@@ -106,13 +126,16 @@ async def view_order_details(
         )
         return
 
+    product_names = await get_user_order_product_names(user_repo, order, user.language)
     text = locale.format_order(
         order,
         template_key="client.user_order_details",
+        product_names=product_names,
     )
     reply_markup = kb_manager.get_client_order_detail_kb(
         order_id=order.id,
         cancellable=OrderStatus.is_cancellable_by_client(order.status),
+        can_reply=order.status != OrderStatus.CANCELLED.value,
     )
 
     await UIManager.show(
@@ -209,11 +232,13 @@ async def do_cancel_order(
         )
     )
 
-    # Перерисовываем карточку заказа (кнопка отмены уже не показывается)
-    text = locale.format_order(order, template_key="client.user_order_details")
+    # Перерисовываем карточку заказа (кнопки отмены и чата уже не показываются)
+    product_names = await get_user_order_product_names(user_repo, order, user.language)
+    text = locale.format_order(order, template_key="client.user_order_details", product_names=product_names)
     reply_markup = locale.keyboards.get_client_order_detail_kb(
         order_id=order.id,
         cancellable=False,
+        can_reply=False,
     )
     await UIManager.show(
         event=callback,

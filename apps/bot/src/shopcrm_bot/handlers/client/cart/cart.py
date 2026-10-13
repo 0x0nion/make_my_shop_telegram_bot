@@ -15,6 +15,7 @@ from shopcrm_bot.locales import Locale
 from shopcrm_bot.services.notification_service import notify_admins_about_new_order
 from shopcrm_bot.ui import UIManager
 from shopcrm_core.services.address_service import build_location_address, normalize_text_address
+from shopcrm_core.services.order_service import get_user_order_product_names
 from shopcrm_bot.states.user_states import UserState
 
 logger = logging.getLogger(__name__)
@@ -204,7 +205,8 @@ async def checkout_order(
         )
     )
 
-    success_text = locale.format_order(order)
+    product_names = await get_user_order_product_names(user_repo, order, user.language)
+    success_text = locale.format_order(order, product_names=product_names)
 
     updated_user = await user_repo.get_user_with_cart(user_id=callback.from_user.id)
 

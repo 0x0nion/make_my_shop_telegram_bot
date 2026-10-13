@@ -31,9 +31,13 @@ def get_order_catalog_kb(
         category_names: dict[int, str],
         status: str = "all",
         page: int = 1,
+        product_names: dict[int, str] | None = None,
 ) -> InlineKeyboardMarkup:
     """
     Генератор клавиатуры каталога товаров с привязкой к конкретному order_id.
+
+    :param product_names: словарь product_id -> локализованное название
+        (entity_type='product_name'); при отсутствии — fallback на product.name
     """
     builder = InlineKeyboardBuilder()
 
@@ -49,9 +53,10 @@ def get_order_catalog_kb(
 
     # 2. Товары
     for product in products:
+        prod_text = (product_names or {}).get(product.id) or product.name
         builder.row(
             InlineKeyboardButton(
-                text=f"📦 {product.name}",
+                text=f"📦 {prod_text}",
                 callback_data=f"admin_order_select_prod:{order_id}:{product.id}:{status}:{page}"
             )
         )
@@ -156,6 +161,18 @@ async def render_order_catalog_ui(
         )
         category_names[cat.id] = loc_name or cat.name
 
+    # Локализованные названия товаров (entity_type='product_name') с fallback на product.name
+    product_names: dict[int, str] = {}
+    for product in db_products:
+        loc_name = await admin_repo.get_locale_text(
+            entity_id=product.id,
+            entity_type="product_name",
+            language_code=lang,
+            use_temp=False,
+            admin_id=admin_id,
+        )
+        product_names[product.id] = loc_name or product.name
+
     currency = get_currency_symbol()
 
     body_parts = [
@@ -172,7 +189,7 @@ async def render_order_catalog_ui(
             [
                 locale.get_text(
                     "admin.orders.product_line",
-                    name=product.name,
+                    name=product_names.get(product.id) or product.name,
                     price=product.price,
                     currency=currency,
                 )
@@ -195,6 +212,7 @@ async def render_order_catalog_ui(
         category_names=category_names,
         status=status,
         page=page,
+        product_names=product_names,
     )
 
     await UIManager.show(

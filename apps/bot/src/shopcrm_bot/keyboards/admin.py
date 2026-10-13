@@ -15,8 +15,13 @@ def build_catalog_edit_kb(
     parent_id: Optional[int],
     category_names: Optional[Dict[int, str]] = None,
     has_description: bool = False,
+    product_names: Optional[Dict[int, str]] = None,
 ) -> InlineKeyboardMarkup:
-    """Динамический конструктор управления категориями и товарами магазина."""
+    """Динамический конструктор управления категориями и товарами магазина.
+
+    :param product_names: словарь product_id -> локализованное название
+        (entity_type='product_name'); при отсутствии — fallback на product.name
+    """
     kb_path = "admin.catalog_navigation"
 
     # Забираем ВСЕ тексты за один вызов
@@ -72,9 +77,14 @@ def build_catalog_edit_kb(
 
     # 3. Список товаров
     for product in products:
+        prod_display_name = (
+            product_names.get(product.id)
+            if product_names and product.id in product_names
+            else product.name
+        )
         builder.row(
             InlineKeyboardButton(
-                text=f"📦 {product.name}",
+                text=f"📦 {prod_display_name}",
                 callback_data=f"admin_item_{product.id}",
             ),
             InlineKeyboardButton(

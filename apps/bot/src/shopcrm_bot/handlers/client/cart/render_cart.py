@@ -1,4 +1,5 @@
 # handlers/client/cart/render_cart.py
+import asyncio
 from typing import Union
 
 from aiogram.fsm.context import FSMContext
@@ -6,6 +7,7 @@ from aiogram.types import CallbackQuery, Message
 
 from shopcrm_core.db.repositories.user_repo import UserRepository
 from shopcrm_core.locales.currencies import DEFAULT_CURRENCY
+from shopcrm_core.utils import format_price
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.ui import UIManager
 
@@ -58,6 +60,23 @@ async def render_cart(
     addr_type = state_data.get("delivery_address_type")
     comment = state_data.get("user_comment", "")
 
+    # 2a. Параллельная подгрузка локализованных названий товаров (устранение N+1)
+    product_names: dict[int, str] = {}
+    loc_names = await asyncio.gather(
+        *[
+            user_repo.get_locale_text(
+                entity_type="product_name",
+                entity_id=item.product_id,
+                lang_code=user.language,
+            )
+            for item in user.cart
+        ]
+    )
+    for item, loc_name in zip(user.cart, loc_names):
+        product_names[item.product_id] = loc_name or (
+            item.product.name if item.product else ""
+        )
+
     subtotal = 0.0
     text_blocks = []
 
@@ -77,7 +96,7 @@ async def render_cart(
         item_total = price * quantity
         subtotal += item_total
 
-        product_name = getattr(item.product, "name", "")
+        product_name = product_names.get(item.product_id) or getattr(item.product, "name", "")
         unit_raw = getattr(item.product, "unit", None)
         unit_val = locale.get_unit(unit_raw)
 
@@ -85,8 +104,8 @@ async def render_cart(
             "client.cart_item_line",
             name=product_name,
             quantity=quantity,
-            price=f"{price:.2f}",
-            item_total=f"{item_total:.2f}",
+            price=format_price(price),
+            item_total=format_price(item_total),
             unit=unit_val,
             currency=currency,
         )
@@ -95,7 +114,7 @@ async def render_cart(
     # Итоговая сумма
     summary_text = locale.get_text(
         "client.cart_summary_subtotal",
-        subtotal=f"{subtotal:.2f}",
+        subtotal=format_price(subtotal),
         currency=currency,
     )
     text_blocks.append(summary_text)
@@ -113,7 +132,7 @@ async def render_cart(
     # Формируем итоговый текст с правильными переносами
     text = "\n".join(text_blocks)
 
-    markup = kb_manager.get_cart_kb(cart_items=user.cart)
+    markup = kb_manager.get_cart_kb(cart_items=user.cart, product_names=product_names)
 
     sent_msg = await UIManager.show(
         event=event,

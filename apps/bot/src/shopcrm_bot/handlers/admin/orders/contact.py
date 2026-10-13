@@ -1,73 +1,25 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 
+from shopcrm_core.constants import OrderStatus
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_bot.handlers.admin.orders.common import render_order_detail
 from shopcrm_bot.locales import Locale
+from shopcrm_bot.services.chat_service import MESSAGES_PER_PAGE, format_chat_history
 from shopcrm_bot.ui import UIManager
 
 logger = logging.getLogger(__name__)
 
 order_contact_router = Router()
 
-# Количество сообщений на одной странице пагинации чата
-MESSAGES_PER_PAGE = 5
-
 
 class AdminContactStates(StatesGroup):
     waiting_for_message = State()
-
-
-def format_chat_history(
-    chat_history: list | None, locale: Locale, page: int = 1
-) -> tuple[str, list[InlineKeyboardButton] | None]:
-    """
-    Форматирует историю переписки для отображения с пагинацией.
-    """
-    if not chat_history:
-        return locale.get_text("admin.orders.chat_empty") + "\n\n", None
-
-    total_messages = len(chat_history)
-    total_pages = max(1, (total_messages + MESSAGES_PER_PAGE - 1) // MESSAGES_PER_PAGE)
-    current_page = max(1, min(page, total_pages))
-
-    start_idx = (current_page - 1) * MESSAGES_PER_PAGE
-    end_idx = start_idx + MESSAGES_PER_PAGE
-    page_messages = chat_history[start_idx:end_idx]
-
-    history_text = locale.get_text("admin.orders.chat_title") + "\n" + "—" * 20 + "\n"
-
-    for msg in page_messages:
-        sender = msg.get("sender")
-        text = msg.get("text", "")
-        time_str = msg.get("time", "")
-
-        if sender == "admin":
-            author = locale.get_text("admin.orders.author_admin")
-        else:
-            author = locale.get_text("admin.orders.author_client")
-
-        history_text += f"{author} <i>({time_str})</i>:\n{text}\n\n"
-
-    history_text += "—" * 20 + "\n" + locale.get_text("admin.orders.chat_page", page=current_page, total=total_pages) + "\n\n"
-
-    pagination_buttons = []
-    if total_pages > 1:
-        if current_page > 1:
-            pagination_buttons.append(
-                InlineKeyboardButton(text=locale.get_text("base.back"), callback_data=f"admin_chat_page:{current_page - 1}")
-            )
-        if current_page < total_pages:
-            pagination_buttons.append(
-                InlineKeyboardButton(text=locale.get_text("base.forward"), callback_data=f"admin_chat_page:{current_page + 1}")
-            )
-
-    return history_text, pagination_buttons
 
 
 @order_contact_router.callback_query(F.data.startswith("admin_order_contact_client:"))
@@ -208,15 +160,26 @@ async def process_send_client_message(
 
     await state.clear()
 
+    # Удаляем ввод админа до проверки, чтобы не-текст (фото/стикер) не остался в чате
     try:
         await message.delete()
     except Exception as e:
         logger.debug(f"[ADMIN CONTACT] Could not delete admin message: {e}")
 
+    # Принимаем только текст: фото/стикеры/голосовые в историю не сохраняем
+    if not message.text:
+        admin_locale = Locale(user.language)
+        await UIManager.show(
+            event=message,
+            text=admin_locale.get_text("base.text_only"),
+            message_id_to_edit=card_message_id,
+        )
+        return
+
     if not target_user_id or not order_id:
         return
 
-    now_str = datetime.utcnow().strftime("%d.%m.%Y %H:%M")
+    now_str = datetime.now(timezone.utc).strftime("%d.%m.%Y %H:%M")
     message_record = {
         "sender": "admin",
         "text": message.text,
@@ -226,12 +189,18 @@ async def process_send_client_message(
     await admin_repo.append_order_chat_history(order_id, message_record)
 
     client_locale = Locale(client_language)
-    client_kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text=client_locale.get_text("keyboards.client.reply_admin.buttons.client_reply_order"), callback_data=f"client_reply_order:{order_id}")],
-            [InlineKeyboardButton(text=client_locale.get_text("keyboards.client.reply_admin.buttons.client_view_order"), callback_data=f"view_details_order_{order_id}")]
-        ]
+    # Кнопка ответа клиенту не показывается, если заказ отменён (чат закрыт)
+    order = await admin_repo.get_order_by_id(order_id)
+    is_cancelled = bool(order) and order.status == OrderStatus.CANCELLED.value
+    client_kb_rows = []
+    if not is_cancelled:
+        client_kb_rows.append(
+            [InlineKeyboardButton(text=client_locale.get_text("keyboards.client.reply_admin.buttons.client_reply_order"), callback_data=f"client_reply_order:{order_id}")]
+        )
+    client_kb_rows.append(
+        [InlineKeyboardButton(text=client_locale.get_text("keyboards.client.reply_admin.buttons.client_view_order"), callback_data=f"view_details_order_{order_id}")]
     )
+    client_kb = InlineKeyboardMarkup(inline_keyboard=client_kb_rows)
 
     try:
         await message.bot.send_message(

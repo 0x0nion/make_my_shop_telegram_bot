@@ -1,8 +1,76 @@
 """Сервисы заказов: общая бизнес-логика оформления заказов."""
+import asyncio
 from typing import Any, Optional
 
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
+from shopcrm_core.db.repositories.user_repo import UserRepository
 from shopcrm_core.locales.locale import Locale
+from shopcrm_core.utils import format_price
+
+# Длина разделителя блоков в карточке заказа: длинный — для обычного сообщения,
+# короткий — для caption под фото (колонка caption уже, длинная линия переносится).
+_SEPARATOR_LONG = "━" * 20
+_SEPARATOR_SHORT = "━" * 12
+
+
+def _order_product_ids(order) -> list[int]:
+    """Уникальные ID товаров из позиций заказа (без дублей и None)."""
+    seen: list[int] = []
+    for item in getattr(order, "items", []) or []:
+        pid = getattr(item, "product_id", None)
+        if pid is not None and pid not in seen:
+            seen.append(pid)
+    return seen
+
+
+async def get_user_order_product_names(
+    user_repo: UserRepository,
+    order,
+    lang: str,
+) -> dict[int, str]:
+    """Локализованные названия товаров заказа (entity_type='product_name').
+
+    Возвращает словарь product_id -> название только для тех товаров,
+    для которых есть запись в локальном хранилище. Для остальных
+    вызывающий код использует fallback на product.name.
+    """
+    product_ids = _order_product_ids(order)
+    if not product_ids:
+        return {}
+    results = await asyncio.gather(
+        *[
+            user_repo.get_locale_text(
+                entity_type="product_name",
+                entity_id=pid,
+                lang_code=lang,
+            )
+            for pid in product_ids
+        ]
+    )
+    return {pid: loc for pid, loc in zip(product_ids, results) if loc}
+
+
+async def get_admin_order_product_names(
+    admin_repo: AdminRepository,
+    order,
+    lang: str,
+) -> dict[int, str]:
+    """Локализованные названия товаров заказа для админ-экранов (production-таблицы)."""
+    product_ids = _order_product_ids(order)
+    if not product_ids:
+        return {}
+    results = await asyncio.gather(
+        *[
+            admin_repo.get_locale_text(
+                entity_id=pid,
+                entity_type="product_name",
+                language_code=lang,
+                use_temp=False,
+            )
+            for pid in product_ids
+        ]
+    )
+    return {pid: loc for pid, loc in zip(product_ids, results) if loc}
 
 
 async def build_order_detail_text(
@@ -27,13 +95,17 @@ async def build_order_detail_text(
             buyer_info = locale.get_text("admin.orders.buyer_id", user_id=u_id)
 
     # 2. Состав заказа
+    product_names = await get_admin_order_product_names(admin_repo, order, lang)
     items_text = []
-    items_price = 0.0
+    items_price = 0
     if order.items:
         for idx, item in enumerate(order.items, start=1):
-            prod_name = item.product.name if item.product else locale.get_text("admin.orders.deleted_product", product_id=item.product_id)
+            if item.product:
+                prod_name = product_names.get(item.product_id) or item.product.name
+            else:
+                prod_name = locale.get_text("admin.orders.deleted_product", product_id=item.product_id)
             unit = locale.get_unit(getattr(item.product, "unit", None)) if item.product else locale.get_text("admin.orders.unit_default")
-            price = float(item.price_at_purchase)
+            price = item.price_at_purchase
             qty = item.quantity
             item_sum = qty * price
             items_price += item_sum
@@ -41,7 +113,7 @@ async def build_order_detail_text(
                 locale.get_text(
                     "admin.orders.item_line",
                     idx=idx, name=prod_name, qty=qty, unit=unit,
-                    price=price, currency=locale.get_currency_symbol(), sum=item_sum,
+                    price=format_price(price), currency=locale.get_currency_symbol(), sum=format_price(item_sum),
                 )
             )
     else:
@@ -55,8 +127,8 @@ async def build_order_detail_text(
     no_comment_str = locale.get_text("admin.orders.no_comment")
     no_proof_str = locale.get_text("admin.orders.no_payment_proof")
 
-    delivery_price = float(order.delivery_price) if order.delivery_price else 0.0
-    total_price = float(order.total_price) if order.total_price else 0.0
+    delivery_price = order.delivery_price if order.delivery_price else 0
+    total_price = order.total_price if order.total_price else 0
     delivery_address = locale.format_address(order.delivery_address, order.delivery_address_type) or no_addr_str
     user_comment = order.user_comment or no_comment_str
     manager_comment = order.manager_comment or no_comment_str
@@ -76,6 +148,9 @@ async def build_order_detail_text(
     else:
         payment_proof_info = no_proof_str
 
+    # caption под фото уже обычного сообщения → короче разделитель, чтобы линия не переносилась
+    separator = _SEPARATOR_SHORT if order.payment_proof_type == "photo" else _SEPARATOR_LONG
+
     card_template = locale.get_text("admin.orders.detail_card")
 
     text = card_template.format(
@@ -87,12 +162,13 @@ async def build_order_detail_text(
         delivery_address=delivery_address,
         items_block=items_block,
         user_comment=user_comment,
-        items_price=f"{items_price:.2f}",
-        delivery_price=f"{delivery_price:.2f}",
-        total_price=f"{total_price:.2f}",
+        items_price=format_price(items_price),
+        delivery_price=format_price(delivery_price),
+        total_price=format_price(total_price),
         currency=locale.get_currency_symbol(),
         payment_proof_info=payment_proof_info,
         manager_comment=manager_comment,
+        separator=separator,
     )
 
     return text, order

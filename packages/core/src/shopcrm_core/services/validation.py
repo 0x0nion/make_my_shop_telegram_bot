@@ -49,6 +49,7 @@ def validate_description(
 def validate_price(value: str, lang: str) -> Tuple[Optional[float], Optional[str]]:
     """Парсит и валидирует цену.
 
+    Допускает до 18 знаков после точки (crypto-friendly).
     :return: (price, error). price — float или None; error — локализованная
              ошибка или None.
     """
@@ -58,5 +59,9 @@ def validate_price(value: str, lang: str) -> Tuple[Optional[float], Optional[str
     except (ValueError, TypeError):
         return None, _t(lang, "admin.product_editor.invalid_price_value")
     if price <= 0:
+        return None, _t(lang, "admin.product_editor.invalid_price_value")
+    # Проверка: не более 18 знаков после точки
+    decimal_part = clean.split(".", 1)[1] if "." in clean else ""
+    if len(decimal_part) > 18:
         return None, _t(lang, "admin.product_editor.invalid_price_value")
     return price, None

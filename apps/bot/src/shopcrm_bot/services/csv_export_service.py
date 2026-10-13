@@ -8,6 +8,7 @@ import io
 from datetime import datetime
 
 from shopcrm_core.db.models.order import Order
+from shopcrm_core.utils import format_price
 
 # Заголовки CSV (порядок колонок = порядок полей в строке)
 CSV_HEADERS = [
@@ -48,7 +49,7 @@ def build_orders_csv(orders: list[Order]) -> str:
             "yes" if order.is_paid else "no",
             _format_items(order),
             sum(item.quantity for item in order.items or []),
-            f"{float(order.total_price):.2f}",
+            format_price(float(order.total_price)),
             order.delivery_address or "",
             order.user_comment or "",
         ])

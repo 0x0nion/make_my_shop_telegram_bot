@@ -20,7 +20,12 @@ class UserAccountMixin:
             selectinload(User.cart),
             selectinload(User.orders)
         ]
-        return await self._user_repo.get_by_id(user_id, options=options)
+        # populate_existing=True: всегда перечитываем корзину/заказы из БД,
+        # иначе после create_order_from_cart (корзина очищена) в identity map
+        # может остаться устаревшая коллекция и бейдж покажет неверное число.
+        return await self._user_repo.get_by_id(
+            user_id, options=options, populate_existing=True
+        )
 
     async def create_user(self, user_id: int) -> User:
         logger.info(f"Creating user id={user_id}")

@@ -94,12 +94,29 @@ async def render_shop_menu(
         for cat, loc_name in zip(db_categories, loc_names):
             category_names[cat.id] = loc_name or cat.name
 
+    # 3b. Параллельная подгрузка локализованных названий товаров (устранение N+1)
+    product_names: dict[int, str] = {}
+    if db_products:
+        prod_loc_names = await asyncio.gather(
+            *[
+                user_repo.get_locale_text(
+                    entity_type="product_name",
+                    entity_id=p.id,
+                    lang_code=user.language,
+                )
+                for p in db_products
+            ]
+        )
+        for p, loc_name in zip(db_products, prod_loc_names):
+            product_names[p.id] = loc_name or p.name
+
     # 4. Формирование итогового текста сообщения (единый формат с админом)
     text = build_catalog_text(
         locale=locale,
         title=shop_caption,
         description=category_text,
         products=db_products,
+        product_names=product_names,
     )
 
     # 5. Сборка клавиатуры через единый KeyboardFactory
@@ -109,6 +126,7 @@ async def render_shop_menu(
         current_cat_id=current_cat_id,
         parent_id=parent_id,
         category_names=category_names,
+        product_names=product_names,
     )
 
     # 6. Безопасный рендеринг через UIManager

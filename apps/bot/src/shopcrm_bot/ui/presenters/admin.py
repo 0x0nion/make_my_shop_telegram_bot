@@ -98,6 +98,18 @@ class AdminUI:
             )
             category_names[cat.id] = loc_name or cat.name
 
+        # 3b. Собираем локализованные названия товаров (entity_type='product_name')
+        product_names: dict[int, str] = {}
+        for product in db_products:
+            loc_name = await admin_repo.get_locale_text(
+                entity_id=product.id,
+                entity_type="product_name",
+                language_code=user.language,
+                use_temp=True,
+                admin_id=admin_id,
+            )
+            product_names[product.id] = loc_name or product.name
+
         # 4. Рендерим готовый экран и клавиатуру через Презентер
         text, reply_markup = CatalogMenuPresenter.render(
             locale=locale,
@@ -108,6 +120,7 @@ class AdminUI:
             category_names=category_names,
             category_description=category_description,
             root_description=root_description,
+            product_names=product_names,
         )
 
         # 5. Отдаем на отрисовку

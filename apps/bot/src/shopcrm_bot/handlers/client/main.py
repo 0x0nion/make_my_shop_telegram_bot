@@ -132,15 +132,11 @@ async def select_language(
         language=lang_code
     )
 
-    if callback.message:
-        try:
-            await callback.message.delete()
-        except Exception:
-            pass
-
+    # Редактируем сообщение на месте (без delete+send), чтобы убрать мигание.
+    # Если редактирование невозможно (сменилось медиа), UIManager сам удалит и перешлёт.
     await show_client_main_menu(
         event=callback,
         user_repo=user_repo,
         user=user,
-        message_id_to_edit=None,
+        message_id_to_edit=callback.message.message_id if callback.message else None,
     )

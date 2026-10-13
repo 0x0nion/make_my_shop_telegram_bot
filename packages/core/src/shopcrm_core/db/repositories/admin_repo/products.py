@@ -60,7 +60,25 @@ class AdminProductsMixin:
         if use_temp:
             data["admin_id"] = admin_id
 
-        return await repo.create(**data)
+        new_product = await repo.create_without_commit(**data)
+
+        # Сохраняем название в локальное хранилище для всех языков
+        # (единое значение по умолчанию, переводы по языкам — позже),
+        # аналогично паттерну категорий
+        locale_repo = BaseRepository(TempLocaleText if use_temp else LocaleText, self.session)
+        for lang_code in self.SUPPORTED_LANGUAGES:
+            loc_data = {
+                "entity_id": new_product.id,
+                "entity_type": "product_name",
+                "language_code": lang_code,
+                "text": name
+            }
+            if use_temp:
+                loc_data["admin_id"] = admin_id
+            await locale_repo.create_without_commit(**loc_data)
+
+        await self.session.commit()
+        return new_product
 
     async def delete_product(self, product_id: int, use_temp: bool = False, admin_id: int = None):
         logger.info(f"Deleting product id={product_id} (use_temp={use_temp}, admin_id={admin_id})")
@@ -94,3 +112,13 @@ class AdminProductsMixin:
         item = await self.get_product_by_id(product_id, use_temp=use_temp, admin_id=admin_id)
         if item:
             await repo.update(item.id, **{field: value})
+            # Держим локальное хранилище названия в актуальном состоянии
+            # (единое значение для всех языков)
+            if field == "name":
+                await self.set_locale_text_for_all_languages(
+                    entity_id=item.id,
+                    entity_type="product_name",
+                    text=value,
+                    use_temp=use_temp,
+                    admin_id=admin_id,
+                )

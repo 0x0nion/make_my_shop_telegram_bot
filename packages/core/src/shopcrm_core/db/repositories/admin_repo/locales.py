@@ -39,6 +39,43 @@ class AdminLocalesMixin:
             TempLocaleText.admin_id == admin_id
         )
 
+    async def set_locale_text_for_all_languages(
+            self,
+            entity_id: int,
+            entity_type: str,
+            text: str,
+            use_temp: bool = False,
+            admin_id: int = None
+    ):
+        """Upsert локализованного текста для всех поддерживаемых языков (один и тот же текст).
+
+        Используется при сохранении единого значения по умолчанию
+        (например, названия товара) до реализации переводов по языкам.
+        """
+        model = TempLocaleText if use_temp else LocaleText
+        repo = BaseRepository(model, self.session)
+        for lang_code in self.SUPPORTED_LANGUAGES:
+            conditions = [
+                model.entity_id == entity_id,
+                model.entity_type == entity_type,
+                model.language_code == lang_code,
+            ]
+            if use_temp:
+                conditions.append(model.admin_id == admin_id)
+            locale = await repo.get_one(*conditions)
+            if locale:
+                await repo.update(locale.id, text=text)
+            else:
+                data = {
+                    "entity_id": entity_id,
+                    "entity_type": entity_type,
+                    "language_code": lang_code,
+                    "text": text,
+                }
+                if use_temp:
+                    data["admin_id"] = admin_id
+                await repo.create(**data)
+
     async def update_temp_locale(
             self,
             entity_id: int,

@@ -21,6 +21,7 @@ from shopcrm_core.utils.retry import RetryConfig, retry_async
 from shopcrm_bot.config import config
 from shopcrm_bot.errors import register_error_handlers
 from shopcrm_bot.handlers import routers as all_routers
+from shopcrm_bot.middlewares.callback_answer import CallbackAnswerMiddleware
 from shopcrm_bot.middlewares.db import DbSessionMiddleware
 from shopcrm_bot.services.commands_service import build_commands
 
@@ -95,6 +96,8 @@ async def main():
     dp = Dispatcher(storage=_create_storage())
 
     dp.update.middleware(DbSessionMiddleware(session_pool=session_factory))
+    # Страховка от «часиков»: отвечает на callback, если хэндлер не ответил.
+    dp.callback_query.middleware(CallbackAnswerMiddleware())
 
     register_error_handlers(dp)
 

@@ -10,6 +10,7 @@ def build_catalog_text(
         title: str,
         description: str,
         products: list,
+        product_names: Optional[Dict[int, str]] = None,
 ) -> str:
     """Единый формат текста каталога для клиента и админа.
 
@@ -26,6 +27,9 @@ def build_catalog_text(
         ℹ️ {footer}
 
     Список товаров (и футер) добавляется только если товары есть.
+
+    :param product_names: словарь product_id -> локализованное название
+        (entity_type='product_name'); при отсутствии — fallback на product.name
     """
     parts = [title.strip()]
     if description and description.strip():
@@ -41,7 +45,7 @@ def build_catalog_text(
         currency = locale.get_currency_symbol(getattr(product, "currency", None))
         line = locale.get_text(
             "catalog.display.product_line",
-            name=getattr(product, "name", ""),
+            name=(product_names or {}).get(product.id) or getattr(product, "name", ""),
             price=f"{price:,.2f}",
             currency=currency,
         )
@@ -68,8 +72,13 @@ class CatalogMenuPresenter:
             category_names: Dict[int, str],
             category_description: Optional[str],
             root_description: Optional[str],
+            product_names: Optional[Dict[int, str]] = None,
     ) -> Tuple[str, InlineKeyboardMarkup]:
-        """Формирует готовый текст экрана и клавиатуру."""
+        """Формирует готовый текст экрана и клавиатуру.
+
+        :param product_names: словарь product_id -> локализованное название
+            (entity_type='product_name'); при отсутствии — fallback на product.name
+        """
 
         # 1. Определяем заголовок и описание
         if current_cat_id:
@@ -92,6 +101,7 @@ class CatalogMenuPresenter:
             title=title,
             description=description,
             products=db_products,
+            product_names=product_names,
         )
 
         # 3. Собираем клавиатуру
@@ -103,6 +113,7 @@ class CatalogMenuPresenter:
             parent_id=parent_id,
             category_names=category_names,
             has_description=has_description,
+            product_names=product_names,
         )
 
         return full_text, reply_markup

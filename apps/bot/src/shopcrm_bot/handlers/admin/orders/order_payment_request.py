@@ -8,6 +8,7 @@ from aiogram.types import CallbackQuery, Message
 
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
+from shopcrm_core.services.order_service import get_admin_order_product_names
 from shopcrm_bot.handlers.admin.orders.common import render_order_detail
 from shopcrm_bot.locales import Locale
 from shopcrm_core.constants import OrderStatus
@@ -60,6 +61,19 @@ async def _safe_edit_or_caption(message: Message, text: str) -> None:
         logger.error(f"Ошибка при редактировании сообщения {message.message_id}: {e}")
 
 
+async def _edit_and_delete_later(message: Message, text: str, delay: int = 3) -> None:
+    """Редактирует сообщение со статусом и удаляет его через delay секунд.
+
+    Запускается через asyncio.create_task, чтобы не блокировать хэндлер.
+    """
+    await _safe_edit_or_caption(message, text)
+    await asyncio.sleep(delay)
+    try:
+        await message.delete()
+    except Exception as e:
+        logger.error(f"Не удалось удалить сообщение {message.message_id}: {e}")
+
+
 # --- Хендлеры ---
 
 @admin_payment_request_router.callback_query(F.data.startswith("admin_order_request_payment:"))
@@ -90,10 +104,12 @@ async def process_admin_request_payment(
 
     locale = Locale(lang=client_lang)
 
+    product_names = await get_admin_order_product_names(admin_repo, order, client_lang)
     try:
         client_text = locale.format_order(
             order=order,
             template_key="client.order_payment_request_text",
+            product_names=product_names,
             payment_details=payment_details,
         )
     except KeyError as e:
@@ -188,16 +204,10 @@ async def process_approve_payment(
         except Exception as e:
             logger.error(f"Ошибка при отправке уведомления пользователю {client_tg_id}: {e}")
 
-    # 3. Обновление карточки админа и удаление через 3 секунды
+    # 3. Обновление карточки админа и удаление через 3 секунды (в фоне, без блокировки хэндлера)
     status_text = admin_locale.get_text("admin.orders.pay_status_accepted")
     if isinstance(callback.message, Message):
-        await _safe_edit_or_caption(callback.message, status_text)
-
-        await asyncio.sleep(3)
-        try:
-            await callback.message.delete()
-        except Exception as e:
-            logger.error(f"Не удалось удалить сообщение {callback.message.message_id}: {e}")
+        asyncio.create_task(_edit_and_delete_later(callback.message, status_text))
 
 
 @admin_payment_request_router.callback_query(F.data.startswith("admin_pay_reject:"))
@@ -229,10 +239,12 @@ async def process_reject_payment(
     raw_reject_msg = client_locale.get_text("client.user_payment_rejected_notification")
     reject_msg = raw_reject_msg.format(id=order_id) if raw_reject_msg != "XXX" else client_locale.get_text("admin.orders.client_rejected_fallback", id=order_id)
 
+    product_names = await get_admin_order_product_names(admin_repo, order, client_lang)
     try:
         payment_form_msg = client_locale.format_order(
             order=order,
             template_key="client.order_payment_request_text",
+            product_names=product_names,
             payment_details=payment_details,
         )
     except KeyError as e:
@@ -274,13 +286,7 @@ async def process_reject_payment(
 
     await callback.answer(admin_locale.get_text("admin.orders.payment_rejected_alert"), show_alert=False)
 
-    # 3. Обновление плашки у админа и ее удаление через 3 сек
+    # 3. Обновление плашки у админа и ее удаление через 3 сек (в фоне, без блокировки хэндлера)
     status_text = admin_locale.get_text("admin.orders.pay_status_rejected")
     if isinstance(callback.message, Message):
-        await _safe_edit_or_caption(callback.message, status_text)
-
-        await asyncio.sleep(3)
-        try:
-            await callback.message.delete()
-        except Exception as e:
-            logger.error(f"Не удалось удалить сообщение {callback.message.message_id}: {e}")
+        asyncio.create_task(_edit_and_delete_later(callback.message, status_text))

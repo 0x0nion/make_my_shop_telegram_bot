@@ -6,6 +6,7 @@ from datetime import datetime
 from shopcrm_core.db.models.cart import CartItem
 from shopcrm_core.db.models.order import Order
 from shopcrm_core.constants import OrderStatus
+from shopcrm_core.utils import format_price
 from shopcrm_bot.services.csv_export_service import (
     CSV_HEADERS,
     build_export_filename,
@@ -39,7 +40,7 @@ class TestBuildOrdersCsv:
         assert row["status"] == OrderStatus.PENDING.value
         assert row["is_paid"] == "no"
         assert row["items_count"] == "2"
-        assert row["total_price"] == f"{float(order.total_price):.2f}"
+        assert row["total_price"] == format_price(float(order.total_price))
         assert product_a.name in row["items"]
 
     async def test_csv_multiple_orders(self, repo, session, user_a, user_b, product_a):

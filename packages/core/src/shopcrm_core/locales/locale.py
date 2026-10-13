@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 from shopcrm_core.locales.utils import SafeDict
+from shopcrm_core.utils import format_price
 
 logger = logging.getLogger(__name__)
 
@@ -171,24 +172,34 @@ class Locale:
     # --- Форматирование заказов ---
 
     def format_order(
-        self, order, template_key: str = "client.user_checkout_confirm", **kwargs
+        self,
+        order,
+        template_key: str = "client.user_checkout_confirm",
+        product_names: Optional[Dict[int, str]] = None,
+        **kwargs
     ) -> str:
         """Универсальный метод форматирования любой карточки заказа / чека.
 
         template_key принимает как полный путь ("client.user_checkout_confirm"),
         так и корневой ключ ("user_checkout_confirm").
+
+        :param product_names: словарь product_id -> локализованное название
+            (entity_type='product_name'); при отсутствии — fallback на product.name
         """
         item_lines = []
-        items_price = 0.0
+        items_price = 0
 
         currency_sym = getattr(order, "currency_symbol", None) or self.get_currency_symbol()
 
         for idx, item in enumerate(getattr(order, "items", []) or [], start=1):
             product = getattr(item, "product", None)
-            product_name = product.name if product else self.get_text(
-                "admin.orders.deleted_product", product_id=getattr(item, "product_id", "?")
-            )
-            price = float(getattr(item, "price_at_purchase", 0.0) or 0.0)
+            if product:
+                product_name = (product_names or {}).get(product.id) or product.name
+            else:
+                product_name = self.get_text(
+                    "admin.orders.deleted_product", product_id=getattr(item, "product_id", "?")
+                )
+            price = getattr(item, "price_at_purchase", 0) or 0
             quantity = int(getattr(item, "quantity", 1) or 1)
             item_total = quantity * price
             items_price += item_total
@@ -203,7 +214,7 @@ class Locale:
                 self.get_text(
                     "admin.orders.item_line",
                     idx=idx, name=product_name, qty=quantity, unit=unit_str,
-                    price=price, currency=currency_sym, sum=item_total,
+                    price=format_price(price), currency=currency_sym, sum=format_price(item_total),
                 )
             )
 
@@ -225,11 +236,11 @@ class Locale:
         )
 
         total_price = (
-            float(order.total_price)
+            order.total_price
             if getattr(order, "total_price", None) is not None
             else items_price
         )
-        delivery_price = float(getattr(order, "delivery_price", 0.0) or 0.0)
+        delivery_price = getattr(order, "delivery_price", 0) or 0
 
         not_specified = self.get_text("client.order_not_specified")
         address = self.format_address(delivery_address, delivery_address_type) or not_specified
@@ -250,9 +261,9 @@ class Locale:
             "comment": comment,
             "created_at": created_at_str,
             "status": self.get_order_status_label(getattr(order, "status", None)),
-            "items_price": items_price,
-            "delivery_price": delivery_price,
-            "total_price": total_price,
+            "items_price": format_price(items_price),
+            "delivery_price": format_price(delivery_price),
+            "total_price": format_price(total_price),
             "currency": currency_sym,
         }
         context.update(kwargs)

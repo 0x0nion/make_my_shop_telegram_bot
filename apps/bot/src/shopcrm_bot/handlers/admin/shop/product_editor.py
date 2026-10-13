@@ -42,13 +42,25 @@ async def show_product_card(
 
     locale = Locale(lang=lang)
 
+    # Локализованное название товара (entity_type='product_name') с fallback на product.name
+    product_name = (
+        await admin_repo.get_locale_text(
+            entity_id=product_id,
+            entity_type="product_name",
+            language_code=lang,
+            use_temp=True,
+            admin_id=chat_id,
+        )
+        or product.name
+    )
+
     desc_val = product.description or locale.get_text("admin.product_editor.no_description")
     unit_val = get_unit_label(product.unit, lang=lang)
     currency_val = get_currency_symbol(getattr(product, "currency", None))
 
     text = locale.get_text("admin.product_editor.product_card_template")
     formatted_text = text.format(
-        name=product.name,
+        name=product_name,
         description=desc_val,
         price=product.price,
         currency=currency_val,

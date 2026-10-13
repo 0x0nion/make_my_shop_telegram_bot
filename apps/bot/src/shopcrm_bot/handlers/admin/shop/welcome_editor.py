@@ -159,16 +159,17 @@ async def process_welcome_text_input(
     menu_message_id = user_data.get("menu_message_id")
     lang = user.language
 
+    # Удаляем ввод админа до валидации, чтобы при ошибке он не остался в чате
+    try:
+        await message.delete()
+    except TelegramBadRequest:
+        pass
+
     error = validate_description(new_text, lang=lang)
     if error:
         err = await message.answer(error)
         asyncio.create_task(self_destruct(err))
         return
-
-    try:
-        await message.delete()
-    except TelegramBadRequest:
-        pass
 
     for lang_code in admin_repo.SUPPORTED_LANGUAGES:
         existing = await admin_repo.get_locale_text(
@@ -273,6 +274,13 @@ async def process_welcome_photo_invalid(message: Message, user: User):
     """Обработка неверного ввода (если прислали не фото)."""
     lang = user.language
     locale = Locale(lang=lang)
+
+    # Удаляем неверный ввод, чтобы он не остался в чате
+    try:
+        await message.delete()
+    except TelegramBadRequest:
+        pass
+
     err_msg = locale.get_text("admin.welcome_editor.not_photo")
     err = await message.answer(err_msg)
     asyncio.create_task(self_destruct(err))

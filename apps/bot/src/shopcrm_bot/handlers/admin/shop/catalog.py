@@ -1,6 +1,10 @@
 # handlers/admin/shop/catalog.py
+import asyncio
 import logging
+from contextlib import suppress
+
 from aiogram import F, Router
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
@@ -289,10 +293,14 @@ async def process_add_category(
     parent_id = user_data.get("parent_id")
     menu_message_id = user_data.get("menu_message_id", None)
 
+    # Удаляем ввод админа до валидации, чтобы при ошибке он не остался в чате
+    with suppress(TelegramBadRequest):
+        await message.delete()
+
     error = validate_name(category_name, lang=user.language)
     if error:
         err = await message.answer(error)
-        await self_destruct(message=err, seconds=3)
+        asyncio.create_task(self_destruct(message=err, seconds=3))
         return
 
     await admin_repo.create_category(
@@ -302,7 +310,6 @@ async def process_add_category(
         admin_id=message.from_user.id,
     )
     await state.clear()
-    await self_destruct(message=message, seconds=0)
 
     await AdminUI.show_shop_catalog_menu(
         event=message,

@@ -4,6 +4,8 @@ from aiogram.types import CallbackQuery
 
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
+from shopcrm_core.services.order_service import get_admin_order_product_names
+from shopcrm_core.utils import format_price
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.ui import UIManager
 
@@ -35,17 +37,19 @@ async def render_edit_order_items_ui(
 
     currency = locale.get_currency_symbol()
 
+    # Локализованные названия товаров (entity_type='product_name') с fallback на product.name
+    product_names = await get_admin_order_product_names(admin_repo, order, lang)
+
     # 1. Формируем текстовый список товаров
     items_lines = []
     if order.items:
         for idx, item in enumerate(order.items, start=1):
-            prod_name = (
-                item.product.name
-                if item.product
-                else locale.get_text("admin.orders.deleted_product", product_id=item.product_id)
-            )
+            if item.product:
+                prod_name = product_names.get(item.product_id) or item.product.name
+            else:
+                prod_name = locale.get_text("admin.orders.deleted_product", product_id=item.product_id)
             unit = locale.get_unit(getattr(item.product, "unit", None))
-            price = float(item.price_at_purchase)
+            price = item.price_at_purchase
             qty = item.quantity
             item_sum = qty * price
 
@@ -56,8 +60,8 @@ async def render_edit_order_items_ui(
                     name=prod_name,
                     qty=qty,
                     unit=unit,
-                    price=price,
-                    sum=item_sum,
+                    price=format_price(price),
+                    sum=format_price(item_sum),
                     currency=currency,
                 )
             )
@@ -73,13 +77,15 @@ async def render_edit_order_items_ui(
         f"{locale.get_text('admin.orders.items_title', id=order.id)}\n\n"
         f"{locale.get_text('admin.orders.items_current')}\n"
         f"{items_block}\n\n"
-        f"{locale.get_text('admin.orders.items_delivery', price=f'{delivery_price:.2f}', currency=currency)}\n"
-        f"{locale.get_text('admin.orders.items_total', price=f'{total_price:.2f}', currency=currency)}\n\n"
+        f"{locale.get_text('admin.orders.items_delivery', price=format_price(delivery_price), currency=currency)}\n"
+        f"{locale.get_text('admin.orders.items_total', price=format_price(total_price), currency=currency)}\n\n"
         f"{locale.get_text('admin.orders.items_hint')}"
     )
 
     # 3. Генерируем клавиатуру с кнопками
-    reply_markup = kb.get_order_items_editor_kb(order=order, status=status, page=page)
+    reply_markup = kb.get_order_items_editor_kb(
+        order=order, status=status, page=page, product_names=product_names
+    )
 
     await UIManager.show(
         event=callback,

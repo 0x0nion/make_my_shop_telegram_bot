@@ -13,11 +13,14 @@ class User(Base):
     role: Mapped[str] = mapped_column(String, default='client')
 
     # Добавляем lazy="selectin" для автоматической асинхронной подгрузки
+    # order_by по id гарантирует стабильный порядок (порядок добавления),
+    # чтобы при in-place редактировании сообщения кнопки не «перемешивались»
     cart: Mapped[list["CartItem"]] = relationship(
         "CartItem",
         backref="user",
         cascade="all, delete-orphan",
-        lazy="selectin"  # <--- Добавь этот параметр
+        lazy="selectin",
+        order_by="CartItem.id",
     )
 
     orders: Mapped[list["Order"]] = relationship(

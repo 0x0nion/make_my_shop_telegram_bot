@@ -64,6 +64,28 @@ class TestCreateOrderFromCart:
         )
         assert remaining.scalars().all() == []
 
+    async def test_cart_badge_reset_after_order(self, repo, session, user_a, product_a, product_b):
+        """Регрессия: после заказа get_user_with_cart видит пустую корзину.
+
+        Без expire_all() в create_order_from_cart объект User остаётся в
+        identity map со старой cart-коллекцией (expire_on_commit=False),
+        и бейдж корзины показывал неверное количество после заказа.
+        """
+        session.add_all([
+            CartItem(user_id=user_a.id, product_id=product_a.id, quantity=2),
+            CartItem(user_id=user_a.id, product_id=product_b.id, quantity=1),
+        ])
+        await session.commit()
+
+        await repo.create_order_from_cart(user_id=user_a.id)
+
+        # Точный сценарий checkout_order: перечитываем пользователя с корзиной
+        updated_user = await repo.get_user_with_cart(user_id=user_a.id)
+
+        assert updated_user is not None
+        assert len(updated_user.cart) == 0
+        assert updated_user.active_orders_count == 1
+
     async def test_order_status_is_pending(self, repo, session, user_a, product_a):
         """Новый заказ: status=pending, is_paid=False."""
         session.add(CartItem(user_id=user_a.id, product_id=product_a.id, quantity=1))

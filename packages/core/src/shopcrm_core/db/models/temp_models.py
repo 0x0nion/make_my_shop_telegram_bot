@@ -24,7 +24,7 @@ class TempProduct(Base):
     original_id: Mapped[Optional[int]] = mapped_column(nullable=True)
     name: Mapped[str] = mapped_column(String(255))
     description: Mapped[Optional[str]] = mapped_column(Text)
-    price: Mapped[float] = mapped_column(Numeric(10, 2))
+    price: Mapped[float] = mapped_column(Numeric(28, 18))
     unit: Mapped[str] = mapped_column(String(20), default=DEFAULT_UNIT.value, nullable=False)
     image_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, server_default="true", nullable=False)

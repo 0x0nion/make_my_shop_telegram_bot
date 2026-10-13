@@ -20,12 +20,20 @@ class BaseRepository(Generic[ModelType]):
     async def get_by_id(
         self,
         entity_id: Any,
-        options: Sequence[Any] | None = None
+        options: Sequence[Any] | None = None,
+        populate_existing: bool = False
     ) -> ModelType | None:
-        """Получить запись по ID c поддержкой joinedload/selectinload."""
+        """Получить запись по ID c поддержкой joinedload/selectinload.
+
+        populate_existing=True принудительно перезаписывает уже загруженные
+        объекты из identity map свежими данными из БД (нужно, чтобы после
+        изменения связанных записей не читать устаревший кэш сессии).
+        """
         stmt = select(self.model).where(self.model.id == entity_id)
         if options:
             stmt = stmt.options(*options)
+        if populate_existing:
+            stmt = stmt.execution_options(populate_existing=True)
         result = await self.session.execute(stmt)
         return result.unique().scalar_one_or_none()
 

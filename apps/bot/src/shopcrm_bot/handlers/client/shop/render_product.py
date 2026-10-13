@@ -1,10 +1,7 @@
 # handlers/client/shop/render_product.py
-import asyncio
 from typing import Optional
 
 from aiogram import Bot
-from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import Message
 
 from shopcrm_core.db.repositories.shop_repo import ShopRepository
 from shopcrm_bot.config import config
@@ -13,8 +10,12 @@ from shopcrm_bot.ui import UIManager
 from shopcrm_core.logging import logger
 
 
-def format_product_from_template(product, locale: Locale) -> str:
-    """Динамический сборщик текста карточки товара с использованием локали."""
+def format_product_from_template(product, locale: Locale, name: Optional[str] = None) -> str:
+    """Динамический сборщик текста карточки товара с использованием локали.
+
+    :param name: локализованное название товара (entity_type='product_name');
+        при отсутствии — fallback на product.name
+    """
     unit_val = locale.get_unit(getattr(product, "unit", None))
     desc_val = getattr(product, "description", None) or locale.get_text("client.no_description")
 
@@ -24,7 +25,7 @@ def format_product_from_template(product, locale: Locale) -> str:
     price_val = float(getattr(product, "price", 0.0) or 0.0)
 
     data = {
-        "name": getattr(product, "name", ""),
+        "name": name or getattr(product, "name", ""),
         "description": desc_val,
         "price": price_val,
         "currency": currency_val,
@@ -34,19 +35,11 @@ def format_product_from_template(product, locale: Locale) -> str:
     return locale.get_text("client.product_template", **data)
 
 
-async def self_destruct(message: Message, seconds: int = 3):
-    """Безопасно удаляет сообщение с ошибкой через заданное время."""
-    await asyncio.sleep(seconds)
-    try:
-        await message.delete()
-    except TelegramBadRequest:
-        pass
-
-
 async def show_product_card(
     chat_id: int,
     product_id: int,
     shop_repo: ShopRepository,
+    user_repo,
     bot: Bot,
     lang: str,
     cart_item: int = 0,
@@ -72,7 +65,17 @@ async def show_product_card(
     locale = Locale(lang)
     kb_manager = locale.keyboards
 
-    text = format_product_from_template(product=product, locale=locale)
+    # Локализованное название товара (entity_type='product_name') с fallback на product.name
+    product_name = (
+        await user_repo.get_locale_text(
+            entity_type="product_name",
+            entity_id=current_id,
+            lang_code=lang,
+        )
+        or product.name
+    )
+
+    text = format_product_from_template(product=product, locale=locale, name=product_name)
     manager_url = config.MANAGER_URL or None
 
     reply_markup = kb_manager.get_product_card_kb(
