@@ -4,6 +4,20 @@
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-10-21
+
+### Added
+
+- Публичный API встраивания админ-секции: `shopcrm_bot.embedding`
+  (`extract_admin_group_router`, `is_admin_shop_callback`,
+  `ADMIN_SHOP_CALLBACK_PREFIXES`) — для переиспользования редактора
+  магазина во внешних приложениях (hosting-платформа) без запуска
+  core-бота
+- README: секция «Встраивание админ-секции во внешнее приложение»
+  (DI-контракт, callback-гейтинг, FSM-состояния)
+- Тесты: `tests/test_embedding.py` (26 тестов: detach/идемпотентность
+  роутера, контракт callback-префиксов)
+
 ## [0.1.4] - 2026-10-13
 
 ### Added
