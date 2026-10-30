@@ -16,8 +16,8 @@ class DbSessionMiddleware(BaseMiddleware):
     def __init__(self, session_pool: async_sessionmaker, admin_ids: Optional[List[int]] = None):
         super().__init__()
         self.session_pool = session_pool
-        # Мульти-тенантовый хостинг: хостер передаёт админов конкретного
-        # тенанта; self-hosted использует config.ADMIN_ID.
+        # Опциональные админы, переданные при инициализации;
+        # по умолчанию используется config.ADMIN_ID.
         self._admin_ids = admin_ids
 
     async def __call__(
@@ -46,7 +46,7 @@ class DbSessionMiddleware(BaseMiddleware):
             data["shop_repo"] = shop_repo
             data["admin_service"] = admin_shop_service
             # Админы для контроля доступа и уведомлений:
-            # тенант-специфичные (хостинг) или из конфига (self-hosted).
+            # переданные при инициализации или из конфига.
             data["admin_ids"] = self._admin_ids if self._admin_ids is not None else config.ADMIN_ID
 
             db_user = None

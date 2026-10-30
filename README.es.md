@@ -73,14 +73,10 @@ El bot arranca en modo long polling. Para detenerlo — `Ctrl+C`.
 
 ## Esquema de la BD
 
-- **Producción / servicios externos** — el esquema se gestiona con migraciones: `alembic upgrade head`.
+- **Producción** — el esquema se gestiona con migraciones: `alembic upgrade head`.
   La cadena de migraciones está sincronizada con los modelos de `shopcrm_core` (autogenerate).
 - **Desarrollo local** — con `DEBUG=true` el bot crea/amplía las tablas
   él mismo mediante `create_all` (las migraciones no son obligatorias).
-- **Servicio externo** (panel de administración, etc.) — `shopcrm-core` se usa como
-  biblioteca: el motor y las sesiones se crean con las fábricas de
-  `shopcrm_core.db.connection`, y los metadatos para tus propias migraciones —
-  mediante `shopcrm_core.db.get_metadata()`.
 
 ## Licencia
 

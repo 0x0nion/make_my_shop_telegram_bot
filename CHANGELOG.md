@@ -4,20 +4,6 @@
 
 ## [Unreleased]
 
-## [0.1.5] - 2026-10-21
-
-### Added
-
-- Публичный API встраивания админ-секции: `shopcrm_bot.embedding`
-  (`extract_admin_group_router`, `is_admin_shop_callback`,
-  `ADMIN_SHOP_CALLBACK_PREFIXES`) — для переиспользования редактора
-  магазина во внешних приложениях (hosting-платформа) без запуска
-  core-бота
-- README: секция «Встраивание админ-секции во внешнее приложение»
-  (DI-контракт, callback-гейтинг, FSM-состояния)
-- Тесты: `tests/test_embedding.py` (26 тестов: detach/идемпотентность
-  роутера, контракт callback-префиксов)
-
 ## [0.1.4] - 2026-10-13
 
 ### Added
@@ -139,9 +125,8 @@
 ### Changed
 
 - Администраторы теперь передаются через workflow data (`admin_ids`):
-  `DbSessionMiddleware` принимает опциональный параметр `admin_ids`
-  (нужен для мульти-тенантового хостинга). Self-hosted поведение не
-  изменилось — по умолчанию используется `config.ADMIN_ID`
+  `DbSessionMiddleware` принимает опциональный параметр `admin_ids`;
+  по умолчанию используется `config.ADMIN_ID`
 - `IsAdminFilter`, уведомления об оплате/отмене и ответ клиента
   администратору используют инжектированные `admin_ids`
   (фолбэк на `config.ADMIN_ID`)

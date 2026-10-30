@@ -11,8 +11,8 @@ from shopcrm_core.db.models.base import Base
 def create_engine(database_url: str, echo: bool = False) -> AsyncEngine:
     """Создаёт асинхронный движок SQLAlchemy для заданного DATABASE_URL.
 
-    Фабрика: позволяет консьюмеру (self-hosted бот, хостинг-бот) создавать
-    движок под свою БД без модульных синглтонов.
+    Фабрика: позволяет консьюмеру создавать движок под свою БД
+    без модульных синглтонов.
     """
     return create_async_engine(database_url, echo=echo)
 

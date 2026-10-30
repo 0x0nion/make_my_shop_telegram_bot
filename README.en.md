@@ -73,14 +73,10 @@ The bot starts in long polling mode. To stop it — `Ctrl+C`.
 
 ## DB Schema
 
-- **Production / external services** — the schema is managed by migrations: `alembic upgrade head`.
+- **Production** — the schema is managed by migrations: `alembic upgrade head`.
   The migration chain is in sync with the `shopcrm_core` models (autogenerate).
 - **Local development** — with `DEBUG=true` the bot creates/extends the tables
   itself via `create_all` (migrations are not required).
-- **External service** (admin panel, etc.) — `shopcrm-core` is used as a
-  library: the engine and sessions are created by the factories from
-  `shopcrm_core.db.connection`, and the metadata for your own migrations —
-  via `shopcrm_core.db.get_metadata()`.
 
 ## License
 
