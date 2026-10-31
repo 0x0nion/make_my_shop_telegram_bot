@@ -82,13 +82,18 @@ class UIManager:
 
         # 2. Отправка нового сообщения (если редактирование не требовалось или не удалось)
         if photo:
-            return await bot.send_photo(
-                chat_id=chat_id,
-                photo=photo,
-                caption=text,
-                reply_markup=reply_markup,
-                parse_mode="HTML",
-            )
+            try:
+                return await bot.send_photo(
+                    chat_id=chat_id,
+                    photo=photo,
+                    caption=text,
+                    reply_markup=reply_markup,
+                    parse_mode="HTML",
+                )
+            except TelegramBadRequest as e:
+                # Фото недоступно (например, file ID принадлежит другому боту) —
+                # отправляем то же сообщение без фото, чтобы UI не «пропал».
+                logger.warning(f"[UI] Cannot send photo ({e}). Falling back to text message.")
 
         return await bot.send_message(
             chat_id=chat_id,

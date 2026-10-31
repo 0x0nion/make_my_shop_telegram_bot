@@ -2,6 +2,7 @@
 import logging
 
 from aiogram import Bot
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import InlineKeyboardMarkup
 
 from shopcrm_bot.config import config as app_config
@@ -52,12 +53,25 @@ async def notify_admins_about_payment(
             reply_markup = get_payment_verify_kb(order_id, lang=admin_lang)
 
             if order.payment_proof_type == PaymentProofType.PHOTO.value:
-                await bot.send_photo(
-                    chat_id=admin_id,
-                    photo=order.payment_proof,
-                    caption=caption,
-                    reply_markup=reply_markup,
-                )
+                try:
+                    await bot.send_photo(
+                        chat_id=admin_id,
+                        photo=order.payment_proof,
+                        caption=caption,
+                        reply_markup=reply_markup,
+                    )
+                except TelegramBadRequest as e:
+                    # Фото чека недоступно (например, file ID принадлежит другому боту) —
+                    # отправляем уведомление текстом, чтобы админ его не потерял.
+                    logger.warning(
+                        f"Не удалось отправить фото чека заказа #{order_id} админу {admin_id}: {e}. "
+                        f"Отправляю уведомление текстом."
+                    )
+                    await bot.send_message(
+                        chat_id=admin_id,
+                        text=caption,
+                        reply_markup=reply_markup,
+                    )
             elif order.payment_proof_type == PaymentProofType.DOCUMENT.value:
                 await bot.send_document(
                     chat_id=admin_id,
