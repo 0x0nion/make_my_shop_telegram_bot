@@ -675,15 +675,10 @@
         "en": "Start shop text",
         "es": "Texto de apertura de la tienda"
       },
-      "product_template": {
-        "ru": "<b>{name}</b>\n\n<i>{description}</i>\n\n<b>Цена:</b> {price} {currency} / {unit}",
-        "en": "<b>{name}</b>\n\n<i>{description}</i>\n\n<b>Price:</b> {price} {currency} / {unit}",
-        "es": "<b>{name}</b>\n\n<i>{description}</i>\n\n<b>Precio:</b> {price} {currency} / {unit}"
-      },
-      "no_description": {
-        "ru": "Описание отсутствует",
-        "en": "No description available",
-        "es": "Sin descripción"
+      "product_price_line": {
+        "ru": "<b>Цена:</b> {price} {currency} / {unit}",
+        "en": "<b>Price:</b> {price} {currency} / {unit}",
+        "es": "<b>Precio:</b> {price} {currency} / {unit}"
       },
       "product_added_to_cart": {
         "ru": "🛒 Товар добавлен в корзину!",
@@ -725,45 +720,15 @@
         "en": "🛒 <b>Your cart is empty.</b>",
         "es": "🛒 <b>Tu carrito está vacío.</b>"
       },
-      "cart_title": {
-        "ru": "🛒 <b>Корзина покупок:</b>\n\n",
-        "en": "🛒 <b>Shopping Cart:</b>\n\n",
-        "es": "🛒 <b>Carrito de compras:</b>\n\n"
-      },
-      "cart_item_line": {
-        "ru": "• {name} — {quantity} {unit} x {price} {currency} = {item_total} {currency}\n",
-        "en": "• {name} — {quantity} {unit} x {price} {currency} = {item_total} {currency}\n",
-        "es": "• {name} — {quantity} {unit} x {price} {currency} = {item_total} {currency}\n"
-      },
-      "cart_summary_subtotal": {
-        "ru": "\n💰 <b>Товары:</b> {subtotal} {currency}\n",
-        "en": "\n💰 <b>Subtotal:</b> {subtotal} {currency}\n",
-        "es": "\n💰 <b>Productos:</b> {subtotal} {currency}\n"
-      },
-      "cart_summary_delivery": {
-        "ru": "🚚 <b>Доставка:</b> {delivery} {currency}\n",
-        "en": "🚚 <b>Delivery:</b> {delivery} {currency}\n",
-        "es": "🚚 <b>Envío:</b> {delivery:} {currency}\n"
-      },
-      "cart_summary_total": {
-        "ru": "💵 <b>Итого:</b> {total} {currency}\n\n",
-        "en": "💵 <b>Total:</b> {total} {currency}\n\n",
-        "es": "💵 <b>Total:</b> {total} {currency}\n\n"
-      },
-      "cart_address_label": {
-        "ru": "📍 <b>Адрес:</b> {address}\n",
-        "en": "📍 <b>Address:</b> {address}\n",
-        "es": "📍 <b>Dirección:</b> {address}\n"
+      "cart_template": {
+        "ru": "🛒 <b>Корзина</b>\n\n{info_block}🛒 <b>Состав корзины:</b>\n{items}\n\n💰 <b>Расчёт стоимости:</b>\n🛒 Товары: {items_price} {currency}\n🚚 Доставка: {delivery_price} {currency}\n💵 Итого к оплате: <b>{total_price} {currency}</b>",
+        "en": "🛒 <b>Cart</b>\n\n{info_block}🛒 <b>Cart Items:</b>\n{items}\n\n💰 <b>Cost Breakdown:</b>\n🛒 Items: {items_price} {currency}\n🚚 Delivery: {delivery_price} {currency}\n💵 Total to Pay: <b>{total_price} {currency}</b>",
+        "es": "🛒 <b>Carrito</b>\n\n{info_block}🛒 <b>Artículos del Carrito:</b>\n{items}\n\n💰 <b>Desglose de Costos:</b>\n🛒 Artículos: {items_price} {currency}\n🚚 Envío: {delivery_price} {currency}\n💵 Total a Pagar: <b>{total_price} {currency}</b>"
       },
       "cart_address_not_specified": {
         "ru": "Не указан",
         "en": "Not specified",
         "es": "No especificado"
-      },
-      "cart_comment_label": {
-        "ru": "📝 <b>Комментарий:</b> {comment}\n",
-        "en": "📝 <b>Comment:</b> {comment}\n",
-        "es": "📝 <b>Comentario:</b> {comment}\n"
       },
       "cart_comment_not_specified": {
         "ru": "Отсутствует",
@@ -1095,10 +1060,15 @@
           "en": "📁 <b>Category not found</b>",
           "es": "📁 <b>Categoría no encontrada</b>"
         },
+        "products_header": {
+          "ru": "🛒 <b>Товары:</b>",
+          "en": "🛒 <b>Products:</b>",
+          "es": "🛒 <b>Productos:</b>"
+        },
         "product_line": {
-          "ru": "🔹 {name} - {price} {currency} / шт.",
-          "en": "🔹 {name} - {price} {currency} / unit",
-          "es": "🔹 {name} - {price} {currency} / unidad"
+          "ru": "{idx}. <b>{name}</b> — {price} {currency} / {unit}",
+          "en": "{idx}. <b>{name}</b> — {price} {currency} / {unit}",
+          "es": "{idx}. <b>{name}</b> — {price} {currency} / {unit}"
         },
         "footer": {
           "ru": "ℹ️ Выберите категорию или товар.",

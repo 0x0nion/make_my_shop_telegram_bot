@@ -199,7 +199,11 @@ class Locale:
                 product_name = self.get_text(
                     "admin.orders.deleted_product", product_id=getattr(item, "product_id", "?")
                 )
-            price = getattr(item, "price_at_purchase", 0) or 0
+            price = getattr(item, "price_at_purchase", None)
+            if price is None:
+                # Позиции корзины не имеют price_at_purchase — берём текущую цену товара
+                price = float(getattr(product, "price", 0) or 0) if product else 0
+            price = price or 0
             quantity = int(getattr(item, "quantity", 1) or 1)
             item_total = quantity * price
             items_price += item_total

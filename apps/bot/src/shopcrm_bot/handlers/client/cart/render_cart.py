@@ -1,13 +1,12 @@
 # handlers/client/cart/render_cart.py
 import asyncio
+from types import SimpleNamespace
 from typing import Union
 
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from shopcrm_core.db.repositories.user_repo import UserRepository
-from shopcrm_core.locales.currencies import DEFAULT_CURRENCY
-from shopcrm_core.utils import format_price
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.ui import UIManager
 
@@ -77,60 +76,38 @@ async def render_cart(
             item.product.name if item.product else ""
         )
 
-    subtotal = 0.0
-    text_blocks = []
-
-    # Заголовок
-    text_blocks.append(locale.get_text("client.cart_title"))
-
-    # Символ валюты
-    currency = locale.get_currency_symbol(DEFAULT_CURRENCY)
-
-    # Позиции
-    for item in user.cart:
-        if not item.product:
-            continue
-
-        price = float(getattr(item.product, "price", 0.0) or 0.0)
-        quantity = int(getattr(item, "quantity", 1) or 1)
-        item_total = price * quantity
-        subtotal += item_total
-
-        product_name = product_names.get(item.product_id) or getattr(item.product, "name", "")
-        unit_raw = getattr(item.product, "unit", None)
-        unit_val = locale.get_unit(unit_raw)
-
-        line = locale.get_text(
-            "client.cart_item_line",
-            name=product_name,
-            quantity=quantity,
-            price=format_price(price),
-            item_total=format_price(item_total),
-            unit=unit_val,
-            currency=currency,
-        )
-        text_blocks.append(line)
-
-    # Итоговая сумма
-    summary_text = locale.get_text(
-        "client.cart_summary_subtotal",
-        subtotal=format_price(subtotal),
-        currency=currency,
+    # 2b. Блок «адрес + комментарий»: в корзине это форма заполнения,
+    #     поэтому строки всегда присутствуют (с плейсхолдером, если не заполнены)
+    addr_text = (
+        locale.format_address(address, addr_type)
+        if address
+        else locale.get_text("client.cart_address_not_specified")
     )
-    text_blocks.append(summary_text)
+    comm_text = comment or locale.get_text("client.cart_comment_not_specified")
+    info_block = (
+        f"{locale.get_text('client.order_delivery_address_label')} {addr_text}\n"
+        f"{locale.get_text('client.order_comment_label')} {comm_text}\n\n"
+    )
 
-    # Адрес
-    addr_text = locale.format_address(address, addr_type) if address else locale.get_text("client.cart_address_not_specified")
-    addr_label = locale.get_text("client.cart_address_label", address=addr_text)
-    text_blocks.append(addr_label)
-
-    # Комментарий
-    comm_text = comment if comment else locale.get_text("client.cart_comment_not_specified")
-    comm_label = locale.get_text("client.cart_comment_label", comment=comm_text)
-    text_blocks.append(comm_label)
-
-    # Формируем итоговый текст с правильными переносами
-    text = "\n".join(text_blocks)
+    # 2c. Единая карточка (тот же format_order, что и заказ):
+    #     позиции корзины не имеют price_at_purchase — цена берется из product.price
+    cart_order = SimpleNamespace(
+        id=None,
+        items=user.cart,
+        total_price=None,
+        delivery_price=0,
+        delivery_address=address,
+        delivery_address_type=addr_type,
+        user_comment=comment,
+        created_at=None,
+        status=None,
+    )
+    text = locale.format_order(
+        cart_order,
+        template_key="client.cart_template",
+        product_names=product_names,
+        info_block=info_block,
+    )
 
     markup = kb_manager.get_cart_kb(cart_items=user.cart, product_names=product_names)
 

@@ -1,9 +1,6 @@
 from typing import Dict, Optional, Tuple, Any
 from aiogram.types import InlineKeyboardMarkup
 
-# Единый разделитель списка товаров в каталоге (клиент и админ).
-_CATALOG_SEPARATOR = "─" * 15
-
 
 def build_catalog_text(
         locale,
@@ -14,18 +11,18 @@ def build_catalog_text(
 ) -> str:
     """Единый формат текста каталога для клиента и админа.
 
-    Формат:
+    Формат (компактный список, как «Состав заказа», без разделительных линий):
         {title}
 
         {description}
 
-        ───────────────
+        🛒 <b>Товары:</b>
+        1. <b>{name}</b> — {price} {currency} / {unit}
+        2. <b>{name}</b> — {price} {currency} / {unit}
 
-        🔹 {name} - {price} {currency} / шт.
-
-        ───────────────
         ℹ️ {footer}
 
+    Описание категории показывается только если оно заполнено.
     Список товаров (и футер) добавляется только если товары есть.
 
     :param product_names: словарь product_id -> локализованное название
@@ -40,23 +37,23 @@ def build_catalog_text(
         return base_text
 
     lines = []
-    for product in products:
+    for idx, product in enumerate(products, start=1):
         price = float(getattr(product, "price", 0.0) or 0.0)
         currency = locale.get_currency_symbol(getattr(product, "currency", None))
+        unit_val = locale.get_unit(getattr(product, "unit", None))
         line = locale.get_text(
             "catalog.display.product_line",
+            idx=idx,
             name=(product_names or {}).get(product.id) or getattr(product, "name", ""),
             price=f"{price:,.2f}",
             currency=currency,
+            unit=unit_val,
         )
         lines.append(line)
 
-    products_text = "\n\n".join(lines)
+    products_header = locale.get_text("catalog.display.products_header")
     footer = locale.get_text("catalog.display.footer")
-    return (
-        f"{base_text}\n\n{_CATALOG_SEPARATOR}\n\n"
-        f"{products_text}\n\n{_CATALOG_SEPARATOR}\n{footer}"
-    )
+    return f"{base_text}\n\n{products_header}\n" + "\n".join(lines) + f"\n\n{footer}"
 
 
 class CatalogMenuPresenter:

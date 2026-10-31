@@ -13,26 +13,26 @@ from shopcrm_core.logging import logger
 def format_product_from_template(product, locale: Locale, name: Optional[str] = None) -> str:
     """Динамический сборщик текста карточки товара с использованием локали.
 
+    Описание показывается только если оно заполнено — без плейсхолдера.
+
     :param name: локализованное название товара (entity_type='product_name');
         при отсутствии — fallback на product.name
     """
-    unit_val = locale.get_unit(getattr(product, "unit", None))
-    desc_val = getattr(product, "description", None) or locale.get_text("client.no_description")
+    parts = [f"<b>{name or getattr(product, 'name', '')}</b>"]
 
-    currency_code = getattr(product, "currency", None)
-    currency_val = locale.get_currency_symbol(currency_code)
+    description = getattr(product, "description", None)
+    if description and description.strip():
+        parts.append(f"<i>{description.strip()}</i>")
 
-    price_val = float(getattr(product, "price", 0.0) or 0.0)
-
-    data = {
-        "name": name or getattr(product, "name", ""),
-        "description": desc_val,
-        "price": price_val,
-        "currency": currency_val,
-        "unit": unit_val,
-    }
-
-    return locale.get_text("client.product_template", **data)
+    parts.append(
+        locale.get_text(
+            "client.product_price_line",
+            price=f"{float(getattr(product, 'price', 0.0) or 0.0):,.2f}",
+            currency=locale.get_currency_symbol(getattr(product, "currency", None)),
+            unit=locale.get_unit(getattr(product, "unit", None)),
+        )
+    )
+    return "\n\n".join(parts)
 
 
 async def show_product_card(
