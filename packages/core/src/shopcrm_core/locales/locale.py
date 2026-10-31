@@ -222,18 +222,19 @@ class Locale:
 
         delivery_address = getattr(order, "delivery_address", None)
         delivery_address_type = getattr(order, "delivery_address_type", None)
-        address_block = (
-            f"📍 {self.get_text('client.order_delivery_label')} {self.format_address(delivery_address, delivery_address_type)}\n\n"
-            if delivery_address
-            else ""
-        )
-
         user_comment = getattr(order, "user_comment", None)
-        comment_block = (
-            f"📝 {self.get_text('client.order_comment_label')} {user_comment}\n\n"
-            if user_comment
-            else ""
-        )
+
+        # Единый блок «адрес + комментарий»: показываем только заполненные поля,
+        # чтобы карточка заказа выглядела одинаково на всех клиентских экранах.
+        info_lines = []
+        if delivery_address:
+            info_lines.append(
+                f"{self.get_text('client.order_delivery_address_label')} "
+                f"{self.format_address(delivery_address, delivery_address_type)}"
+            )
+        if user_comment:
+            info_lines.append(f"{self.get_text('client.order_comment_label')} {user_comment}")
+        info_block = "\n".join(info_lines) + "\n\n" if info_lines else ""
 
         total_price = (
             order.total_price
@@ -241,10 +242,6 @@ class Locale:
             else items_price
         )
         delivery_price = getattr(order, "delivery_price", 0) or 0
-
-        not_specified = self.get_text("client.order_not_specified")
-        address = self.format_address(delivery_address, delivery_address_type) or not_specified
-        comment = user_comment or not_specified
 
         created_at = getattr(order, "created_at", None)
         created_at_str = created_at.strftime("%d.%m.%Y %H:%M") if created_at else "—"
@@ -255,10 +252,7 @@ class Locale:
             "id": getattr(order, "id", "N/A"),
             "order_id": getattr(order, "id", "N/A"),
             "items": items_block,
-            "address_block": address_block,
-            "comment_block": comment_block,
-            "address": address,
-            "comment": comment,
+            "info_block": info_block,
             "created_at": created_at_str,
             "status": self.get_order_status_label(getattr(order, "status", None)),
             "items_price": format_price(items_price),
