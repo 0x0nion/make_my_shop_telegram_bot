@@ -49,7 +49,7 @@ def build_orders_csv(orders: list[Order]) -> str:
             "yes" if order.is_paid else "no",
             _format_items(order),
             sum(item.quantity for item in order.items or []),
-            format_price(float(order.total_price)),
+            format_price(order.total_price),
             order.delivery_address or "",
             order.user_comment or "",
         ])

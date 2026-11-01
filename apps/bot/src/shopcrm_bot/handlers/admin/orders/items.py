@@ -69,16 +69,14 @@ async def render_edit_order_items_ui(
         items_lines.append(locale.get_text("admin.orders.no_items"))
 
     items_block = "\n".join(items_lines)
-    delivery_price = float(order.delivery_price or 0.0)
-    total_price = float(order.total_price or 0.0)
 
     # 2. Собираем общий текст
     text = (
         f"{locale.get_text('admin.orders.items_title', id=order.id)}\n\n"
         f"{locale.get_text('admin.orders.items_current')}\n"
         f"{items_block}\n\n"
-        f"{locale.get_text('admin.orders.items_delivery', price=format_price(delivery_price), currency=currency)}\n"
-        f"{locale.get_text('admin.orders.items_total', price=format_price(total_price), currency=currency)}\n\n"
+        f"{locale.get_text('admin.orders.items_delivery', price=format_price(order.delivery_price or 0), currency=currency)}\n"
+        f"{locale.get_text('admin.orders.items_total', price=format_price(order.total_price or 0), currency=currency)}\n\n"
         f"{locale.get_text('admin.orders.items_hint')}"
     )
 

@@ -4,6 +4,7 @@ from typing import Optional
 from aiogram import Bot
 
 from shopcrm_core.db.repositories.shop_repo import ShopRepository
+from shopcrm_core.utils import format_price
 from shopcrm_bot.config import config
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.ui import UIManager
@@ -27,7 +28,7 @@ def format_product_from_template(product, locale: Locale, name: Optional[str] = 
     parts.append(
         locale.get_text(
             "client.product_price_line",
-            price=f"{float(getattr(product, 'price', 0.0) or 0.0):,.2f}",
+            price=format_price(getattr(product, "price", 0) or 0),
             currency=locale.get_currency_symbol(getattr(product, "currency", None)),
             unit=locale.get_unit(getattr(product, "unit", None)),
         )

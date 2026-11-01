@@ -9,6 +9,7 @@ from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_bot.locales import Locale
 from shopcrm_core.constants import ADMIN_ORDER_STATUS_FILTERS
+from shopcrm_core.utils import format_price
 from shopcrm_bot.services.csv_export_service import build_export_filename, build_orders_csv
 from shopcrm_bot.ui import UIManager
 
@@ -139,12 +140,18 @@ async def render_orders_list(
     )
 
     # 3. Формируем текст
+    # Локализованная подпись статуса (для «all» — отдельный ключ).
+    status_label = (
+        locale.get_text("admin.orders.all_status")
+        if status == "all"
+        else locale.get_order_status_label(status)
+    )
     if not orders:
-        text = locale.get_text("admin.orders.list_header", status=status) + "\n\n" + locale.get_text("admin.orders.list_empty")
+        text = locale.get_text("admin.orders.list_header", status=status_label) + "\n\n" + locale.get_text("admin.orders.list_empty")
     else:
-        lines = [locale.get_text("admin.orders.list_header", status=status) + "\n"]
+        lines = [locale.get_text("admin.orders.list_header", status=status_label) + "\n"]
         for order in orders:
-            lines.append(locale.get_text("admin.orders.list_line", id=order.id, price=order.total_price, currency=locale.get_currency_symbol(), status=order.status))
+            lines.append(locale.get_text("admin.orders.list_line", id=order.id, price=format_price(order.total_price), currency=locale.get_currency_symbol(), status=locale.get_order_status_label(order.status)))
 
         text = "\n".join(lines)
 

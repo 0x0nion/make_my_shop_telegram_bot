@@ -114,7 +114,7 @@ async def process_set_order_status(
     await admin_repo.update_order(order)
 
     await callback.answer(
-        locale.get_text("admin.orders.status_changed", status=new_status),
+        locale.get_text("admin.orders.status_changed", status=locale.get_order_status_label(new_status)),
         show_alert=True,
     )
 
@@ -198,7 +198,7 @@ async def process_confirm_close_order(
     await admin_repo.update_order(order)
 
     await callback.answer(
-        locale.get_text("admin.orders.status_changed", status=OrderStatus.COMPLETED.value),
+        locale.get_text("admin.orders.status_changed", status=locale.get_order_status_label(OrderStatus.COMPLETED.value)),
         show_alert=True,
     )
 

@@ -9,6 +9,7 @@ from shopcrm_core.db.models.order import OrderItem
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.locales.currencies import get_currency_symbol
+from shopcrm_core.utils import format_price
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.ui import UIManager
 
@@ -190,7 +191,7 @@ async def render_order_catalog_ui(
                 locale.get_text(
                     "admin.orders.product_line",
                     name=product_names.get(product.id) or product.name,
-                    price=product.price,
+                    price=format_price(product.price),
                     currency=currency,
                 )
                 for product in db_products
@@ -275,7 +276,7 @@ async def render_order_product_card_ui(
     text_parts = [
         f"📦 <b>{prod_name}</b>\n",
         f"{prod_desc.strip()}\n",
-        locale.get_text("admin.orders.price_line", price=product.price, currency=currency),
+        locale.get_text("admin.orders.price_line", price=format_price(product.price), currency=currency),
     ]
 
     if hasattr(product, "stock") and product.stock is not None:

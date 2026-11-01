@@ -2,6 +2,7 @@
 import html
 import json
 import logging
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
@@ -202,8 +203,9 @@ class Locale:
             price = getattr(item, "price_at_purchase", None)
             if price is None:
                 # Позиции корзины не имеют price_at_purchase — берём текущую цену товара
-                price = float(getattr(product, "price", 0) or 0) if product else 0
-            price = price or 0
+                price = getattr(product, "price", 0) or 0 if product else 0
+            # Decimal, а не float: сохраняем до 18 знаков точности (crypto)
+            price = Decimal(str(price or 0))
             quantity = int(getattr(item, "quantity", 1) or 1)
             item_total = quantity * price
             items_price += item_total

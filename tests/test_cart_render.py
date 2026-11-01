@@ -69,14 +69,14 @@ class TestCartRender:
 
         # Позиции — тот же формат, что в заказе (нумерация + └)
         assert "🛒 <b>Состав корзины:</b>" in text
-        assert "1. <b>Widget</b>\n   └ 2 шт. x 10 $ = <b>20 $</b>" in text
-        assert "2. <b>Gadget</b>\n   └ 1 кг x 25.5 $ = <b>25.5 $</b>" in text
+        assert "1. <b>Widget</b>\n   └ 2 шт. x 10.00 $ = <b>20.00 $</b>" in text
+        assert "2. <b>Gadget</b>\n   └ 1 кг x 25.50 $ = <b>25.50 $</b>" in text
 
         # Расчёт стоимости — как в заказе
         assert "💰 <b>Расчёт стоимости:</b>" in text
-        assert "🛒 Товары: 45.5 $" in text
-        assert "🚚 Доставка: 0 $" in text
-        assert "💵 Итого к оплате: <b>45.5 $</b>" in text
+        assert "🛒 Товары: 45.50 $" in text
+        assert "🚚 Доставка: 0.00 $" in text
+        assert "💵 Итого к оплате: <b>45.50 $</b>" in text
 
     async def test_address_and_comment_placeholders_when_empty(
         self, repo, session, user_a, product_a, product_b, cart_with_items, captured_ui

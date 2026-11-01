@@ -1,6 +1,8 @@
 from typing import Dict, Optional, Tuple, Any
 from aiogram.types import InlineKeyboardMarkup
 
+from shopcrm_core.utils import format_price
+
 
 def build_catalog_text(
         locale,
@@ -38,14 +40,13 @@ def build_catalog_text(
 
     lines = []
     for idx, product in enumerate(products, start=1):
-        price = float(getattr(product, "price", 0.0) or 0.0)
         currency = locale.get_currency_symbol(getattr(product, "currency", None))
         unit_val = locale.get_unit(getattr(product, "unit", None))
         line = locale.get_text(
             "catalog.display.product_line",
             idx=idx,
             name=(product_names or {}).get(product.id) or getattr(product, "name", ""),
-            price=f"{price:,.2f}",
+            price=format_price(getattr(product, "price", 0) or 0),
             currency=currency,
             unit=unit_val,
         )

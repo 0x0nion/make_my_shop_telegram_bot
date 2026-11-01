@@ -7,10 +7,14 @@ class OrderStatus(str, Enum):
     PENDING = "pending"                             # Создан / ожидает действий
     PAYMENT_REQUESTED = "payment_requested"         # Админ запросил оплату у клиента
     AWAITING_CONFIRMATION = "awaiting_confirmation" # Чек/хэш отправлен, ждет проверки
+    PAYMENT_REJECTED = "payment_rejected"           # Платеж не подтвержден, ждем повторной оплаты
     PROCESSING = "processing"                       # Подтвержден админом / готовится к отправке
+    READY_FOR_PICKUP = "ready_for_pickup"           # Собран, ждет курьера / клиента
     DELIVERING = "delivering"                       # Взята курьером / в пути
     COMPLETED = "completed"                         # Завершен
     CANCELLED = "cancelled"                         # Отменен
+    ON_HOLD = "on_hold"                             # На паузе (клиент не на связи / нет товара)
+    REFUND_IN_PROGRESS = "refund_in_progress"       # Идет возврат средств по отмененному оплаченному заказу
 
     @classmethod
     def is_final(cls, status: str) -> bool:
@@ -24,7 +28,10 @@ class OrderStatus(str, Enum):
             cls.PENDING.value,
             cls.PAYMENT_REQUESTED.value,
             cls.AWAITING_CONFIRMATION.value,
+            cls.PAYMENT_REJECTED.value,
             cls.PROCESSING.value,
+            cls.READY_FOR_PICKUP.value,
+            cls.ON_HOLD.value,
         )
 
 
@@ -35,10 +42,14 @@ ADMIN_ORDER_STATUS_FILTERS: dict[str, str] = {
     "admin_order_pending": OrderStatus.PENDING.value,
     "admin_order_payment_requested": OrderStatus.PAYMENT_REQUESTED.value,
     "admin_order_awaiting": OrderStatus.AWAITING_CONFIRMATION.value,
+    "admin_order_payment_rejected": OrderStatus.PAYMENT_REJECTED.value,
     "admin_order_processing": OrderStatus.PROCESSING.value,
+    "admin_order_ready": OrderStatus.READY_FOR_PICKUP.value,
     "admin_order_delivering": OrderStatus.DELIVERING.value,
     "admin_order_completed": OrderStatus.COMPLETED.value,
     "admin_order_cancelled": OrderStatus.CANCELLED.value,
+    "admin_order_on_hold": OrderStatus.ON_HOLD.value,
+    "admin_order_refund": OrderStatus.REFUND_IN_PROGRESS.value,
 }
 
 # Множество всех допустимых статусов заказа (генерируется из enum).
@@ -58,6 +69,11 @@ ORDER_STATUS_CODES: dict[str, str] = {
     OrderStatus.DELIVERING.value: "5",
     OrderStatus.COMPLETED.value: "6",
     OrderStatus.CANCELLED.value: "7",
+    # Новые статусы — коды дописаны в конец, чтобы не ломать «живые» callback'ы со старыми кодами.
+    OrderStatus.PAYMENT_REJECTED.value: "8",
+    OrderStatus.READY_FOR_PICKUP.value: "9",
+    OrderStatus.ON_HOLD.value: "10",
+    OrderStatus.REFUND_IN_PROGRESS.value: "11",
 }
 # Обратное отображение: код -> полное имя статуса.
 ORDER_STATUS_BY_CODE: dict[str, str] = {v: k for k, v in ORDER_STATUS_CODES.items()}

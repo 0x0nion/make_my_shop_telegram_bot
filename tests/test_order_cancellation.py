@@ -1,9 +1,8 @@
 """Тесты отмены заказа клиентом: допустимые статусы, запрещённые статусы, изоляция владельца."""
 import pytest
-
+from shopcrm_core.constants import OrderStatus
 from shopcrm_core.db.models.cart import CartItem
 from shopcrm_core.db.models.order import Order
-from shopcrm_core.constants import OrderStatus
 
 
 class TestIsCancellableByClient:
@@ -13,19 +12,23 @@ class TestIsCancellableByClient:
         OrderStatus.PENDING,
         OrderStatus.PAYMENT_REQUESTED,
         OrderStatus.AWAITING_CONFIRMATION,
+        OrderStatus.PAYMENT_REJECTED,
         OrderStatus.PROCESSING,
+        OrderStatus.READY_FOR_PICKUP,
+        OrderStatus.ON_HOLD,
     ])
     def test_cancellable_statuses(self, status):
-        """Заказ можно отменить до передачи курьеру."""
+        """Заказ можно отменить до передачи курьеру (включая паузу и отклонённый платёж)."""
         assert OrderStatus.is_cancellable_by_client(status.value) is True
 
     @pytest.mark.parametrize("status", [
         OrderStatus.DELIVERING,
         OrderStatus.COMPLETED,
         OrderStatus.CANCELLED,
+        OrderStatus.REFUND_IN_PROGRESS,
     ])
     def test_non_cancellable_statuses(self, status):
-        """Заказ в пути / завершённый / отменённый отменить нельзя."""
+        """Заказ в пути / завершённый / отменённый / с возвратом отменить нельзя."""
         assert OrderStatus.is_cancellable_by_client(status.value) is False
 
 
@@ -63,6 +66,7 @@ class TestCancelOrder:
         OrderStatus.DELIVERING,
         OrderStatus.COMPLETED,
         OrderStatus.CANCELLED,
+        OrderStatus.REFUND_IN_PROGRESS,
     ])
     async def test_cancel_non_cancellable_status_rejected(
         self, repo, session, user_a, product_a, status

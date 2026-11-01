@@ -610,8 +610,8 @@ class KeyboardFactory:
             button_text = self.get_button_text(
                 button_template,
                 id=order.id,
-                price=getattr(order, "total_price", 0),
-                status=order.status,
+                price=format_price(getattr(order, "total_price", 0) or 0),
+                status=self.locale.get_order_status_label(order.status),
                 currency=self.locale.get_currency_symbol(),
             )
             builder.row(

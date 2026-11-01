@@ -84,15 +84,10 @@ async def build_order_detail_text(
     if not order:
         return "", None
 
-    # 1. Покупатель
-    buyer_info = locale.get_text("admin.orders.buyer_unknown")
+    # 1. Покупатель: номер ID ссылкой на пользователя
+    buyer_info = locale.get_text("admin.orders.empty_value")
     if order.user:
-        u_id = order.user.id
-        u_name = getattr(order.user, "username", None)
-        if u_name:
-            buyer_info = locale.get_text("admin.orders.buyer_name", username=u_name, user_id=u_id)
-        else:
-            buyer_info = locale.get_text("admin.orders.buyer_id", user_id=u_id)
+        buyer_info = locale.get_text("admin.orders.buyer", user_id=order.user.id)
 
     # 2. Состав заказа
     product_names = await get_admin_order_product_names(admin_repo, order, lang)
@@ -122,16 +117,14 @@ async def build_order_detail_text(
 
     items_block = "\n".join(items_text)
 
-    # 3. Поля заказа
-    no_addr_str = locale.get_text("admin.orders.no_address")
-    no_comment_str = locale.get_text("admin.orders.no_comment")
-    no_proof_str = locale.get_text("admin.orders.no_payment_proof")
+    # 3. Поля заказа: пустые значения показываем единым плейсхолдером
+    empty_str = locale.get_text("admin.orders.empty_value")
 
     delivery_price = order.delivery_price if order.delivery_price else 0
     total_price = order.total_price if order.total_price else 0
-    delivery_address = locale.format_address(order.delivery_address, order.delivery_address_type) or no_addr_str
-    user_comment = order.user_comment or no_comment_str
-    manager_comment = order.manager_comment or no_comment_str
+    delivery_address = locale.format_address(order.delivery_address, order.delivery_address_type) or empty_str
+    user_comment = order.user_comment or empty_str
+    manager_comment = order.manager_comment or empty_str
     created_at_str = order.created_at.strftime("%d.%m.%Y %H:%M") if order.created_at else "—"
     paid_status_str = locale.get_text("admin.orders.paid_yes") if getattr(order, "is_paid", False) else locale.get_text("admin.orders.paid_no")
 
@@ -146,7 +139,7 @@ async def build_order_detail_text(
     elif order.payment_proof:
         payment_proof_info = locale.get_text("admin.orders.proof_code", proof=order.payment_proof)
     else:
-        payment_proof_info = no_proof_str
+        payment_proof_info = empty_str
 
     # caption под фото уже обычного сообщения → короче разделитель, чтобы линия не переносилась
     separator = _SEPARATOR_SHORT if order.payment_proof_type == "photo" else _SEPARATOR_LONG
@@ -156,7 +149,7 @@ async def build_order_detail_text(
     text = card_template.format(
         order_id=order.id,
         created_at=created_at_str,
-        status=order.status,
+        status=locale.get_order_status_label(order.status),
         is_paid_status=paid_status_str,
         buyer_info=buyer_info,
         delivery_address=delivery_address,

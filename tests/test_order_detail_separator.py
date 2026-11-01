@@ -43,13 +43,13 @@ def _separator_lengths(text: str) -> list[int]:
 
 class TestOrderDetailSeparator:
     async def test_photo_proof_uses_short_separator(self):
-        """Чек-фото → caption → короткий разделитель (12 символов) во всех 6 местах."""
+        """Чек-фото → caption → короткий разделитель (12 символов) во всех 3 местах."""
         order = _fake_order(payment_proof_type="photo", payment_proof="https://x/y.jpg")
         text, _ = await build_order_detail_text(_make_repo(order), 42, lang="ru")
-        assert _separator_lengths(text) == [12] * 6
+        assert _separator_lengths(text) == [12] * 3
 
     async def test_no_photo_uses_long_separator(self):
         """Без фото-чека → обычное сообщение → длинный разделитель (20 символов)."""
         order = _fake_order(payment_proof_type=None)
         text, _ = await build_order_detail_text(_make_repo(order), 42, lang="ru")
-        assert _separator_lengths(text) == [20] * 6
+        assert _separator_lengths(text) == [20] * 3

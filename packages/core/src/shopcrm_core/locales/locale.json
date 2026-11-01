@@ -218,34 +218,29 @@
           "ru": "📋 <b>Управление заказами</b>\n\nВыберите категорию или фильтр для просмотра:"
         },
         "detail_card": {
-          "ru": "📦 <b>Заказ #{order_id}</b>\n📅 <b>Дата:</b> {created_at}\n📦 <b>Статус:</b> {status} ({is_paid_status})\n\n{separator}\n\n👤 <b>Покупатель:</b> {buyer_info}\n📍 <b>Адрес доставки:</b> {delivery_address}\n\n{separator}\n\n🛒 <b>Состав заказа:</b>\n{items_block}\n\n{separator}\n\n💬 <b>Комментарий клиента:</b>\n{user_comment}\n\n{separator}\n\n💰 <b>Расчёт стоимости:</b>\n🛒 Товары: {items_price} {currency}\n🚚 Доставка: {delivery_price} {currency}\n💵 Итого к оплате: <b>{total_price} {currency}</b>\n\n{separator}\n\n💳 <b>Подтверждение оплаты:</b> {payment_proof_info}\n\n{separator}\n\n💬 <b>Комментарий менеджера:</b>\n{manager_comment}",
-          "en": "📦 <b>Order #{order_id}</b>\n📅 <b>Date:</b> {created_at}\n📦 <b>Status:</b> {status} ({is_paid_status})\n\n{separator}\n\n👤 <b>Customer:</b> {buyer_info}\n📍 <b>Delivery Address:</b> {delivery_address}\n\n{separator}\n\n🛒 <b>Order Items:</b>\n{items_block}\n\n{separator}\n\n💬 <b>Client Comment:</b>\n{user_comment}\n\n{separator}\n\n💰 <b>Cost Breakdown:</b>\n🛒 Items: {items_price} {currency}\n🚚 Delivery: {delivery_price} {currency}\n💵 Total to Pay: <b>{total_price} {currency}</b>\n\n{separator}\n\n💳 <b>Payment Proof:</b> {payment_proof_info}\n\n{separator}\n\n💬 <b>Manager Comment:</b>\n{manager_comment}",
-          "es": "📦 <b>Pedido #{order_id}</b>\n📅 <b>Fecha:</b> {created_at}\n📦 <b>Estado:</b> {status} ({is_paid_status})\n\n{separator}\n\n👤 <b>Cliente:</b> {buyer_info}\n📍 <b>Dirección de Envío:</b> {delivery_address}\n\n{separator}\n\n🛒 <b>Artículos del Pedido:</b>\n{items_block}\n\n{separator}\n\n💬 <b>Comentario del Cliente:</b>\n{user_comment}\n\n{separator}\n\n💰 <b>Desglose de Costos:</b>\n🛒 Artículos: {items_price} {currency}\n🚚 Envío: {delivery_price} {currency}\n💵 Total a Pagar: <b>{total_price} {currency}</b>\n\n{separator}\n\n💳 <b>Comprobante de Pago:</b> {payment_proof_info}\n\n{separator}\n\n💬 <b>Comentario del Gerente:</b>\n{manager_comment}"
+          "ru": "📦 <b>Заказ #{order_id}</b>\n📅 <b>Дата:</b> {created_at}\n📦 <b>Статус:</b> {status} ({is_paid_status})\n💬 <b>Комментарий менеджера:</b>\n{manager_comment}\n\n{separator}\n\n👤 <b>Покупатель:</b> {buyer_info}\n📍 <b>Адрес доставки:</b> {delivery_address}\n💬 <b>Комментарий клиента:</b>\n{user_comment}\n💳 <b>Подтверждение оплаты:</b> {payment_proof_info}\n\n{separator}\n\n🛒 <b>Состав заказа:</b>\n{items_block}\n\n{separator}\n\n💰 <b>Расчёт стоимости:</b>\n🛒 Товары: {items_price} {currency}\n🚚 Доставка: {delivery_price} {currency}\n💵 Итого к оплате: <b>{total_price} {currency}</b>",
+          "en": "📦 <b>Order #{order_id}</b>\n📅 <b>Date:</b> {created_at}\n📦 <b>Status:</b> {status} ({is_paid_status})\n💬 <b>Manager Comment:</b>\n{manager_comment}\n\n{separator}\n\n👤 <b>Customer:</b> {buyer_info}\n📍 <b>Delivery Address:</b> {delivery_address}\n💬 <b>Client Comment:</b>\n{user_comment}\n💳 <b>Payment Proof:</b> {payment_proof_info}\n\n{separator}\n\n🛒 <b>Order Items:</b>\n{items_block}\n\n{separator}\n\n💰 <b>Cost Breakdown:</b>\n🛒 Items: {items_price} {currency}\n🚚 Delivery: {delivery_price} {currency}\n💵 Total to Pay: <b>{total_price} {currency}</b>",
+          "es": "📦 <b>Pedido #{order_id}</b>\n📅 <b>Fecha:</b> {created_at}\n📦 <b>Estado:</b> {status} ({is_paid_status})\n💬 <b>Comentario del Gerente:</b>\n{manager_comment}\n\n{separator}\n\n👤 <b>Cliente:</b> {buyer_info}\n📍 <b>Dirección de Envío:</b> {delivery_address}\n💬 <b>Comentario del Cliente:</b>\n{user_comment}\n💳 <b>Comprobante de Pago:</b> {payment_proof_info}\n\n{separator}\n\n🛒 <b>Artículos del Pedido:</b>\n{items_block}\n\n{separator}\n\n💰 <b>Desglose de Costos:</b>\n🛒 Artículos: {items_price} {currency}\n🚚 Envío: {delivery_price} {currency}\n💵 Total a Pagar: <b>{total_price} {currency}</b>"
         },
         "no_items": {
           "ru": "<i>Список товаров пуст.</i>",
           "en": "<i>Item list is empty.</i>",
           "es": "<i>La lista de productos está vacía.</i>"
         },
-        "no_address": {
-          "ru": "<i>Не указан</i>",
-          "en": "<i>Not specified</i>",
-          "es": "<i>No especificado</i>"
-        },
-        "no_comment": {
-          "ru": "<i>Отсутствует</i>",
-          "en": "<i>None</i>",
-          "es": "<i>Ninguno</i>"
-        },
-        "no_payment_proof": {
-          "ru": "<i>Не предоставлено</i>",
-          "en": "<i>Not provided</i>",
-          "es": "<i>No proporcionado</i>"
+        "empty_value": {
+          "ru": "Пусто",
+          "en": "empty",
+          "es": "vacío"
         },
         "not_found": {
           "ru": "❌ <b>Заказ не найден.</b>",
           "en": "❌ <b>Order not found.</b>",
           "es": "❌ <b>Pedido no encontrado.</b>"
+        },
+        "all_status": {
+          "ru": "все",
+          "en": "all",
+          "es": "todos"
         },
         "list_header": {
           "ru": "📋 <b>Список заказов ({status})</b>",
@@ -282,20 +277,10 @@
           "en": "📤 Exported orders: {count}",
           "es": "📤 Pedidos exportados: {count}"
         },
-        "buyer_unknown": {
-          "ru": "Неизвестен",
-          "en": "Unknown",
-          "es": "Desconocido"
-        },
-        "buyer_name": {
-          "ru": "<a href=\"https://t.me/{username}\">@{username}</a> (ID: <code>{user_id}</code>)",
-          "en": "<a href=\"https://t.me/{username}\">@{username}</a> (ID: <code>{user_id}</code>)",
-          "es": "<a href=\"https://t.me/{username}\">@{username}</a> (ID: <code>{user_id}</code>)"
-        },
-        "buyer_id": {
-          "ru": "<a href=\"tg://user?id={user_id}\">Пользователь {user_id}</a> (ID: <code>{user_id}</code>)",
-          "en": "<a href=\"tg://user?id={user_id}\">User {user_id}</a> (ID: <code>{user_id}</code>)",
-          "es": "<a href=\"tg://user?id={user_id}\">Usuario {user_id}</a> (ID: <code>{user_id}</code>)"
+        "buyer": {
+          "ru": "<a href=\"tg://user?id={user_id}\">{user_id}</a>",
+          "en": "<a href=\"tg://user?id={user_id}\">{user_id}</a>",
+          "es": "<a href=\"tg://user?id={user_id}\">{user_id}</a>"
         },
         "item_line": {
           "ru": "{idx}. <b>{name}</b>\n   └ {qty} {unit} x {price} {currency} = <b>{sum} {currency}</b>",
@@ -1292,10 +1277,20 @@
             "es": "⏳ Esperando Pago{count}",
             "ru": "⏳ Ждет проверки чека{count}"
           },
+          "admin_order_payment_rejected": {
+            "en": "❌ Payment Rejected{count}",
+            "es": "❌ Pago Rechazado{count}",
+            "ru": "❌ Платёж не подтверждён{count}"
+          },
           "admin_order_processing": {
             "en": "⚙️ Processing{count}",
             "es": "⚙️ En Proceso{count}",
             "ru": "⚙️ В обработке{count}"
+          },
+          "admin_order_ready": {
+            "en": "📦 Ready for Pickup{count}",
+            "es": "📦 Listo para Recoger{count}",
+            "ru": "📦 Готов к выдаче{count}"
           },
           "admin_order_delivering": {
             "en": "🚚 Delivering{count}",
@@ -1312,6 +1307,16 @@
             "es": "❌ Cancelado{count}",
             "ru": "❌ Отменён{count}"
           },
+          "admin_order_on_hold": {
+            "en": "⏸ On Hold{count}",
+            "es": "⏸ En Pausa{count}",
+            "ru": "⏸ На паузе{count}"
+          },
+          "admin_order_refund": {
+            "en": "💸 Refund in Progress{count}",
+            "es": "💸 Reembolso en Proceso{count}",
+            "ru": "💸 Возврат в процессе{count}"
+          },
           "back": {
             "en": "⬅️ Back",
             "es": "⬅️ Volver",
@@ -1319,6 +1324,10 @@
           }
         },
         "sizes": [
+          1,
+          1,
+          1,
+          1,
           1,
           1,
           1,
@@ -1401,10 +1410,20 @@
             "es": "⏳ Esperando Pago",
             "ru": "⏳ Ждет проверки чека"
           },
+          "payment_rejected": {
+            "en": "❌ Payment Rejected",
+            "es": "❌ Pago Rechazado",
+            "ru": "❌ Платёж не подтверждён"
+          },
           "processing": {
             "en": "⚙️ Processing",
             "es": "⚙️ En Proceso",
             "ru": "⚙️ В обработке"
+          },
+          "ready_for_pickup": {
+            "en": "📦 Ready for Pickup",
+            "es": "📦 Listo para Recoger",
+            "ru": "📦 Готов к выдаче"
           },
           "delivering": {
             "en": "🚚 Delivering",
@@ -1421,6 +1440,16 @@
             "es": "❌ Cancelado",
             "ru": "❌ Отменен"
           },
+          "on_hold": {
+            "en": "⏸ On Hold",
+            "es": "⏸ En Pausa",
+            "ru": "⏸ На паузе"
+          },
+          "refund_in_progress": {
+            "en": "💸 Refund in Progress",
+            "es": "💸 Reembolso en Proceso",
+            "ru": "💸 Возврат в процессе"
+          },
           "back": {
             "en": "⬅️ Back to Order",
             "es": "⬅️ Volver al Pedido",
@@ -1428,6 +1457,10 @@
           }
         },
         "sizes": [
+          1,
+          1,
+          1,
+          1,
           1,
           1,
           1,

@@ -15,6 +15,7 @@ from shopcrm_core.services.validation import (
 )
 from shopcrm_bot.handlers.admin.utils import self_destruct
 from shopcrm_core.locales.currencies import get_currency_symbol
+from shopcrm_core.utils import format_price
 from shopcrm_bot.locales import Locale
 from shopcrm_core.locales.units import get_unit_label
 from shopcrm_bot.ui import UIManager
@@ -62,7 +63,7 @@ async def show_product_card(
     formatted_text = text.format(
         name=product_name,
         description=desc_val,
-        price=product.price,
+        price=format_price(product.price),
         currency=currency_val,
         unit=unit_val,
     )
