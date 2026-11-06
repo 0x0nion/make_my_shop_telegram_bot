@@ -1,6 +1,6 @@
 """Сервисы заказов: общая бизнес-логика оформления заказов."""
 import asyncio
-from typing import Any, Optional
+from typing import Any
 
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.db.repositories.user_repo import UserRepository
@@ -47,7 +47,7 @@ async def get_user_order_product_names(
             for pid in product_ids
         ]
     )
-    return {pid: loc for pid, loc in zip(product_ids, results) if loc}
+    return {pid: loc for pid, loc in zip(product_ids, results, strict=True) if loc}
 
 
 async def get_admin_order_product_names(
@@ -70,14 +70,14 @@ async def get_admin_order_product_names(
             for pid in product_ids
         ]
     )
-    return {pid: loc for pid, loc in zip(product_ids, results) if loc}
+    return {pid: loc for pid, loc in zip(product_ids, results, strict=True) if loc}
 
 
 async def build_order_detail_text(
     admin_repo: AdminRepository,
     order_id: int,
     lang: str = "en",
-) -> tuple[str, Optional[Any]]:
+) -> tuple[str, Any | None]:
     """Формирует текстовое описание заказа для администратора."""
     locale = Locale(lang)
     order = await admin_repo.get_order_by_id(order_id)
@@ -99,7 +99,11 @@ async def build_order_detail_text(
                 prod_name = product_names.get(item.product_id) or item.product.name
             else:
                 prod_name = locale.get_text("admin.orders.deleted_product", product_id=item.product_id)
-            unit = locale.get_unit(getattr(item.product, "unit", None)) if item.product else locale.get_text("admin.orders.unit_default")
+            unit = (
+                locale.get_unit(getattr(item.product, "unit", None))
+                if item.product
+                else locale.get_text("admin.orders.unit_default")
+            )
             price = item.price_at_purchase
             qty = item.quantity
             item_sum = qty * price
@@ -126,7 +130,11 @@ async def build_order_detail_text(
     user_comment = order.user_comment or empty_str
     manager_comment = order.manager_comment or empty_str
     created_at_str = order.created_at.strftime("%d.%m.%Y %H:%M") if order.created_at else "—"
-    paid_status_str = locale.get_text("admin.orders.paid_yes") if getattr(order, "is_paid", False) else locale.get_text("admin.orders.paid_no")
+    paid_status_str = (
+        locale.get_text("admin.orders.paid_yes")
+        if getattr(order, "is_paid", False)
+        else locale.get_text("admin.orders.paid_no")
+    )
 
     if order.payment_proof_type == "photo":
         payment_proof_info = locale.get_text("admin.orders.proof_photo")

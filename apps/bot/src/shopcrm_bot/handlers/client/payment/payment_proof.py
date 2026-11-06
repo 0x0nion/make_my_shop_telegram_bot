@@ -1,21 +1,20 @@
 # handlers/client/payment/payment_proof.py
 import asyncio
 import logging
-from typing import Optional
 
 from aiogram import Bot, F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
-
+from shopcrm_core.constants import OrderStatus, PaymentProofType
 from shopcrm_core.db.models import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.db.repositories.user_repo import UserRepository
+
 from shopcrm_bot.locales import Locale
-from shopcrm_core.constants import OrderStatus, PaymentProofType
-from shopcrm_bot.ui import UIManager
 from shopcrm_bot.services.notification_service import notify_admins_about_payment
 from shopcrm_bot.states.user_states import UserPaymentState
+from shopcrm_bot.ui import UIManager
 
 logger = logging.getLogger(__name__)
 
@@ -162,8 +161,8 @@ async def process_payment_proof_input(
     locale = Locale(user.language)
 
     data = await state.get_data()
-    order_id: Optional[int] = data.get("active_order_id")
-    instruction_msg_id: Optional[int] = data.get("instruction_msg_id")
+    order_id: int | None = data.get("active_order_id")
+    instruction_msg_id: int | None = data.get("instruction_msg_id")
 
     # Очищаем пользовательский ввод
     await safe_delete_message(

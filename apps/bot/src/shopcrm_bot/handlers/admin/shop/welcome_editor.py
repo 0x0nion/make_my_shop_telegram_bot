@@ -1,18 +1,20 @@
 # handlers/admin/shop/welcome_editor.py
 import asyncio
+import contextlib
 import logging
+
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
-
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.services.validation import validate_description
+
 from shopcrm_bot.handlers.admin.utils import self_destruct
 from shopcrm_bot.locales import Locale
-from shopcrm_bot.ui import UIManager
 from shopcrm_bot.states.admin_states import EditWelcome
+from shopcrm_bot.ui import UIManager
 
 welcome_editor_router = Router()
 logger = logging.getLogger(__name__)
@@ -43,7 +45,7 @@ async def show_welcome_card(
         language_code=lang,
         use_temp=False,
     )
-    if not photo_id or (photo_id.startswith("http") == False and len(photo_id) < 10):
+    if not photo_id or (not photo_id.startswith("http") and len(photo_id) < 10):
         photo_id = None
 
     reply_markup = locale.keyboards.get_welcome_editor_kb(has_photo=bool(photo_id))
@@ -132,8 +134,8 @@ async def delete_welcome_photo(
         admin_id=callback.from_user.id,
     )
 
-    from sqlalchemy import delete
     from shopcrm_core.db.models import LocaleText
+    from sqlalchemy import delete
     await admin_repo.session.execute(
         delete(LocaleText).where(
             LocaleText.entity_id == 0,
@@ -160,10 +162,8 @@ async def process_welcome_text_input(
     lang = user.language
 
     # Удаляем ввод админа до валидации, чтобы при ошибке он не остался в чате
-    try:
+    with contextlib.suppress(TelegramBadRequest):
         await message.delete()
-    except TelegramBadRequest:
-        pass
 
     error = validate_description(new_text, lang=lang)
     if error:
@@ -179,8 +179,8 @@ async def process_welcome_text_input(
             use_temp=False,
         )
         if existing is not None:
-            from sqlalchemy import update
             from shopcrm_core.db.models import LocaleText
+            from sqlalchemy import update
             await admin_repo.session.execute(
                 update(LocaleText)
                 .where(
@@ -224,10 +224,8 @@ async def process_welcome_photo_input(
     menu_message_id = user_data.get("menu_message_id")
     lang = user.language
 
-    try:
+    with contextlib.suppress(TelegramBadRequest):
         await message.delete()
-    except TelegramBadRequest:
-        pass
 
     for lang_code in admin_repo.SUPPORTED_LANGUAGES:
         existing = await admin_repo.get_locale_text(
@@ -237,8 +235,8 @@ async def process_welcome_photo_input(
             use_temp=False,
         )
         if existing is not None:
-            from sqlalchemy import update
             from shopcrm_core.db.models import LocaleText
+            from sqlalchemy import update
             await admin_repo.session.execute(
                 update(LocaleText)
                 .where(
@@ -276,10 +274,8 @@ async def process_welcome_photo_invalid(message: Message, user: User):
     locale = Locale(lang=lang)
 
     # Удаляем неверный ввод, чтобы он не остался в чате
-    try:
+    with contextlib.suppress(TelegramBadRequest):
         await message.delete()
-    except TelegramBadRequest:
-        pass
 
     err_msg = locale.get_text("admin.welcome_editor.not_photo")
     err = await message.answer(err_msg)

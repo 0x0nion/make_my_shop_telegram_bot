@@ -1,14 +1,15 @@
 # handlers/admin/orders/view.py
 import logging
+
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
-
+from shopcrm_core.constants import OrderStatus
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
+
 from shopcrm_bot.handlers.admin.orders.common import render_order_detail
 from shopcrm_bot.locales import Locale
-from shopcrm_core.constants import OrderStatus
 
 logger = logging.getLogger(__name__)
 

@@ -9,10 +9,9 @@
 from types import SimpleNamespace
 
 import pytest
-
-from shopcrm_core.locales.locale import Locale
 from shopcrm_bot.handlers.client.cart.render_cart import render_cart
 from shopcrm_bot.ui import UIManager
+from shopcrm_core.locales.locale import Locale
 
 
 class FakeState:

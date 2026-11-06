@@ -9,7 +9,6 @@ from datetime import datetime
 from types import SimpleNamespace
 
 import pytest
-
 from shopcrm_core.locales.locale import Locale
 
 

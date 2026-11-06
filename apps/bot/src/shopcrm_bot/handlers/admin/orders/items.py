@@ -1,11 +1,12 @@
 import logging
+
 from aiogram import F, Router
 from aiogram.types import CallbackQuery
-
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.services.order_service import get_admin_order_product_names
 from shopcrm_core.utils import format_price
+
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.ui import UIManager
 
@@ -71,12 +72,18 @@ async def render_edit_order_items_ui(
     items_block = "\n".join(items_lines)
 
     # 2. Собираем общий текст
+    delivery_line = locale.get_text(
+        "admin.orders.items_delivery", price=format_price(order.delivery_price or 0), currency=currency
+    )
+    total_line = locale.get_text(
+        "admin.orders.items_total", price=format_price(order.total_price or 0), currency=currency
+    )
     text = (
         f"{locale.get_text('admin.orders.items_title', id=order.id)}\n\n"
         f"{locale.get_text('admin.orders.items_current')}\n"
         f"{items_block}\n\n"
-        f"{locale.get_text('admin.orders.items_delivery', price=format_price(order.delivery_price or 0), currency=currency)}\n"
-        f"{locale.get_text('admin.orders.items_total', price=format_price(order.total_price or 0), currency=currency)}\n\n"
+        f"{delivery_line}\n"
+        f"{total_line}\n\n"
         f"{locale.get_text('admin.orders.items_hint')}"
     )
 

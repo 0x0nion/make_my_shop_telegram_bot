@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class ProductUnit(str, Enum):
+class ProductUnit(str, Enum):  # noqa: UP042  # str-Enum: str() даёт value; StrEnum меняет поведение str()/format
     PIECE = "pc"
     GRAM = "g"
     KILOGRAM = "kg"

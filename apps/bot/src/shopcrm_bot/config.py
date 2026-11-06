@@ -2,13 +2,11 @@
 
 Наследует базовый конфиг core (``DATABASE_URL``, ``LOG_LEVEL``, ``DEBUG``,
 ``LOGS_DIR``) и добавляет бот-специфичные настройки (``BOT_TOKEN``,
-``ADMIN_ID``, ``FSM_STORAGE``, ``REDIS_URL``). Core остаётся чистой
-библиотекой без зависимостей от Telegram.
+``ADMIN_ID``, ``FSM_STORAGE``, ``REDIS_URL``). Core остаётся
+самодостаточным, без зависимостей от Telegram.
 """
-from typing import List
 
 from pydantic import SecretStr, field_validator
-
 from shopcrm_core.config import Settings as CoreSettings
 
 # Разрешённые бэкенды хранения FSM.
@@ -19,7 +17,7 @@ class Settings(CoreSettings):
     """Конфиг бота: core-настройки + Telegram/FSM."""
 
     BOT_TOKEN: SecretStr
-    ADMIN_ID: List[int]
+    ADMIN_ID: list[int]
 
     # FSM storage backend: "memory" (default, single process) or "redis" (shared/persistent).
     FSM_STORAGE: str = "memory"
@@ -32,7 +30,7 @@ class Settings(CoreSettings):
 
     @field_validator("ADMIN_ID")
     @classmethod
-    def _validate_admin_id(cls, v: List[int]) -> List[int]:
+    def _validate_admin_id(cls, v: list[int]) -> list[int]:
         if not v:
             raise ValueError("ADMIN_ID must not be empty")
         if any(x <= 0 for x in v):

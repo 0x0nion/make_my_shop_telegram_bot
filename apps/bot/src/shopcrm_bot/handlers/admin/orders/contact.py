@@ -1,13 +1,14 @@
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
-
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 from shopcrm_core.constants import OrderStatus
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
+
 from shopcrm_bot.handlers.admin.orders.common import render_order_detail
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.services.chat_service import MESSAGES_PER_PAGE, format_chat_history
@@ -66,7 +67,12 @@ async def process_contact_client_start(
         keyboard_rows.append(nav_buttons)
 
     keyboard_rows.append(
-        [InlineKeyboardButton(text=locale.get_text("base.cancel"), callback_data=f"admin_order_view:{order_id}:{status}:{page}")]
+        [
+            InlineKeyboardButton(
+                text=locale.get_text("base.cancel"),
+                callback_data=f"admin_order_view:{order_id}:{status}:{page}",
+            )
+        ]
     )
 
     cancel_kb = InlineKeyboardMarkup(inline_keyboard=keyboard_rows)
@@ -119,7 +125,12 @@ async def process_chat_pagination(
     if nav_buttons:
         keyboard_rows.append(nav_buttons)
     keyboard_rows.append(
-        [InlineKeyboardButton(text=locale.get_text("base.cancel"), callback_data=f"admin_order_view:{order_id}:{status}:{page}")]
+        [
+            InlineKeyboardButton(
+                text=locale.get_text("base.cancel"),
+                callback_data=f"admin_order_view:{order_id}:{status}:{page}",
+            )
+        ]
     )
 
     cancel_kb = InlineKeyboardMarkup(inline_keyboard=keyboard_rows)
@@ -179,7 +190,7 @@ async def process_send_client_message(
     if not target_user_id or not order_id:
         return
 
-    now_str = datetime.now(timezone.utc).strftime("%d.%m.%Y %H:%M")
+    now_str = datetime.now(UTC).strftime("%d.%m.%Y %H:%M")
     message_record = {
         "sender": "admin",
         "text": message.text,
@@ -195,10 +206,20 @@ async def process_send_client_message(
     client_kb_rows = []
     if not is_cancelled:
         client_kb_rows.append(
-            [InlineKeyboardButton(text=client_locale.get_text("keyboards.client.reply_admin.buttons.client_reply_order"), callback_data=f"client_reply_order:{order_id}")]
+            [
+                InlineKeyboardButton(
+                    text=client_locale.get_text("keyboards.client.reply_admin.buttons.client_reply_order"),
+                    callback_data=f"client_reply_order:{order_id}",
+                )
+            ]
         )
     client_kb_rows.append(
-        [InlineKeyboardButton(text=client_locale.get_text("keyboards.client.reply_admin.buttons.client_view_order"), callback_data=f"view_details_order_{order_id}")]
+        [
+            InlineKeyboardButton(
+                text=client_locale.get_text("keyboards.client.reply_admin.buttons.client_view_order"),
+                callback_data=f"view_details_order_{order_id}",
+            )
+        ]
     )
     client_kb = InlineKeyboardMarkup(inline_keyboard=client_kb_rows)
 

@@ -1,10 +1,8 @@
 """Тесты расчёта стоимости заказа при создании из корзины."""
 import pytest
-from sqlalchemy import select
-
-from shopcrm_core.db.models.cart import CartItem
-from shopcrm_core.db.models.order import Order, OrderItem
 from shopcrm_core.constants import OrderStatus
+from shopcrm_core.db.models.cart import CartItem
+from sqlalchemy import select
 
 
 class TestCreateOrderFromCart:

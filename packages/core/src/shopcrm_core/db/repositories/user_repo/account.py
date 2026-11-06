@@ -1,4 +1,5 @@
 from typing import Any
+
 from sqlalchemy.orm import selectinload
 
 from shopcrm_core.db.models.user import User

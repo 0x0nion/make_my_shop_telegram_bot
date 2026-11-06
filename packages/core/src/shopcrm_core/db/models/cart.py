@@ -1,9 +1,14 @@
 # database/models/cart.py
 
+from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from shopcrm_core.db.models.base import Base
+
+if TYPE_CHECKING:
+    from shopcrm_core.db.models.product import Product
 
 
 class CartItem(Base):

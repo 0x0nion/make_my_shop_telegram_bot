@@ -2,7 +2,7 @@
 
 from shopcrm_core.db.models import LocaleText
 from shopcrm_core.db.models.product import Product
-from shopcrm_core.db.models.temp_models import TempProduct, TempLocaleText
+from shopcrm_core.db.models.temp_models import TempLocaleText, TempProduct
 from shopcrm_core.db.repositories.base_repo import BaseRepository
 from shopcrm_core.locales.units import DEFAULT_UNIT
 from shopcrm_core.logging import logger
@@ -18,7 +18,7 @@ class AdminProductsMixin:
             self,
             product_id: int,
             use_temp: bool = False,
-            admin_id: int = None
+            admin_id: int | None = None
     ) -> Product | TempProduct | None:
         repo = self._get_product_repo(use_temp)
         if use_temp:
@@ -29,7 +29,7 @@ class AdminProductsMixin:
             self,
             category_id: int | None,
             use_temp: bool = False,
-            admin_id: int = None
+            admin_id: int | None = None
     ) -> list:
         repo = self._get_product_repo(use_temp)
         if use_temp:
@@ -45,7 +45,7 @@ class AdminProductsMixin:
             image_id: str | None = None,
             unit: str = DEFAULT_UNIT.value,
             use_temp: bool = False,
-            admin_id: int = None
+            admin_id: int | None = None
     ) -> Product | TempProduct:
         logger.info(f"Creating product '{name}' (category_id={category_id}, use_temp={use_temp}, admin_id={admin_id})")
         repo = self._get_product_repo(use_temp)
@@ -80,7 +80,7 @@ class AdminProductsMixin:
         await self.session.commit()
         return new_product
 
-    async def delete_product(self, product_id: int, use_temp: bool = False, admin_id: int = None):
+    async def delete_product(self, product_id: int, use_temp: bool = False, admin_id: int | None = None):
         logger.info(f"Deleting product id={product_id} (use_temp={use_temp}, admin_id={admin_id})")
         if use_temp:
             await BaseRepository(TempProduct, self.session).delete_where(
@@ -98,13 +98,105 @@ class AdminProductsMixin:
                 LocaleText.entity_type.like('%product%')
             )
 
+    async def get_all_products(self) -> list[Product]:
+        """Все реальные товары (для склада) с остатком."""
+        return await self._get_product_repo(use_temp=False).get_all(
+            order_by=Product.name
+        )
+
+    async def add_stock(self, product_id: int, qty: int) -> Product | None:
+        """Пополнить остаток товара на складе (только реальные товары).
+
+        Увеличивает ``stock`` и накопительную метрику ``total_arrived``.
+        """
+        logger.info(f"Adding stock: product_id={product_id}, qty={qty}")
+        product = await self.get_product_by_id(product_id)
+        if not product:
+            return None
+        new_stock = (product.stock or 0) + qty
+        new_total_arrived = (product.total_arrived or 0) + qty
+        await self._get_product_repo(use_temp=False).update(
+            product.id, stock=new_stock, total_arrived=new_total_arrived
+        )
+        return await self.get_product_by_id(product_id)
+
+    async def write_off_stock(self, product_id: int, qty: int) -> Product | None:
+        """Списать остаток товара (не ниже 0). Только реальные товары.
+
+        Списывает ``min(qty, stock)`` и увеличивает ``total_written_off``
+        на фактическое списание (чтобы не уйти в минус).
+        """
+        logger.info(f"Writing off stock: product_id={product_id}, qty={qty}")
+        product = await self.get_product_by_id(product_id)
+        if not product:
+            return None
+        current_stock = product.stock or 0
+        actual = min(qty, current_stock)
+        new_stock = current_stock - actual
+        new_total_written_off = (product.total_written_off or 0) + actual
+        await self._get_product_repo(use_temp=False).update(
+            product.id, stock=new_stock, total_written_off=new_total_written_off
+        )
+        return await self.get_product_by_id(product_id)
+
+    async def reserve_stock(self, product_id: int, qty: int) -> Product | None:
+        """Заморозить часть остатка под заказ (бронирование).
+
+        Увеличивает ``reserved``. Физический ``stock`` не меняется —
+        товар остаётся на складе, но становится недоступен для новых заказов.
+        """
+        logger.info(f"Reserving stock: product_id={product_id}, qty={qty}")
+        product = await self.get_product_by_id(product_id)
+        if not product:
+            return None
+        new_reserved = (product.reserved or 0) + qty
+        await self._get_product_repo(use_temp=False).update(product.id, reserved=new_reserved)
+        return await self.get_product_by_id(product_id)
+
+    async def release_stock(self, product_id: int, qty: int) -> Product | None:
+        """Разморозить часть остатка (отмена заказа).
+
+        Уменьшает ``reserved`` (не ниже 0). Физический ``stock`` не меняется —
+        товар возвращается в доступный остаток.
+        """
+        logger.info(f"Releasing stock: product_id={product_id}, qty={qty}")
+        product = await self.get_product_by_id(product_id)
+        if not product:
+            return None
+        current_reserved = product.reserved or 0
+        actual = min(qty, current_reserved)
+        new_reserved = current_reserved - actual
+        await self._get_product_repo(use_temp=False).update(product.id, reserved=new_reserved)
+        return await self.get_product_by_id(product_id)
+
+    async def confirm_stock(self, product_id: int, qty: int) -> Product | None:
+        """Списать товар со склада по завершённому заказу.
+
+        Уменьшает ``stock`` и ``reserved``, увеличивает ``total_sold``.
+        Товар физически покидает склад.
+        """
+        logger.info(f"Confirming stock: product_id={product_id}, qty={qty}")
+        product = await self.get_product_by_id(product_id)
+        if not product:
+            return None
+        new_stock = max((product.stock or 0) - qty, 0)
+        new_reserved = max((product.reserved or 0) - qty, 0)
+        new_total_sold = (product.total_sold or 0) + qty
+        await self._get_product_repo(use_temp=False).update(
+            product.id,
+            stock=new_stock,
+            reserved=new_reserved,
+            total_sold=new_total_sold,
+        )
+        return await self.get_product_by_id(product_id)
+
     async def update_product_field(
             self,
             product_id: int,
             field: str,
             value: any,
             use_temp: bool = False,
-            admin_id: int = None
+            admin_id: int | None = None
     ):
         logger.debug(
             f"Updating product id={product_id} field '{field}' to '{value}' (use_temp={use_temp}, admin_id={admin_id})")

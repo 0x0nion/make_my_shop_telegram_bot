@@ -1,6 +1,5 @@
 """Тесты утилиты retry_async с экспоненциальным backoff."""
 import pytest
-
 from shopcrm_core.utils.retry import (
     RetryConfig,
     TransientError,

@@ -9,7 +9,6 @@
 from unittest.mock import AsyncMock, MagicMock
 
 from aiogram.exceptions import TelegramBadRequest
-
 from shopcrm_bot.middlewares.callback_answer import CallbackAnswerMiddleware
 
 

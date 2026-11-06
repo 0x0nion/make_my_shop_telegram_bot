@@ -1,15 +1,16 @@
 import io
 import logging
 import math
+
 from aiogram import Bot, F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InputFile
-
+from shopcrm_core.constants import ADMIN_ORDER_STATUS_FILTERS
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
-from shopcrm_bot.locales import Locale
-from shopcrm_core.constants import ADMIN_ORDER_STATUS_FILTERS
 from shopcrm_core.utils import format_price
+
+from shopcrm_bot.locales import Locale
 from shopcrm_bot.services.csv_export_service import build_export_filename, build_orders_csv
 from shopcrm_bot.ui import UIManager
 
@@ -114,10 +115,7 @@ async def render_orders_list(
     # 1. Считаем количество заказов в текущей категории
     status_counts = await admin_repo.get_orders_count_by_statuses()
 
-    if status == "all":
-        total_count = sum(status_counts.values())
-    else:
-        total_count = status_counts.get(status, 0)
+    total_count = sum(status_counts.values()) if status == "all" else status_counts.get(status, 0)
 
     total_pages = math.ceil(total_count / PAGE_SIZE)
 
@@ -147,11 +145,23 @@ async def render_orders_list(
         else locale.get_order_status_label(status)
     )
     if not orders:
-        text = locale.get_text("admin.orders.list_header", status=status_label) + "\n\n" + locale.get_text("admin.orders.list_empty")
+        text = (
+            locale.get_text("admin.orders.list_header", status=status_label)
+            + "\n\n"
+            + locale.get_text("admin.orders.list_empty")
+        )
     else:
         lines = [locale.get_text("admin.orders.list_header", status=status_label) + "\n"]
         for order in orders:
-            lines.append(locale.get_text("admin.orders.list_line", id=order.id, price=format_price(order.total_price), currency=locale.get_currency_symbol(), status=locale.get_order_status_label(order.status)))
+            lines.append(
+                locale.get_text(
+                    "admin.orders.list_line",
+                    id=order.id,
+                    price=format_price(order.total_price),
+                    currency=locale.get_currency_symbol(),
+                    status=locale.get_order_status_label(order.status),
+                )
+            )
 
         text = "\n".join(lines)
 

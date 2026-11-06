@@ -1,7 +1,6 @@
 """Тесты fail-fast валидации конфигурации core (Settings)."""
 import pytest
 from pydantic import ValidationError
-
 from shopcrm_core.config import Settings, _mask_db_url
 
 

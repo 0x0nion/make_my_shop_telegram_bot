@@ -1,7 +1,7 @@
 # handlers/client/order_reply.py
 import logging
 from contextlib import suppress
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
@@ -9,14 +9,14 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import (
     CallbackQuery,
-    Message,
-    InlineKeyboardMarkup,
     InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
 )
-
 from shopcrm_core.constants import OrderStatus
 from shopcrm_core.db.models import User
 from shopcrm_core.db.repositories.user_repo import UserRepository
+
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.services.chat_service import MESSAGES_PER_PAGE, format_chat_history
 from shopcrm_bot.ui import UIManager
@@ -214,7 +214,7 @@ async def client_send_reply(
         return
 
     # Формируем запись сообщения клиента с timezone-aware UTC
-    now_str = datetime.now(timezone.utc).strftime("%d.%m.%Y %H:%M")
+    now_str = datetime.now(UTC).strftime("%d.%m.%Y %H:%M")
     message_record = {
         "sender": "client",
         "text": message.text,

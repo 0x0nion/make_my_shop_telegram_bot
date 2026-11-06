@@ -1,13 +1,14 @@
 # handlers/admin/main.py
 import logging
+
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
-
+from shopcrm_core.constants import OrderStatus
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
+
 from shopcrm_bot.locales import Locale
-from shopcrm_core.constants import OrderStatus
 from shopcrm_bot.ui.presenters.admin import AdminUI
 
 admin_main_router = Router()
@@ -92,6 +93,7 @@ async def admin_main_menu(
     & ~F.data.startswith("admin_greeting")
     & ~F.data.startswith("admin_edit_wel")
     & ~F.data.startswith("admin_order")     # <-- Исключаем все действия с заказами
+    & ~F.data.startswith("admin_warehouse") # <-- Исключаем раздел склада
 )
 async def catch_other_admin_actions(callback: CallbackQuery, user: User):
     """Безопасная заглушка для нереализованных разделов админки (без ложных срабатываний)."""

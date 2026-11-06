@@ -1,12 +1,11 @@
 # keyboards/keyboard.py
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
-from shopcrm_core.locales.utils import SafeDict
 from shopcrm_core.constants import OrderStatus
+from shopcrm_core.locales.utils import SafeDict
 from shopcrm_core.utils import format_price
 
 logger = logging.getLogger(__name__)
@@ -25,10 +24,10 @@ class KeyboardFactory:
     def get_button_text(
             self,
             path_or_value: Any,
-            btn_key: Optional[Union[str, List[str]]] = None,
+            btn_key: str | list[str] | None = None,
             default: str = "XXX",
             **kwargs
-    ) -> Union[str, Dict[str, str]]:
+    ) -> str | dict[str, str]:
         """Универсальный извлекатель локализованных текстов.
 
         Варианты использования:
@@ -91,8 +90,8 @@ class KeyboardFactory:
     def get_inline(
             self,
             path: str,
-            callbacks: Optional[Dict[str, str]] = None,
-            exclude: Optional[List[str]] = None,
+            callbacks: dict[str, str] | None = None,
+            exclude: list[str] | None = None,
             **kwargs
     ) -> InlineKeyboardMarkup:
         """Собирает Inline-клавиатуру по пути в locale.json."""
@@ -103,12 +102,12 @@ class KeyboardFactory:
             logger.error(f"[KEYBOARDS] Structure at path '{path}' must be a dict.")
             return builder.as_markup()
 
-        buttons_dict: Dict[str, Any] = kb_data.get("buttons", {})
-        sizes: List[int] = kb_data.get("sizes", [])
+        buttons_dict: dict[str, Any] = kb_data.get("buttons", {})
+        sizes: list[int] = kb_data.get("sizes", [])
         callbacks_map = callbacks or {}
 
         exclude_set = set(exclude or [])
-        buttons: List[InlineKeyboardButton] = []
+        buttons: list[InlineKeyboardButton] = []
         for btn_key, btn_value in buttons_dict.items():
             if btn_key in exclude_set:
                 continue
@@ -148,14 +147,14 @@ class KeyboardFactory:
     def build(
             self,
             path: str,
-            callbacks: Optional[Dict[str, str]] = None,
-            exclude: Optional[List[str]] = None,
+            callbacks: dict[str, str] | None = None,
+            exclude: list[str] | None = None,
             **kwargs
     ) -> InlineKeyboardMarkup:
         """Универсальный alias-метод для быстрой сборки клавиатуры."""
         return self.get_inline(path=path, callbacks=callbacks, exclude=exclude, **kwargs)
 
-    def get_kb(self, key: str, callbacks: Optional[Dict[str, str]] = None, **kwargs):
+    def get_kb(self, key: str, callbacks: dict[str, str] | None = None, **kwargs):
         """Прямая сборка статической клиентской клавиатуры по ключу (legacy-совместимый API).
 
         Ключи соответствуют разделу keyboards.client в locale.json
@@ -307,10 +306,10 @@ class KeyboardFactory:
             self,
             categories: list,
             products: list,
-            current_cat_id: Optional[int],
-            parent_id: Optional[int],
-            category_names: Optional[Dict[int, str]] = None,
-            product_names: Optional[Dict[int, str]] = None,
+            current_cat_id: int | None,
+            parent_id: int | None,
+            category_names: dict[int, str] | None = None,
+            product_names: dict[int, str] | None = None,
     ) -> InlineKeyboardMarkup:
         """Иерархическое меню каталога (Категории + Товары + Навигация назад).
 
@@ -363,11 +362,11 @@ class KeyboardFactory:
     def get_product_card_kb(
             self,
             product_id: int,
-            category_id: Optional[int],
-            prev_id: Optional[int],
-            next_id: Optional[int],
+            category_id: int | None,
+            prev_id: int | None,
+            next_id: int | None,
             cart_item: int = 0,
-            manager_url: Optional[str] = None,
+            manager_url: str | None = None,
     ) -> InlineKeyboardMarkup:
         """Карточка конкретного товара с пагинацией (⬅️ ➡️), кнопкой корзины и менеджером."""
         texts = self.get_button_text(
@@ -422,7 +421,7 @@ class KeyboardFactory:
     def get_cart_kb(
             self,
             cart_items: list,
-            product_names: Optional[Dict[int, str]] = None,
+            product_names: dict[int, str] | None = None,
     ) -> InlineKeyboardMarkup:
         """Меню корзины с изменением количества (➖ / ➕) и оформлением.
 
@@ -472,7 +471,7 @@ class KeyboardFactory:
         return self.build("client.order_payment_request", order_id=order_id)
 
     def get_language_keyboard(
-            self, exclude: Optional[List[str]] = None
+            self, exclude: list[str] | None = None
     ) -> InlineKeyboardMarkup:
         """Клавиатура выбора языка.
 
@@ -489,11 +488,11 @@ class KeyboardFactory:
             self,
             categories: list,
             products: list,
-            current_cat_id: Optional[int],
-            parent_id: Optional[int],
-            category_names: Optional[Dict[int, str]] = None,
+            current_cat_id: int | None,
+            parent_id: int | None,
+            category_names: dict[int, str] | None = None,
             has_description: bool = False,
-            product_names: Optional[Dict[int, str]] = None,
+            product_names: dict[int, str] | None = None,
     ) -> InlineKeyboardMarkup:
         """Динамический конструктор управления категориями и товарами магазина."""
         from shopcrm_bot.keyboards.admin import build_catalog_edit_kb
@@ -557,7 +556,7 @@ class KeyboardFactory:
         btns = buttons.get("buttons", {}) if isinstance(buttons, dict) else {}
         sizes = buttons.get("sizes") if isinstance(buttons, dict) else None
 
-        out_buttons: List[InlineKeyboardButton] = []
+        out_buttons: list[InlineKeyboardButton] = []
         for btn_key, btn_val in btns.items():
             count: int | None = None
             if btn_key == "admin_order_all" and counts:
@@ -583,7 +582,7 @@ class KeyboardFactory:
         return builder.as_markup()
 
     @staticmethod
-    def _format_count(counts: dict, status: Optional[str]) -> str:
+    def _format_count(counts: dict, status: str | None) -> str:
         """Символ в скобках только при ненулевом счетчике."""
         count = counts.get(status, 0) if status else counts.get("__all__", 0)
         return f" ({count})" if count > 0 else ""
@@ -748,7 +747,7 @@ class KeyboardFactory:
             order,
             status: str = "all",
             page: int = 1,
-            product_names: Optional[Dict[int, str]] = None,
+            product_names: dict[int, str] | None = None,
     ) -> InlineKeyboardMarkup:
         """Редактор состава заказа (➖/➕ по позициям, добавление, назад).
 
@@ -833,7 +832,12 @@ class KeyboardFactory:
 
         texts = {
             key: self.get_button_text(btns.get(key), default="XXX")
-            for key in ("admin_edit_wel_text", "admin_edit_wel_photo", "admin_edit_wel_del_photo", "admin_shop_settings")
+            for key in (
+                "admin_edit_wel_text",
+                "admin_edit_wel_photo",
+                "admin_edit_wel_del_photo",
+                "admin_shop_settings",
+            )
         }
 
         builder = InlineKeyboardBuilder()
@@ -890,7 +894,7 @@ class KeyboardFactory:
         # Короткий код фильтра (лимит callback_data — 64 байта); "all" остаётся как есть.
         filter_code = ORDER_STATUS_CODES.get(status, status)
 
-        out_buttons: List[InlineKeyboardButton] = []
+        out_buttons: list[InlineKeyboardButton] = []
         for btn_key, btn_val in btns.items():
             text = self.get_button_text(btn_val, default="XXX")
 

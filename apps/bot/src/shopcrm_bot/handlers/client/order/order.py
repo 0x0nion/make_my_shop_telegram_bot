@@ -5,11 +5,13 @@ import logging
 from aiogram import Bot, F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
-
 from shopcrm_core.constants import OrderStatus
 from shopcrm_core.db.models import User
+from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.db.repositories.user_repo import UserRepository
 from shopcrm_core.services.order_service import get_user_order_product_names
+from shopcrm_core.services.warehouse_service import WarehouseService
+
 from shopcrm_bot.handlers.client.order_reply import ClientReplyStates
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.services.notification_service import notify_admins_about_cancellation
@@ -198,6 +200,8 @@ async def confirm_cancel_order(
 async def do_cancel_order(
     callback: CallbackQuery,
     user_repo: UserRepository,
+    admin_repo: AdminRepository,
+    warehouse_service: WarehouseService,
     user: User,
     bot: Bot,
     admin_ids: list[int],
@@ -219,6 +223,12 @@ async def do_cancel_order(
             show_alert=True,
         )
         return
+
+    # Возвращаем бронирование (release): товар снова доступен для новых заказов.
+    # Загружаем заказ с позициями (в cancel_order они не подгружаются).
+    order_with_items = await admin_repo.get_order_by_id(order_id)
+    if order_with_items:
+        await warehouse_service.apply_order_stock(order_with_items, "release")
 
     await callback.answer(
         text=locale.get_text("client.order_cancelled", order_id=order_id),

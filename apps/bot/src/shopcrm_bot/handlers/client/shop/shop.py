@@ -1,17 +1,16 @@
 # handlers/client/shop/shop.py
-import logging
 
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
-
 from shopcrm_core.db.models import User
 from shopcrm_core.db.repositories.shop_repo import ShopRepository
 from shopcrm_core.db.repositories.user_repo import UserRepository
+from shopcrm_core.logging import logger
+
 from shopcrm_bot.handlers.client.shop.render_product import show_product_card
 from shopcrm_bot.handlers.client.shop.render_shop import render_shop_menu
 from shopcrm_bot.locales import Locale
-from shopcrm_core.logging import logger
 
 user_shop_router = Router()
 
@@ -107,18 +106,27 @@ async def order_product(
         )
         return
 
-    await user_repo.add_to_cart(
+    user, error = await user_repo.add_to_cart(
         user_id=callback.from_user.id, product_id=product_id
     )
 
-    user = await user_repo.get_user_with_cart(user_id=callback.from_user.id)
+    locale = Locale(user.language)
+
+    if error:
+        # Лимит по остатку: показываем алерт с доступным количеством
+        product = await shop_repo.get_product_by_id(product_id)
+        stock = (product.stock or 0) if product else 0
+        key = (
+            "client.product_out_of_stock"
+            if error == "out_of_stock"
+            else "client.product_stock_limit"
+        )
+        await callback.answer(text=locale.get_text(key, stock=stock), show_alert=True)
+    else:
+        added_msg = locale.get_text("client.product_added_to_cart")
+        await callback.answer(text=added_msg, show_alert=False)
 
     cart_count = len(user.cart)
-
-    locale = Locale(user.language)
-    added_msg = locale.get_text("client.product_added_to_cart")
-
-    await callback.answer(text=added_msg, show_alert=False)
 
     await show_product_card(
         chat_id=callback.message.chat.id,

@@ -1,5 +1,5 @@
 # state/admin_states.py
-from aiogram.fsm.state import StatesGroup, State
+from aiogram.fsm.state import State, StatesGroup
 
 
 class AdminState(StatesGroup):
@@ -28,3 +28,9 @@ class AdminOrderState(StatesGroup):
 
 class EditPaymentDetails(StatesGroup):
     text = State()
+
+
+class WarehouseState(StatesGroup):
+    """Ввод количества для операций склада (пополнение / списание)."""
+    add_stock = State()
+    write_off_stock = State()

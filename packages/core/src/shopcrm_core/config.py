@@ -23,7 +23,7 @@ def _mask_db_url(url: str) -> str:
 class Settings(BaseSettings):
     """Конфигурация core: только данные (БД) и логирование.
 
-    Core — библиотека, поэтому здесь нет бот-специфичных полей
+    Core — самодостаточный пакет, поэтому здесь нет бот-специфичных полей
     (BOT_TOKEN, ADMIN_ID, FSM_STORAGE, REDIS_URL) — они живут в конфиге
     консьюмера (например, ``shopcrm_bot.config``).
     """
@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     # Directory for rotating log files (relative to the working directory).
     LOGS_DIR: str = "logs"
 
-    # ``extra="ignore"``: core — библиотека, поэтому неизвестные env-переменные
+    # ``extra="ignore"``: core — самодостаточный пакет, поэтому неизвестные env-переменные
     # (BOT_TOKEN, ADMIN_ID и т.д. — поля консьюмера) игнорируются, а не
     # вызывают ошибку валидации.
     model_config = SettingsConfigDict(

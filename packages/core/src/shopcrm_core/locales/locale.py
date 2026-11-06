@@ -4,7 +4,7 @@ import json
 import logging
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 from shopcrm_core.locales.utils import SafeDict
 from shopcrm_core.utils import format_price
@@ -20,17 +20,17 @@ class Locale:
     """
 
     locale_path = Path(__file__).resolve().parent / "locale.json"
-    _cached_locales: Optional[Dict[str, Any]] = None
+    _cached_locales: dict[str, Any] | None = None
 
     def __init__(self, lang: str = "en"):
         self.lang = lang or "en"
-        self.locales: Dict[str, Any] = self._get_locales()
+        self.locales: dict[str, Any] = self._get_locales()
 
     @classmethod
-    def _get_locales(cls) -> Dict[str, Any]:
+    def _get_locales(cls) -> dict[str, Any]:
         if cls._cached_locales is None:
             try:
-                with open(cls.locale_path, "r", encoding="utf-8") as file:
+                with open(cls.locale_path, encoding="utf-8") as file:
                     data = json.load(file)
                     cls._cached_locales = data if isinstance(data, dict) else {}
             except Exception as e:
@@ -48,7 +48,7 @@ class Locale:
 
     # --- Вспомогательные методы ---
 
-    def _resolve_path(self, path: str, silent: bool = False) -> Optional[Any]:
+    def _resolve_path(self, path: str, silent: bool = False) -> Any | None:
         keys = path.split(".")
         current: Any = self.locales
 
@@ -66,7 +66,7 @@ class Locale:
 
     def _get_localized_value(
         self, path: str, silent: bool = False
-    ) -> Optional[Union[str, Dict[str, Any], list]]:
+    ) -> str | dict[str, Any] | list | None:
         data = self._resolve_path(path, silent=silent)
 
         if data is None:
@@ -79,7 +79,7 @@ class Locale:
 
         return data
 
-    # --- Публичные методы получения текста и сырых данных клавиатур ---
+    # --- Методы получения текста и сырых данных клавиатур ---
 
     def get_text(self, path: str, **kwargs) -> str:
         """Возвращает локализованный текст.
@@ -89,9 +89,7 @@ class Locale:
           - "client.user_main" (с авто-префиксом "text.")
           - "user_main" (корневой клиентский ключ, как в старом msg.json)
         """
-        if path.startswith("text."):
-            target_path = path
-        elif self._resolve_path(path, silent=True) is not None:
+        if path.startswith("text.") or self._resolve_path(path, silent=True) is not None:
             target_path = path
         else:
             target_path = f"text.{path}"
@@ -115,9 +113,7 @@ class Locale:
 
     def has_text(self, path: str) -> bool:
         """True, если по пути существует валидный перевод для текущего языка."""
-        if path.startswith("text."):
-            target_path = path
-        elif self._resolve_path(path, silent=True) is not None:
+        if path.startswith("text.") or self._resolve_path(path, silent=True) is not None:
             target_path = path
         else:
             target_path = f"text.{path}"
@@ -125,12 +121,12 @@ class Locale:
         value = self._get_localized_value(target_path, silent=True)
         return isinstance(value, str) and value != ""
 
-    def get_keyboard_data(self, path: str) -> Optional[Union[Dict[str, Any], list]]:
+    def get_keyboard_data(self, path: str) -> dict[str, Any] | list | None:
         """Возвращает сырые данные из массива keyboards в locale.json."""
         target_path = path if path.startswith("keyboards.") else f"keyboards.{path}"
         return self._get_localized_value(target_path)
 
-    def get_order_status_label(self, status: Optional[str]) -> str:
+    def get_order_status_label(self, status: str | None) -> str:
         """Локализованная подпись статуса заказа (из keyboards.order_status_menu).
 
         Fallback — исходное значение статуса.
@@ -145,21 +141,21 @@ class Locale:
 
     # --- Валюты и Единицы (из единого locale.json) ---
 
-    def get_unit(self, unit_code: Optional[str]) -> str:
+    def get_unit(self, unit_code: str | None) -> str:
         code = unit_code or self.locales.get("units", {}).get("default", "pc")
         data = self.locales.get("units", {}).get(code)
         if isinstance(data, dict):
             return data.get(self.lang) or data.get("en") or code
         return str(code)
 
-    def get_currency_symbol(self, currency_code: Optional[str] = None) -> str:
+    def get_currency_symbol(self, currency_code: str | None = None) -> str:
         code = currency_code or self.locales.get("currencies", {}).get("default", "USD")
         data = self.locales.get("currencies", {}).get(code)
         if isinstance(data, dict):
             return data.get("symbol", code)
         return code
 
-    def get_currency(self, currency_code: Optional[str]) -> str:
+    def get_currency(self, currency_code: str | None) -> str:
         code = currency_code or self.locales.get("currencies", {}).get("default", "USD")
         data = self.locales.get("currencies", {}).get(code)
         if isinstance(data, dict):
@@ -176,7 +172,7 @@ class Locale:
         self,
         order,
         template_key: str = "client.user_checkout_confirm",
-        product_names: Optional[Dict[int, str]] = None,
+        product_names: dict[int, str] | None = None,
         **kwargs
     ) -> str:
         """Универсальный метод форматирования любой карточки заказа / чека.

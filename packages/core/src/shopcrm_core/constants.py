@@ -2,7 +2,7 @@
 from enum import Enum
 
 
-class OrderStatus(str, Enum):
+class OrderStatus(str, Enum):  # noqa: UP042  # str-Enum: str() даёт value; StrEnum меняет поведение str()/format
     """Жизненный цикл заказа."""
     PENDING = "pending"                             # Создан / ожидает действий
     PAYMENT_REQUESTED = "payment_requested"         # Админ запросил оплату у клиента
@@ -79,7 +79,7 @@ ORDER_STATUS_CODES: dict[str, str] = {
 ORDER_STATUS_BY_CODE: dict[str, str] = {v: k for k, v in ORDER_STATUS_CODES.items()}
 
 
-class PaymentProofType(str, Enum):
+class PaymentProofType(str, Enum):  # noqa: UP042  # str-Enum: str() даёт value; StrEnum меняет поведение str()/format
     """Типы подтверждения оплаты."""
     CASH = "cash"
     PHOTO = "photo"

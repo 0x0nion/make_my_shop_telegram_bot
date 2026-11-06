@@ -1,10 +1,10 @@
 import logging
 
 from aiogram.types import CallbackQuery, Message
-
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.services.order_service import build_order_detail_text
+
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.ui import UIManager
 

@@ -1,7 +1,7 @@
 from shopcrm_core.db.models import LocaleText
 from shopcrm_core.db.models.category import Category
 from shopcrm_core.db.models.product import Product
-from shopcrm_core.db.models.temp_models import TempCategory, TempProduct, TempLocaleText
+from shopcrm_core.db.models.temp_models import TempCategory, TempLocaleText, TempProduct
 from shopcrm_core.db.repositories.base_repo import BaseRepository
 from shopcrm_core.logging import logger
 
@@ -16,7 +16,7 @@ class AdminCategoriesMixin:
             self,
             category_id: int,
             use_temp: bool = False,
-            admin_id: int = None
+            admin_id: int | None = None
     ) -> Category | TempCategory | None:
         repo = self._get_category_repo(use_temp)
         if use_temp:
@@ -27,7 +27,7 @@ class AdminCategoriesMixin:
             self,
             parent_id: int | None = None,
             use_temp: bool = False,
-            admin_id: int = None
+            admin_id: int | None = None
     ) -> list:
         repo = self._get_category_repo(use_temp)
         if use_temp:
@@ -39,7 +39,7 @@ class AdminCategoriesMixin:
             name: str,
             parent_id: int | None = None,
             use_temp: bool = False,
-            admin_id: int = None
+            admin_id: int | None = None
     ) -> Category | TempCategory:
         logger.info(f"Creating category '{name}' (parent_id={parent_id}, use_temp={use_temp}, admin_id={admin_id})")
         cat_repo = self._get_category_repo(use_temp)
@@ -79,7 +79,7 @@ class AdminCategoriesMixin:
             accumulated.append(s.id)
             await self._get_real_subcategory_ids(s.id, accumulated)
 
-    async def delete_category(self, category_id: int, use_temp: bool = False, admin_id: int = None):
+    async def delete_category(self, category_id: int, use_temp: bool = False, admin_id: int | None = None):
         logger.info(f"Deleting category id={category_id} (use_temp={use_temp}, admin_id={admin_id})")
         all_cat_ids = [category_id]
 

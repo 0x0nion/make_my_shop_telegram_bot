@@ -5,9 +5,9 @@ from aiogram import F, Router
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
-
 from shopcrm_core.db.models import User
 from shopcrm_core.db.repositories.user_repo import UserRepository
+
 from shopcrm_bot.handlers.admin.utils import SUPPORTED_LANGUAGES
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.ui import UIManager

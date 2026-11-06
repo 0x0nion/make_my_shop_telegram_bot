@@ -1,6 +1,7 @@
 # database/models/template.py
 from sqlalchemy import String, Text
 from sqlalchemy.orm import Mapped, mapped_column
+
 from shopcrm_core.db.models.base import Base
 
 

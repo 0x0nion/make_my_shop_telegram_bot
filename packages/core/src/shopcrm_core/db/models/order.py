@@ -1,8 +1,14 @@
 from datetime import datetime
-from sqlalchemy import ForeignKey, String, Text, Numeric, DateTime, func, JSON
+from typing import TYPE_CHECKING
+
+from sqlalchemy import JSON, DateTime, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from shopcrm_core.db.models.base import Base
+
+if TYPE_CHECKING:
+    from shopcrm_core.db.models.product import Product
+    from shopcrm_core.db.models.user import User
 
 
 class Order(Base):

@@ -4,13 +4,13 @@ import logging
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import InlineKeyboardMarkup
-
-from shopcrm_bot.config import config as app_config
+from shopcrm_core.constants import PaymentProofType
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.db.repositories.user_repo import UserRepository
 from shopcrm_core.services.order_service import build_order_detail_text
+
+from shopcrm_bot.config import config as app_config
 from shopcrm_bot.locales import Locale
-from shopcrm_core.constants import PaymentProofType
 
 logger = logging.getLogger(__name__)
 

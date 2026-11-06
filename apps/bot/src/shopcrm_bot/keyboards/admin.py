@@ -1,5 +1,4 @@
 import logging
-from typing import Dict, Optional
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -11,11 +10,11 @@ def build_catalog_edit_kb(
     keyboard_factory,
     categories: list,
     products: list,
-    current_cat_id: Optional[int | None],
-    parent_id: Optional[int],
-    category_names: Optional[Dict[int, str]] = None,
+    current_cat_id: int | None,
+    parent_id: int | None,
+    category_names: dict[int, str] | None = None,
     has_description: bool = False,
-    product_names: Optional[Dict[int, str]] = None,
+    product_names: dict[int, str] | None = None,
 ) -> InlineKeyboardMarkup:
     """Динамический конструктор управления категориями и товарами магазина.
 

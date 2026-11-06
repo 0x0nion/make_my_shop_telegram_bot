@@ -1,6 +1,6 @@
-from typing import Dict, Optional, Tuple, Any
-from aiogram.types import InlineKeyboardMarkup
+from typing import Any
 
+from aiogram.types import InlineKeyboardMarkup
 from shopcrm_core.utils import format_price
 
 
@@ -9,7 +9,7 @@ def build_catalog_text(
         title: str,
         description: str,
         products: list,
-        product_names: Optional[Dict[int, str]] = None,
+        product_names: dict[int, str] | None = None,
 ) -> str:
     """Единый формат текста каталога для клиента и админа.
 
@@ -63,15 +63,15 @@ class CatalogMenuPresenter:
     @staticmethod
     def render(
             locale,
-            current_cat: Optional[Any],
-            current_cat_id: Optional[int],
+            current_cat: Any | None,
+            current_cat_id: int | None,
             db_categories: list,
             db_products: list,
-            category_names: Dict[int, str],
-            category_description: Optional[str],
-            root_description: Optional[str],
-            product_names: Optional[Dict[int, str]] = None,
-    ) -> Tuple[str, InlineKeyboardMarkup]:
+            category_names: dict[int, str],
+            category_description: str | None,
+            root_description: str | None,
+            product_names: dict[int, str] | None = None,
+    ) -> tuple[str, InlineKeyboardMarkup]:
         """Формирует готовый текст экрана и клавиатуру.
 
         :param product_names: словарь product_id -> локализованное название

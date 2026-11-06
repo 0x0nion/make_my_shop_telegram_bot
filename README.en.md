@@ -16,6 +16,7 @@ A Telegram bot for managing a small shop: catalog, cart, orders, payment and an 
 - **Checkout** — delivery address, comment, total amount
 - **Payment** — attaching a receipt (photo / text), confirmation by the admin
 - **Order history** — statuses, support chat for each order
+- **Warehouse** — stock levels, restocking, write-offs, reservation for orders
 - **Admin panel** — managing products, categories, order statuses
 - **Multilingual** — RU / EN / ES (switchable in the bot)
 

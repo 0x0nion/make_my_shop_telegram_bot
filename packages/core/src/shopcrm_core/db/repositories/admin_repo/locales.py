@@ -12,7 +12,7 @@ class AdminLocalesMixin:
             entity_type: str,
             language_code: str,
             use_temp: bool = False,
-            admin_id: int = None
+            admin_id: int | None = None
     ) -> str | None:
         if use_temp:
             repo = BaseRepository(TempLocaleText, self.session)
@@ -45,7 +45,7 @@ class AdminLocalesMixin:
             entity_type: str,
             text: str,
             use_temp: bool = False,
-            admin_id: int = None
+            admin_id: int | None = None
     ):
         """Upsert локализованного текста для всех поддерживаемых языков (один и тот же текст).
 
@@ -84,7 +84,10 @@ class AdminLocalesMixin:
             text: str,
             admin_id: int
     ):
-        logger.debug(f"Updating temp locale for entity_id={entity_id}, type='{entity_type}', lang='{language_code}', admin_id={admin_id}")
+        logger.debug(
+            f"Updating temp locale for entity_id={entity_id}, type='{entity_type}', "
+            f"lang='{language_code}', admin_id={admin_id}"
+        )
         repo = BaseRepository(TempLocaleText, self.session)
         locale = await repo.get_one(
             TempLocaleText.entity_id == entity_id,

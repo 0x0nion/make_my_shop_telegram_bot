@@ -1,8 +1,7 @@
 # database/repositories/admin_repo/orders.py
 
-from typing import Sequence
-from sqlalchemy import select, func
-from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy import func, select
+from sqlalchemy.orm import joinedload, selectinload
 
 from shopcrm_core.db.models.order import Order
 from shopcrm_core.db.repositories.base_repo import BaseRepository

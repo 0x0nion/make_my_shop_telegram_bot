@@ -1,9 +1,10 @@
-"""API встраивания админ-секции во внешние приложения.
+"""API переиспользования роутера админ-секции.
 
-Для приложений, которые переиспользуют редактор магазина
-(каталог/товары/приветствие/заказы) без запуска полноценного core-бота.
+Позволяет подключить редактор магазина
+(каталог/товары/приветствие/заказы) в отдельный dispatcher
+без запуска полноценного core-бота.
 
-Пример (внешний dispatcher):
+Пример:
 
     from shopcrm_bot.embedding import (
         extract_admin_group_router,
@@ -25,7 +26,7 @@ from aiogram import Router
 from shopcrm_bot.handlers.admin import admin_group_router
 
 # Callback-префиксы редактора магазина (единый источник истины).
-# Внешние middleware используют их для гейтинга: только на эти callback'ы
+# Middleware использует их для гейтинга: только на эти callback'ы
 # нужно создавать сессию схемы и DI-объекты.
 ADMIN_SHOP_CALLBACK_PREFIXES: tuple[str, ...] = (
     "admin_catalog_",  # навигация каталога (admin_catalog_start, ...)
@@ -45,7 +46,7 @@ ADMIN_SHOP_CALLBACK_PREFIXES: tuple[str, ...] = (
 def is_admin_shop_callback(data: str | None) -> bool:
     """Принадлежит ли callback-данные редактору магазина.
 
-    Используется внешними middleware для решения, нужно ли создавать
+    Используется middleware для решения, нужно ли создавать
     сессию схемы и DI-объекты для этого callback'а.
     """
     if not data:
@@ -56,8 +57,8 @@ def is_admin_shop_callback(data: str | None) -> bool:
 def extract_admin_group_router() -> Router:
     """Открепляет ``admin_group_router`` от дерева core-бота и возвращает его.
 
-    Для переиспользования админ-секции (редактор магазина, заказы) во
-    внешних приложениях. После вызова core-бот в том
+    Для подключения админ-секции (редактор магазина, заказы) в отдельный
+    dispatcher. После вызова core-бот в том
     же процессе админ-секцию не получит — функция предназначена для
     процессов, которые НЕ запускают core-бота.
 

@@ -1,5 +1,3 @@
-from typing import Optional, Sequence
-from sqlalchemy import or_
 from shopcrm_core.db.models.locales import LocaleText
 from shopcrm_core.db.repositories.base_repo import BaseRepository
 
@@ -17,7 +15,7 @@ class UserLocaleMixin:
             entity_id: int = 0,
             lang_code: str = "en",
             default_lang: str = "en"
-    ) -> Optional[str]:
+    ) -> str | None:
         """Получение одного текста с автоматическим фолбэком на язык по умолчанию."""
         # Запрашиваем сразу и целевой, и дефолтный язык за 1 запрос
         stmt_conditions = [
@@ -39,7 +37,7 @@ class UserLocaleMixin:
         fallback_locale = next((loc for loc in locales if loc.language_code == default_lang), None)
         return fallback_locale.text if fallback_locale else None
 
-    async def get_welcome_card(self, lang_code: str = "en") -> tuple[str, Optional[str]]:
+    async def get_welcome_card(self, lang_code: str = "en") -> tuple[str, str | None]:
         """
         Загружает приветственный текст и фото за 1 эффективный запрос к БД.
         """
@@ -51,14 +49,19 @@ class UserLocaleMixin:
         )
 
         # Функция-помощник для извлечения значения из полученного списка
-        def extract_text(entity_type: str) -> Optional[str]:
+        def extract_text(entity_type: str) -> str | None:
             # Пробуем найти целевой язык
-            match = next((l for l in locales if l.entity_type == entity_type and l.language_code == lang_code), None)
+            match = next(
+                (loc for loc in locales if loc.entity_type == entity_type and loc.language_code == lang_code),
+                None,
+            )
             if match and match.text:
                 return match.text
             # Пробуем найти дефолтный язык (en)
-            match_fallback = next((l for l in locales if l.entity_type == entity_type and l.language_code == "en"),
-                                  None)
+            match_fallback = next(
+                (loc for loc in locales if loc.entity_type == entity_type and loc.language_code == "en"),
+                None,
+            )
             return match_fallback.text if match_fallback else None
 
         text = extract_text("welcome_message") or ""

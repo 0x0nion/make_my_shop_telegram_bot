@@ -13,8 +13,8 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from aiogram.types import BotCommandScopeChat, CallbackQuery, Chat, Message, User as TgUser
-
+from aiogram.types import BotCommandScopeChat, CallbackQuery, Chat, Message
+from aiogram.types import User as TgUser
 from shopcrm_bot.services import commands_service
 from shopcrm_bot.services.commands_service import build_commands, ensure_bot_commands
 

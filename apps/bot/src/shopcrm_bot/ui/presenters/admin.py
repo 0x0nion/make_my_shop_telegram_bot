@@ -1,7 +1,7 @@
 from aiogram.types import CallbackQuery, Message
-
 from shopcrm_core.db.models import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
+
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.ui import UIManager
 from shopcrm_bot.ui.presenters.catalog import CatalogMenuPresenter

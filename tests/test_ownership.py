@@ -1,10 +1,8 @@
 """Тесты изоляции данных: пользователь не видит чужие заказы."""
-import pytest
-from sqlalchemy import select
 
+from shopcrm_core.constants import OrderStatus, PaymentProofType
 from shopcrm_core.db.models.cart import CartItem
 from shopcrm_core.db.models.order import Order
-from shopcrm_core.constants import OrderStatus, PaymentProofType
 
 
 class TestOrderOwnership:

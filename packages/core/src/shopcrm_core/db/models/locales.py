@@ -1,6 +1,7 @@
 # database/models/locales.py
 from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
+
 from shopcrm_core.db.models.base import Base
 
 

@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class Currency(str, Enum):
+class Currency(str, Enum):  # noqa: UP042  # str-Enum: str() даёт value; StrEnum меняет поведение str()/format
     USD = "USD"
     USDT = "USDT"
     BTC = "BTC"

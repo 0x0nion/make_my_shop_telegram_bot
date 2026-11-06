@@ -1,11 +1,11 @@
 from aiogram import Router
 
+from .cart import user_cart_group_router
+from .main import client_main_router
+from .order import user_order_group_router
 from .order_reply import client_reply_router
 from .payment import user_payment_group_router
-from .cart import user_cart_group_router
-from .order import user_order_group_router
 from .shop import user_shop_group_router
-from .main import client_main_router
 
 client_group_router = Router()
 

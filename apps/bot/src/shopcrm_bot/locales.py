@@ -15,4 +15,4 @@ class BotLocale(_CoreLocale):
 # Алиас: код бота продолжает использовать привычное имя Locale
 Locale = BotLocale
 
-__all__ = ["Locale", "BotLocale"]
+__all__ = ["BotLocale", "Locale"]

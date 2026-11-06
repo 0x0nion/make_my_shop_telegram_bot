@@ -1,12 +1,14 @@
 import logging
+
 from aiogram import F, Router
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
-
+from shopcrm_core.constants import ORDER_STATUS_BY_CODE, ORDER_STATUS_CODES, OrderStatus
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
+from shopcrm_core.services.warehouse_service import WarehouseService
+
 from shopcrm_bot.handlers.admin.orders.common import render_order_detail
 from shopcrm_bot.locales import Locale
-from shopcrm_core.constants import ORDER_STATUS_BY_CODE, ORDER_STATUS_CODES, OrderStatus
 from shopcrm_bot.ui import UIManager
 
 logger = logging.getLogger(__name__)
@@ -61,6 +63,7 @@ async def process_change_status_menu(
 async def process_set_order_status(
         callback: CallbackQuery,
         admin_repo: AdminRepository,
+        warehouse_service: WarehouseService,
         user: User,
 ):
     """
@@ -112,6 +115,14 @@ async def process_set_order_status(
     # Обновляем статус
     order.status = new_status
     await admin_repo.update_order(order)
+
+    # Синхронизируем остаток со статусом заказа:
+    #   COMPLETED → списываем товар со склада (confirm);
+    #   CANCELLED → возвращаем бронирование (release).
+    if new_status == OrderStatus.COMPLETED.value:
+        await warehouse_service.apply_order_stock(order, "confirm")
+    elif new_status == OrderStatus.CANCELLED.value:
+        await warehouse_service.apply_order_stock(order, "release")
 
     await callback.answer(
         locale.get_text("admin.orders.status_changed", status=locale.get_order_status_label(new_status)),
@@ -170,6 +181,7 @@ async def process_mark_order_paid(
 async def process_confirm_close_order(
         callback: CallbackQuery,
         admin_repo: AdminRepository,
+        warehouse_service: WarehouseService,
         user: User,
 ):
     """
@@ -197,8 +209,14 @@ async def process_confirm_close_order(
         order.is_paid = True
     await admin_repo.update_order(order)
 
+    # Закрытие заказа = завершение: списываем товар со склада (confirm).
+    await warehouse_service.apply_order_stock(order, "confirm")
+
     await callback.answer(
-        locale.get_text("admin.orders.status_changed", status=locale.get_order_status_label(OrderStatus.COMPLETED.value)),
+        locale.get_text(
+            "admin.orders.status_changed",
+            status=locale.get_order_status_label(OrderStatus.COMPLETED.value),
+        ),
         show_alert=True,
     )
 

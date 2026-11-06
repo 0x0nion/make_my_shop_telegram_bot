@@ -6,16 +6,13 @@ os.environ.setdefault("BOT_TOKEN", "123:TEST")
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("ADMIN_ID", "[1]")
 
-import pytest
 import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
 from shopcrm_core.db.models.base import Base
-from shopcrm_core.db.models.user import User
-from shopcrm_core.db.models.product import Product
 from shopcrm_core.db.models.cart import CartItem
-from shopcrm_core.db.models.order import Order, OrderItem
+from shopcrm_core.db.models.product import Product
+from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.user_repo import UserRepository
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 
 @pytest_asyncio.fixture

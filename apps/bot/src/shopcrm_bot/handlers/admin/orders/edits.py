@@ -1,17 +1,18 @@
 import logging
 from contextlib import suppress
+
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
-
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
+from shopcrm_core.services.address_service import build_location_address, normalize_text_address
+
 from shopcrm_bot.handlers.admin.orders.common import render_order_detail
 from shopcrm_bot.locales import Locale
-from shopcrm_bot.ui import UIManager
-from shopcrm_core.services.address_service import build_location_address, normalize_text_address
 from shopcrm_bot.states.admin_states import AdminOrderState
+from shopcrm_bot.ui import UIManager
 
 logger = logging.getLogger(__name__)
 

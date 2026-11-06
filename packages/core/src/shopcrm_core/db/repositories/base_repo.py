@@ -1,6 +1,9 @@
-from typing import Generic, TypeVar, Type, Sequence, Any, Iterable
-from sqlalchemy import select, delete, func, exists, inspect
+from collections.abc import Iterable, Sequence
+from typing import Any, Generic, TypeVar
+
+from sqlalchemy import delete, exists, func, inspect, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from shopcrm_core.db.models.base import Base
 
 ModelType = TypeVar("ModelType", bound=Base)
@@ -11,7 +14,7 @@ class BaseRepository(Generic[ModelType]):
     Универсальный базовый репозиторий для SQLAlchemy 2.0.
     """
 
-    def __init__(self, model: Type[ModelType], session: AsyncSession):
+    def __init__(self, model: type[ModelType], session: AsyncSession):
         self.model = model
         self.session = session
         # Кэшируем названия колонок для безопасной проверки при update
@@ -62,10 +65,7 @@ class BaseRepository(Generic[ModelType]):
         if options:
             stmt = stmt.options(*options)
         if order_by is not None:
-            if isinstance(order_by, (list, tuple)):
-                stmt = stmt.order_by(*order_by)
-            else:
-                stmt = stmt.order_by(order_by)
+            stmt = stmt.order_by(*order_by) if isinstance(order_by, (list, tuple)) else stmt.order_by(order_by)
         if offset is not None:
             stmt = stmt.offset(offset)
         if limit is not None:

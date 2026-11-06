@@ -29,7 +29,7 @@ class TestStatusCodes:
         assert len(codes) == len(set(codes))
 
     def test_by_code_is_reverse_mapping(self):
-        assert ORDER_STATUS_BY_CODE == {v: k for k, v in ORDER_STATUS_CODES.items()}
+        assert {v: k for k, v in ORDER_STATUS_CODES.items()} == ORDER_STATUS_BY_CODE
 
 
 class TestAdminFilters:

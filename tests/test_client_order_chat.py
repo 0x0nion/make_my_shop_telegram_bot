@@ -10,9 +10,6 @@
 """
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from shopcrm_core.constants import OrderStatus
-from shopcrm_core.db.models.cart import CartItem
-
 from shopcrm_bot.handlers.client import order_reply as order_reply_module
 from shopcrm_bot.handlers.client.order.order import _clear_reply_state
 from shopcrm_bot.handlers.client.order_reply import (
@@ -22,6 +19,8 @@ from shopcrm_bot.handlers.client.order_reply import (
 )
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.services.chat_service import MESSAGES_PER_PAGE
+from shopcrm_core.constants import OrderStatus
+from shopcrm_core.db.models.cart import CartItem
 
 
 async def _create_order(repo, session, user, product):

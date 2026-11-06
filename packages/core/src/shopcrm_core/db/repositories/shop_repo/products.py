@@ -1,4 +1,5 @@
-from sqlalchemy import select
+from sqlalchemy import and_
+
 from shopcrm_core.db.models.product import Product
 from shopcrm_core.db.repositories.base_repo import BaseRepository
 from shopcrm_core.logging import logger
@@ -16,12 +17,22 @@ class ShopProductsMixin:
             return Product.category_id.is_(None)
         return Product.category_id == category_id
 
+    def _get_visible_condition(self):
+        """Условие видимости товара для клиента: активный и есть доступный остаток.
+
+        Доступный остаток = stock - reserved (часть может быть заморожена заказами).
+        """
+        return and_(
+            Product.is_active.is_not(False),
+            (Product.stock - Product.reserved) > 0,
+        )
+
     async def get_products_by_category(self, category_id: int | None) -> list[Product]:
-        """Получить активные товары в категории."""
+        """Получить видимые товары в категории (активные и с остатком > 0)."""
         logger.info(f"Fetching shop products by category_id={category_id}")
         return await self._product_repo.get_all(
             self._get_category_condition(category_id),
-            Product.is_active.is_not(False)
+            self._get_visible_condition()
         )
 
     async def get_product_by_id(self, product_id: int) -> Product | None:
@@ -35,10 +46,10 @@ class ShopProductsMixin:
 
         category_cond = self._get_category_condition(category_id)
 
-        # 1. Ищем следующий активный товар по возрастанию ID
+        # 1. Ищем следующий видимый товар по возрастанию ID
         products = await self._product_repo.get_all(
             category_cond,
-            Product.is_active.is_not(False),
+            self._get_visible_condition(),
             Product.id > current_product_id,
             order_by=Product.id.asc(),
             limit=1
@@ -46,10 +57,10 @@ class ShopProductsMixin:
         if products:
             return products[0]
 
-        # 2. Если дальше ничего нет — закольцовываемся на самый первый активный
+        # 2. Если дальше ничего нет — закольцовываемся на самый первый видимый
         first_products = await self._product_repo.get_all(
             category_cond,
-            Product.is_active.is_not(False),
+            self._get_visible_condition(),
             order_by=Product.id.asc(),
             limit=1
         )
@@ -61,10 +72,10 @@ class ShopProductsMixin:
 
         category_cond = self._get_category_condition(category_id)
 
-        # 1. Ищем предыдущий активный товар по убыванию ID
+        # 1. Ищем предыдущий видимый товар по убыванию ID
         products = await self._product_repo.get_all(
             category_cond,
-            Product.is_active.is_not(False),
+            self._get_visible_condition(),
             Product.id < current_product_id,
             order_by=Product.id.desc(),
             limit=1
@@ -72,10 +83,10 @@ class ShopProductsMixin:
         if products:
             return products[0]
 
-        # 2. Если назад ничего нет — закольцовываемся на самый последний активный
+        # 2. Если назад ничего нет — закольцовываемся на самый последний видимый
         last_products = await self._product_repo.get_all(
             category_cond,
-            Product.is_active.is_not(False),
+            self._get_visible_condition(),
             order_by=Product.id.desc(),
             limit=1
         )

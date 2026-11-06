@@ -1,18 +1,17 @@
 # handlers/client/cart/render_cart.py
 import asyncio
 from types import SimpleNamespace
-from typing import Union
 
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
-
 from shopcrm_core.db.repositories.user_repo import UserRepository
+
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.ui import UIManager
 
 
 async def render_cart(
-    event: Union[CallbackQuery, Message],
+    event: CallbackQuery | Message,
     user_repo: UserRepository,
     state: FSMContext,
 ):
@@ -71,7 +70,7 @@ async def render_cart(
             for item in user.cart
         ]
     )
-    for item, loc_name in zip(user.cart, loc_names):
+    for item, loc_name in zip(user.cart, loc_names, strict=True):
         product_names[item.product_id] = loc_name or (
             item.product.name if item.product else ""
         )

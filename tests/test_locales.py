@@ -3,22 +3,23 @@ import json
 from pathlib import Path
 
 import pytest
-
 from shopcrm_core.locales.currencies import (
     DEFAULT_CURRENCY,
     get_currency_label,
     get_currency_symbol,
 )
 from shopcrm_core.locales.locale import Locale
+from shopcrm_core.locales.units import get_unit_label
 from shopcrm_core.locales.utils import SafeDict
-from shopcrm_core.locales.units import get_unit_label, ProductUnit, DEFAULT_UNIT
 
-LOCALE_PATH = Path(__file__).resolve().parent.parent / "packages" / "core" / "src" / "shopcrm_core" / "locales" / "locale.json"
+LOCALE_PATH = (
+    Path(__file__).resolve().parent.parent / "packages" / "core" / "src" / "shopcrm_core" / "locales" / "locale.json"
+)
 SUPPORTED_LANGS = ("ru", "en", "es")
 
 
 def _load_raw_locales() -> dict:
-    with open(LOCALE_PATH, "r", encoding="utf-8") as f:
+    with open(LOCALE_PATH, encoding="utf-8") as f:
         return json.load(f)
 
 

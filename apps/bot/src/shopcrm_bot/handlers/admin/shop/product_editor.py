@@ -1,25 +1,27 @@
 # handlers/admin/shop/product_editor.py
 import asyncio
+import contextlib
 import logging
+
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
-
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
+from shopcrm_core.locales.currencies import get_currency_symbol
+from shopcrm_core.locales.units import get_unit_label
 from shopcrm_core.services.validation import (
     validate_description,
     validate_name,
     validate_price,
 )
-from shopcrm_bot.handlers.admin.utils import self_destruct
-from shopcrm_core.locales.currencies import get_currency_symbol
 from shopcrm_core.utils import format_price
+
+from shopcrm_bot.handlers.admin.utils import self_destruct
 from shopcrm_bot.locales import Locale
-from shopcrm_core.locales.units import get_unit_label
-from shopcrm_bot.ui import UIManager
 from shopcrm_bot.states.admin_states import EditProduct
+from shopcrm_bot.ui import UIManager
 
 editor_router = Router()
 logger = logging.getLogger(__name__)
@@ -233,10 +235,8 @@ async def process_edit_input(
     lang = user.language
     locale = Locale(lang=lang)
 
-    try:
+    with contextlib.suppress(TelegramBadRequest):
         await message.delete()
-    except TelegramBadRequest:
-        pass
 
     if "photo" in curr_state and not message.photo:
         err_msg = locale.get_text("admin.product_editor.not_photo")

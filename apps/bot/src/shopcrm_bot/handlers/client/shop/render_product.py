@@ -1,17 +1,16 @@
 # handlers/client/shop/render_product.py
-from typing import Optional
 
 from aiogram import Bot
-
 from shopcrm_core.db.repositories.shop_repo import ShopRepository
+from shopcrm_core.logging import logger
 from shopcrm_core.utils import format_price
+
 from shopcrm_bot.config import config
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.ui import UIManager
-from shopcrm_core.logging import logger
 
 
-def format_product_from_template(product, locale: Locale, name: Optional[str] = None) -> str:
+def format_product_from_template(product, locale: Locale, name: str | None = None) -> str:
     """Динамический сборщик текста карточки товара с использованием локали.
 
     Описание показывается только если оно заполнено — без плейсхолдера.
@@ -44,7 +43,7 @@ async def show_product_card(
     bot: Bot,
     lang: str,
     cart_item: int = 0,
-    old_message_id: Optional[int] = None,
+    old_message_id: int | None = None,
 ):
     """Универсальная локализованная функция для отрисовки карточки товара."""
     logger.info(f"Showing product card id={product_id} for chat_id={chat_id}")

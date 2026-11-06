@@ -8,8 +8,8 @@ traceback и показывает пользователю вежливое ло
 from aiogram import Dispatcher
 from aiogram.exceptions import TelegramAPIError
 from aiogram.types import CallbackQuery, ErrorEvent
-
 from shopcrm_core.logging import logger
+
 from shopcrm_bot.locales import Locale
 
 # Подстроки в message у TelegramAPIError, которые считаются безобидными
@@ -38,7 +38,7 @@ def _resolve_error_text(user) -> str:
     try:
         lang = getattr(user, "language", None) or "en"
         return Locale(lang=lang).get_text("client.error_generic")
-    except Exception:  # noqa: BLE001 — локализация не должна ронять обработчик
+    except Exception:
         return _FALLBACK_ERROR_TEXT
 
 
@@ -52,7 +52,7 @@ async def _notify_user(update, text: str) -> None:
             target = update  # Message / EditedMessage / ChannelPost имеют .reply()
         if target is not None and hasattr(target, "reply"):
             await target.reply(text)
-    except Exception:  # noqa: BLE001 — сбой в уведомлении не должен ронять обработку
+    except Exception:
         logger.debug(
             f"Failed to send error notification for update id={getattr(update, 'update_id', '?')}"
         )

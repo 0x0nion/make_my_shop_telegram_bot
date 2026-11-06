@@ -1,5 +1,5 @@
-from typing import Optional
-from sqlalchemy import String, Text, Numeric, BigInteger, UniqueConstraint
+
+from sqlalchemy import BigInteger, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from shopcrm_core.db.models.base import Base
@@ -10,9 +10,9 @@ class TempCategory(Base):
     __tablename__ = "temp_categories"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    original_id: Mapped[Optional[int]] = mapped_column(nullable=True)
+    original_id: Mapped[int | None] = mapped_column(nullable=True)
     name: Mapped[str] = mapped_column(String(100))
-    parent_id: Mapped[Optional[int]] = mapped_column(nullable=True)
+    parent_id: Mapped[int | None] = mapped_column(nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, server_default="true", nullable=False)
     admin_id: Mapped[int] = mapped_column(BigInteger)
 
@@ -21,14 +21,16 @@ class TempProduct(Base):
     __tablename__ = "temp_products"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    original_id: Mapped[Optional[int]] = mapped_column(nullable=True)
+    original_id: Mapped[int | None] = mapped_column(nullable=True)
     name: Mapped[str] = mapped_column(String(255))
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
     price: Mapped[float] = mapped_column(Numeric(28, 18))
     unit: Mapped[str] = mapped_column(String(20), default=DEFAULT_UNIT.value, nullable=False)
-    image_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    image_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, server_default="true", nullable=False)
-    category_id: Mapped[Optional[int]] = mapped_column(nullable=True)
+    # Остаток на складе (черновик). Не сбрасывается при синхронизации каталога
+    stock: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    category_id: Mapped[int | None] = mapped_column(nullable=True)
     admin_id: Mapped[int] = mapped_column(BigInteger)
 
 

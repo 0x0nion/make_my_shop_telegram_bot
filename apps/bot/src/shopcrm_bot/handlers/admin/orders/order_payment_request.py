@@ -1,17 +1,16 @@
 import asyncio
 import logging
-from typing import Optional
 
-from aiogram import F, Router, Bot
+from aiogram import Bot, F, Router
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from aiogram.types import CallbackQuery, Message
-
+from shopcrm_core.constants import OrderStatus
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.services.order_service import get_admin_order_product_names
+
 from shopcrm_bot.handlers.admin.orders.common import render_order_detail
 from shopcrm_bot.locales import Locale
-from shopcrm_core.constants import OrderStatus
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +19,7 @@ admin_payment_request_router = Router()
 
 # --- Вспомогательные функции ---
 
-def _get_client_lang(client_user: Optional[User]) -> str:
+def _get_client_lang(client_user: User | None) -> str:
     """Возвращает язык клиента из БД с дефолтом на 'en'."""
     if not client_user or not client_user.language:
         return "en"
@@ -191,7 +190,11 @@ async def process_approve_payment(
         client_tg_id = _get_client_tg_id(order.user)
 
         raw_template = client_locale.get_text("client.user_payment_confirmed_notification")
-        formatted_text = raw_template.format(id=order_id) if raw_template != "XXX" else client_locale.get_text("admin.orders.client_confirmed_fallback", id=order_id)
+        formatted_text = (
+            raw_template.format(id=order_id)
+            if raw_template != "XXX"
+            else client_locale.get_text("admin.orders.client_confirmed_fallback", id=order_id)
+        )
 
         try:
             await bot.send_message(
@@ -237,7 +240,11 @@ async def process_reject_payment(
     client_locale = Locale(lang=client_lang)
 
     raw_reject_msg = client_locale.get_text("client.user_payment_rejected_notification")
-    reject_msg = raw_reject_msg.format(id=order_id) if raw_reject_msg != "XXX" else client_locale.get_text("admin.orders.client_rejected_fallback", id=order_id)
+    reject_msg = (
+        raw_reject_msg.format(id=order_id)
+        if raw_reject_msg != "XXX"
+        else client_locale.get_text("admin.orders.client_rejected_fallback", id=order_id)
+    )
 
     product_names = await get_admin_order_product_names(admin_repo, order, client_lang)
     try:

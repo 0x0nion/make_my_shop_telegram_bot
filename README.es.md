@@ -16,6 +16,7 @@ Bot de Telegram para gestionar una tienda pequeña: catálogo, carrito, pedidos,
 - **Finalizar pedido** — dirección de entrega, comentario, importe total
 - **Pago** — adjuntar comprobante (foto / texto), confirmación por el administrador
 - **Historial de pedidos** — estados, chat de soporte para cada pedido
+- **Almacén** — existencias, reposición, bajas, reserva para pedidos
 - **Panel de administración** — gestión de productos, categorías y estados de pedidos
 - **Multilingüe** — RU / EN / ES (cambiable en el bot)
 

@@ -7,9 +7,8 @@
 from types import SimpleNamespace
 
 import pytest
-
-from shopcrm_core.locales.locale import Locale
 from shopcrm_bot.ui.presenters.catalog import build_catalog_text
+from shopcrm_core.locales.locale import Locale
 
 
 def _make_product(name: str = "Tea", price: float = 3.0, unit: str = "pc", pid: int = 1) -> SimpleNamespace:

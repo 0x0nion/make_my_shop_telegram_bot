@@ -4,7 +4,6 @@
 язык, возвращают локализованное сообщение об ошибке (или None, если ввод
 корректен). Хэндлеры только отображают результат — правила живут здесь.
 """
-from typing import Optional, Tuple
 
 from shopcrm_core.locales.locale import Locale
 
@@ -20,7 +19,7 @@ def _t(lang: str, path: str, **kwargs) -> str:
 
 def validate_name(
     value: str, lang: str, max_length: int = NAME_MAX_LENGTH
-) -> Optional[str]:
+) -> str | None:
     """Валидирует название (категории/товара).
 
     :return: локализованное сообщение об ошибке или None, если корректно.
@@ -35,7 +34,7 @@ def validate_name(
 
 def validate_description(
     value: str, lang: str, max_length: int = DESCRIPTION_MAX_LENGTH
-) -> Optional[str]:
+) -> str | None:
     """Валидирует описание (пустое значение допустимо).
 
     :return: локализованное сообщение об ошибке или None, если корректно.
@@ -46,7 +45,7 @@ def validate_description(
     return None
 
 
-def validate_price(value: str, lang: str) -> Tuple[Optional[float], Optional[str]]:
+def validate_price(value: str, lang: str) -> tuple[float | None, str | None]:
     """Парсит и валидирует цену.
 
     Допускает до 18 знаков после точки (crypto-friendly).
@@ -65,3 +64,19 @@ def validate_price(value: str, lang: str) -> Tuple[Optional[float], Optional[str
     if len(decimal_part) > 18:
         return None, _t(lang, "admin.product_editor.invalid_price_value")
     return price, None
+
+
+def validate_quantity(value: str, lang: str) -> tuple[int | None, str | None]:
+    """Парсит и валидирует количество (положительное целое число).
+
+    :return: (quantity, error). quantity — int или None; error — локализованная
+             ошибка или None.
+    """
+    clean = (value or "").strip()
+    try:
+        qty = int(clean)
+    except (ValueError, TypeError):
+        return None, _t(lang, "admin.warehouse.invalid_quantity")
+    if qty <= 0:
+        return None, _t(lang, "admin.warehouse.invalid_quantity")
+    return qty, None

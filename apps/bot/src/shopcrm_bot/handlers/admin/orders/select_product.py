@@ -1,15 +1,14 @@
 import logging
-from decimal import Decimal
 
 from aiogram import F, Router
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
 from shopcrm_core.db.models.order import OrderItem
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.locales.currencies import get_currency_symbol
 from shopcrm_core.utils import format_price
+
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.ui import UIManager
 

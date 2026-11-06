@@ -1,13 +1,14 @@
 # handlers/client/shop/render_shop.py
 import asyncio
-from aiogram.types import CallbackQuery, Message
 
+from aiogram.types import CallbackQuery, Message
 from shopcrm_core.db.repositories.shop_repo import ShopRepository
 from shopcrm_core.db.repositories.user_repo import UserRepository
+from shopcrm_core.logging import logger
+
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.ui import UIManager
 from shopcrm_bot.ui.presenters.catalog import build_catalog_text
-from shopcrm_core.logging import logger
 
 
 async def render_shop_menu(
@@ -91,7 +92,7 @@ async def render_shop_menu(
                 for cat in db_categories
             ]
         )
-        for cat, loc_name in zip(db_categories, loc_names):
+        for cat, loc_name in zip(db_categories, loc_names, strict=True):
             category_names[cat.id] = loc_name or cat.name
 
     # 3b. Параллельная подгрузка локализованных названий товаров (устранение N+1)
@@ -107,7 +108,7 @@ async def render_shop_menu(
                 for p in db_products
             ]
         )
-        for p, loc_name in zip(db_products, prod_loc_names):
+        for p, loc_name in zip(db_products, prod_loc_names, strict=True):
             product_names[p.id] = loc_name or p.name
 
     # 4. Формирование итогового текста сообщения (единый формат с админом)

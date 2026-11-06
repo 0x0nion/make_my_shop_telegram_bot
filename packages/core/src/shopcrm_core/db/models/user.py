@@ -1,8 +1,15 @@
 # database/models/user.py
+from typing import TYPE_CHECKING
+
 from sqlalchemy import BigInteger, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from shopcrm_core.db.models.base import Base
+
 from shopcrm_core.constants import OrderStatus
+from shopcrm_core.db.models.base import Base
+
+if TYPE_CHECKING:
+    from shopcrm_core.db.models.cart import CartItem
+    from shopcrm_core.db.models.order import Order
 
 
 class User(Base):

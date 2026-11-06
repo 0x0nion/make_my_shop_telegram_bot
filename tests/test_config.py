@@ -1,6 +1,4 @@
 """Тесты парсинга конфигурации из environment variables."""
-import os
-import pytest
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 

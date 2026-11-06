@@ -1,7 +1,7 @@
 from shopcrm_core.db.repositories.admin_repo.categories import AdminCategoriesMixin
+from shopcrm_core.db.repositories.admin_repo.locales import AdminLocalesMixin
 from shopcrm_core.db.repositories.admin_repo.orders import AdminOrdersMixin
 from shopcrm_core.db.repositories.admin_repo.products import AdminProductsMixin
-from shopcrm_core.db.repositories.admin_repo.locales import AdminLocalesMixin
 from shopcrm_core.db.repositories.admin_repo.sync import AdminSyncMixin
 
 

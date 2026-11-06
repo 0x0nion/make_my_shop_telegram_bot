@@ -1,9 +1,8 @@
-from sqlalchemy import select, delete
 
 from shopcrm_core.db.models import LocaleText
 from shopcrm_core.db.models.category import Category
 from shopcrm_core.db.models.product import Product
-from shopcrm_core.db.models.temp_models import TempCategory, TempProduct, TempLocaleText
+from shopcrm_core.db.models.temp_models import TempCategory, TempLocaleText, TempProduct
 from shopcrm_core.db.repositories.base_repo import BaseRepository
 from shopcrm_core.logging import logger
 
@@ -47,6 +46,7 @@ class AdminSyncMixin:
             tp = TempProduct(
                 original_id=p.id, name=p.name, description=p.description,
                 price=p.price, unit=p.unit, image_id=p.image_id,
+                stock=p.stock,
                 category_id=real_to_temp_cat_id.get(p.category_id), admin_id=admin_id
             )
             self.session.add(tp)
@@ -78,7 +78,9 @@ class AdminSyncMixin:
 
         await self.session.commit()
         logger.info(
-            f"Successfully synced data to temp for admin_id={admin_id} (Categories: {len(cats)}, Products: {len(temp_prods_pairs)})")
+            f"Successfully synced data to temp for admin_id={admin_id} "
+            f"(Categories: {len(cats)}, Products: {len(temp_prods_pairs)})"
+        )
 
     async def commit_changes(self, admin_id: int):
         logger.info(f"Committing changes from temp tables to real database for admin_id={admin_id}")

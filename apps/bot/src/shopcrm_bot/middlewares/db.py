@@ -1,19 +1,22 @@
-from typing import Any, Awaitable, Callable, Dict, List, Optional
-from aiogram import BaseMiddleware
-from aiogram.types import TelegramObject, Message, CallbackQuery, Update
-from sqlalchemy.ext.asyncio import async_sessionmaker
+from collections.abc import Awaitable, Callable
+from typing import Any
 
+from aiogram import BaseMiddleware
+from aiogram.types import CallbackQuery, Message, TelegramObject, Update
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.db.repositories.shop_repo import ShopRepository
 from shopcrm_core.db.repositories.user_repo import UserRepository
+from shopcrm_core.services.admin_shop_service import AdminShopService
+from shopcrm_core.services.warehouse_service import WarehouseService
+from sqlalchemy.ext.asyncio import async_sessionmaker
+
 from shopcrm_bot.config import config
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.services.commands_service import ensure_bot_commands
-from shopcrm_core.services.admin_shop_service import AdminShopService
 
 
 class DbSessionMiddleware(BaseMiddleware):
-    def __init__(self, session_pool: async_sessionmaker, admin_ids: Optional[List[int]] = None):
+    def __init__(self, session_pool: async_sessionmaker, admin_ids: list[int] | None = None):
         super().__init__()
         self.session_pool = session_pool
         # Опциональные админы, переданные при инициализации;
@@ -22,9 +25,9 @@ class DbSessionMiddleware(BaseMiddleware):
 
     async def __call__(
         self,
-        handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
+        handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
         event: TelegramObject,
-        data: Dict[str, Any]
+        data: dict[str, Any]
     ) -> Any:
         actual_event = event.event if isinstance(event, Update) else event
         tg_user = None
@@ -38,13 +41,15 @@ class DbSessionMiddleware(BaseMiddleware):
             user_repo = UserRepository(session)
             shop_repo = ShopRepository(session)
 
-            # Создаем сервис и прокидываем в него репозиторий
+            # Создаем сервисы и прокидываем в них репозитории
             admin_shop_service = AdminShopService(admin_repo)
+            warehouse_service = WarehouseService(admin_repo)
 
             data["admin_repo"] = admin_repo
             data["user_repo"] = user_repo
             data["shop_repo"] = shop_repo
             data["admin_service"] = admin_shop_service
+            data["warehouse_service"] = warehouse_service
             # Админы для контроля доступа и уведомлений:
             # переданные при инициализации или из конфига.
             data["admin_ids"] = self._admin_ids if self._admin_ids is not None else config.ADMIN_ID

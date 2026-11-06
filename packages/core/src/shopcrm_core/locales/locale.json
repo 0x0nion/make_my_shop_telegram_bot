@@ -652,6 +652,83 @@
           "en": "❌ Payment rejected",
           "es": "❌ Pago rechazado"
         }
+      },
+      "warehouse": {
+        "root_title": {
+          "en": "📦 Warehouse",
+          "es": "📦 Almacén",
+          "ru": "📦 Склад"
+        },
+        "category_title": {
+          "en": "📁 {name}",
+          "es": "📁 {name}",
+          "ru": "📁 {name}"
+        },
+        "product_title": {
+          "en": "📦 <b>{name}</b>\n\n📊 Available: <b>{available}</b> {unit}\n🔒 Reserved: <b>{reserved}</b> {unit}",
+          "es": "📦 <b>{name}</b>\n\n📊 Disponible: <b>{available}</b> {unit}\n🔒 Reservado: <b>{reserved}</b> {unit}",
+          "ru": "📦 <b>{name}</b>\n\n📊 В наличии: <b>{available}</b> {unit}\n🔒 Заморожено: <b>{reserved}</b> {unit}"
+        },
+        "products_header": {
+          "en": "🛒 Products:",
+          "es": "🛒 Productos:",
+          "ru": "🛒 Товары:"
+        },
+        "product_line": {
+          "en": "{idx}. {name} — {available} / {reserved} {unit}",
+          "es": "{idx}. {name} — {available} / {reserved} {unit}",
+          "ru": "{idx}. {name} — {available} / {reserved} {unit}"
+        },
+        "available": {
+          "en": "Available",
+          "es": "Disponible",
+          "ru": "В наличии"
+        },
+        "reserved": {
+          "en": "Reserved",
+          "es": "Reservado",
+          "ru": "Заморожено"
+        },
+        "no_category": {
+          "en": "No category",
+          "es": "Sin categoría",
+          "ru": "Без категории"
+        },
+        "truncated": {
+          "en": "… and {count} more",
+          "es": "… y {count} más",
+          "ru": "… и ещё {count} товаров"
+        },
+        "add_stock_prompt": {
+          "en": "➕ Enter quantity to add to stock (positive integer):",
+          "es": "➕ Introduce la cantidad a añadir al stock (entero positivo):",
+          "ru": "➕ Введите количество для пополнения (целое положительное число):"
+        },
+        "write_off_prompt": {
+          "en": "➖ Enter quantity to write off (positive integer):",
+          "es": "➖ Introduce la cantidad a descargar (entero positivo):",
+          "ru": "➖ Введите количество для списания (целое положительное число):"
+        },
+        "add_stock_success": {
+          "en": "✅ Added {qty}. New stock: {stock}",
+          "es": "✅ Añadidas {qty}. Nuevo stock: {stock}",
+          "ru": "✅ Добавлено {qty}. Новый остаток: {stock}"
+        },
+        "write_off_success": {
+          "en": "✅ Written off {qty}. New stock: {stock}",
+          "es": "✅ Descargadas {qty}. Nuevo stock: {stock}",
+          "ru": "✅ Списано {qty}. Новый остаток: {stock}"
+        },
+        "invalid_quantity": {
+          "en": "❌ Please enter a positive integer.",
+          "es": "❌ Introduce un entero positivo.",
+          "ru": "❌ Введите целое положительное число."
+        },
+        "product_not_found": {
+          "en": "❌ Product not found.",
+          "es": "❌ Producto no encontrado.",
+          "ru": "❌ Товар не найден."
+        }
       }
     },
     "client": {
@@ -964,6 +1041,16 @@
         "ru": "💬 <b>Сообщение от администрации по заказу #{order_id}:</b>\n\n{text}",
         "en": "💬 <b>Message from administration about order #{order_id}:</b>\n\n{text}",
         "es": "💬 <b>Mensaje de la administración sobre el pedido #{order_id}:</b>\n\n{text}"
+      },
+      "product_out_of_stock": {
+        "en": "❌ This product is out of stock.",
+        "es": "❌ Este producto está agotado.",
+        "ru": "❌ Этот товар закончился."
+      },
+      "product_stock_limit": {
+        "en": "⚠️ Only {stock} left in stock.",
+        "es": "⚠️ Quedan solo {stock} en stock.",
+        "ru": "⚠️ В наличии только {stock}."
       }
     },
     "alerts": {
@@ -1624,6 +1711,29 @@
           }
         },
         "sizes": [
+          1
+        ]
+      },
+      "warehouse": {
+        "buttons": {
+          "back": {
+            "en": "⬅️ Back",
+            "es": "⬅️ Volver",
+            "ru": "⬅️ Назад"
+          },
+          "add_stock": {
+            "en": "➕ Add stock",
+            "es": "➕ Añadir stock",
+            "ru": "➕ Пополнить"
+          },
+          "write_off": {
+            "en": "➖ Write off",
+            "es": "➖ Descargar",
+            "ru": "➖ Списать"
+          }
+        },
+        "sizes": [
+          2,
           1
         ]
       }

@@ -1,8 +1,9 @@
 # handlers/admin/utils.py
 import asyncio
-from aiogram.types import Message
+import contextlib
+
 from aiogram.exceptions import TelegramBadRequest
-from shopcrm_core.db.models.user import User
+from aiogram.types import Message
 
 SUPPORTED_LANGUAGES = {"ru", "en", "es"}
 DEFAULT_LANGUAGE = "en"
@@ -19,7 +20,5 @@ def parse_id(raw_value: str) -> int | None:
 async def self_destruct(message: Message, seconds: int = 3) -> None:
     """Автоматическое удаление служебного сообщения через заданное время."""
     await asyncio.sleep(seconds)
-    try:
+    with contextlib.suppress(TelegramBadRequest):
         await message.delete()
-    except TelegramBadRequest:
-        pass

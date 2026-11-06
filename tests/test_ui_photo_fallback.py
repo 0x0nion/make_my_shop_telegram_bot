@@ -15,7 +15,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 from aiogram.exceptions import TelegramBadRequest
-
 from shopcrm_bot.services.notification_service import notify_admins_about_payment
 from shopcrm_bot.ui import UIManager
 from shopcrm_core.constants import PaymentProofType

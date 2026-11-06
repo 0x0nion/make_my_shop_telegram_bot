@@ -7,17 +7,17 @@ from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
-
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
-from shopcrm_bot.handlers.admin.utils import parse_id, self_destruct
-from shopcrm_bot.locales import Locale
 from shopcrm_core.locales.units import DEFAULT_UNIT
-from shopcrm_bot.ui import UIManager
 from shopcrm_core.services.admin_shop_service import AdminShopService
 from shopcrm_core.services.validation import validate_name
-from shopcrm_bot.ui.presenters.admin import AdminUI
+
+from shopcrm_bot.handlers.admin.utils import parse_id, self_destruct
+from shopcrm_bot.locales import Locale
 from shopcrm_bot.states.admin_states import AdminState
+from shopcrm_bot.ui import UIManager
+from shopcrm_bot.ui.presenters.admin import AdminUI
 
 admin_catalog_router = Router()
 logger = logging.getLogger(__name__)

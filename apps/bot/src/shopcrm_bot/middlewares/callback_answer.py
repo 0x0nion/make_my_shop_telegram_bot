@@ -12,12 +12,12 @@ Telegram. Мидлварь отвечает на callback после выпол�
 - «После» безопасно: ответ хэндлера имеет приоритет, а повторный ответ
   мидлваря отклоняется Telegram («query id invalid») и молча игнорируется.
 """
-from typing import Any, Awaitable, Callable, Dict
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from aiogram import BaseMiddleware
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import CallbackQuery
-
 from shopcrm_core.logging import logger
 
 
@@ -26,9 +26,9 @@ class CallbackAnswerMiddleware(BaseMiddleware):
 
     async def __call__(
         self,
-        handler: Callable[[CallbackQuery, Dict[str, Any]], Awaitable[Any]],
+        handler: Callable[[CallbackQuery, dict[str, Any]], Awaitable[Any]],
         event: CallbackQuery,
-        data: Dict[str, Any],
+        data: dict[str, Any],
     ) -> Any:
         result = await handler(event, data)
         await self._safe_answer(event)

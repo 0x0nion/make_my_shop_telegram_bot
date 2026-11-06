@@ -1,16 +1,18 @@
+import contextlib
 import logging
+
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
-from sqlalchemy import update
-
 from shopcrm_core.db.models import LocaleText
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
+from sqlalchemy import update
+
 from shopcrm_bot.locales import Locale
-from shopcrm_bot.ui import UIManager
 from shopcrm_bot.states.admin_states import EditPaymentDetails
+from shopcrm_bot.ui import UIManager
 
 payment_details_editor_router = Router()
 logger = logging.getLogger(__name__)
@@ -37,10 +39,7 @@ async def show_payment_details_card(
 
     locale = Locale(lang=lang)
 
-    if not has_text:
-        display_text = locale.get_text("admin.payment_details.not_set")
-    else:
-        display_text = text_val
+    display_text = locale.get_text("admin.payment_details.not_set") if not has_text else text_val
 
     reply_markup = locale.keyboards.get_payment_details_editor_kb(has_text=has_text)
 
@@ -97,10 +96,8 @@ async def process_payment_text_input(
     menu_message_id = user_data.get("menu_message_id")
     lang = user.language
 
-    try:
+    with contextlib.suppress(TelegramBadRequest):
         await message.delete()
-    except TelegramBadRequest:
-        pass
 
     for lang_code in admin_repo.SUPPORTED_LANGUAGES:
         existing = await admin_repo.get_locale_text(

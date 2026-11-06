@@ -2,21 +2,24 @@
 import asyncio
 import logging
 from contextlib import suppress
+
 from aiogram import Bot, F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
-
 from shopcrm_core.db.models import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
+from shopcrm_core.db.repositories.shop_repo import ShopRepository
 from shopcrm_core.db.repositories.user_repo import UserRepository
+from shopcrm_core.services.address_service import build_location_address, normalize_text_address
+from shopcrm_core.services.order_service import get_user_order_product_names
+from shopcrm_core.services.warehouse_service import WarehouseService
+
 from shopcrm_bot.handlers.client.cart.render_cart import render_cart
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.services.notification_service import notify_admins_about_new_order
-from shopcrm_bot.ui import UIManager
-from shopcrm_core.services.address_service import build_location_address, normalize_text_address
-from shopcrm_core.services.order_service import get_user_order_product_names
 from shopcrm_bot.states.user_states import UserState
+from shopcrm_bot.ui import UIManager
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +143,7 @@ async def cancel_input(
 async def update_quantity(
     callback: CallbackQuery,
     user_repo: UserRepository,
+    shop_repo: ShopRepository,
     state: FSMContext,
 ):
     try:
@@ -152,11 +156,25 @@ async def update_quantity(
 
     change = 1 if action == "inc" else -1
 
-    await user_repo.update_cart_item(
+    user, error = await user_repo.update_cart_item(
         user_id=callback.from_user.id,
         product_id=product_id,
         change=change,
     )
+
+    if error and change > 0:
+        # Лимит по остатку: показываем алерт с доступным количеством
+        product = await shop_repo.get_product_by_id(product_id)
+        stock = (product.stock or 0) if product else 0
+        key = (
+            "client.product_out_of_stock"
+            if error == "out_of_stock"
+            else "client.product_stock_limit"
+        )
+        locale = Locale(user.language) if user else Locale("en")
+        await callback.answer(text=locale.get_text(key, stock=stock), show_alert=True)
+        return
+
     await render_cart(event=callback, user_repo=user_repo, state=state)
 
 
@@ -166,6 +184,7 @@ async def checkout_order(
         bot: Bot,
         user_repo: UserRepository,
         admin_repo: AdminRepository,
+        warehouse_service: WarehouseService,
         state: FSMContext,
         user: User,
         admin_ids: list[int],
@@ -191,6 +210,10 @@ async def checkout_order(
         )
         await render_cart(event=callback, user_repo=user_repo, state=state)
         return
+
+    # Бронируем остаток под заказ: товар остаётся на складе,
+    # но становится недоступен для новых заказов (stock - reserved).
+    await warehouse_service.apply_order_stock(order, "reserve")
 
     await state.clear()
 

@@ -1,16 +1,18 @@
-from typing import Optional, Union
+
+import contextlib
+
 from aiogram import Bot
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InputMediaPhoto
 from aiogram.exceptions import TelegramBadRequest
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InputMediaPhoto, Message
 from shopcrm_core.logging import logger
 
 
 class UIManager:
     @staticmethod
     def _extract_bot_and_chat(
-        bot: Optional[Bot],
-        chat_id: Optional[int],
-        event: Optional[Union[Message, CallbackQuery]]
+        bot: Bot | None,
+        chat_id: int | None,
+        event: Message | CallbackQuery | None
     ) -> tuple[Bot, int]:
         """Извлекает bot и chat_id из переданных аргументов или объекта события."""
         if bot and chat_id:
@@ -27,13 +29,13 @@ class UIManager:
     async def show(
         cls,
         text: str,
-        bot: Optional[Bot] = None,
-        chat_id: Optional[int] = None,
-        event: Optional[Union[Message, CallbackQuery]] = None,
-        reply_markup: Optional[InlineKeyboardMarkup] = None,
-        photo: Optional[str] = None,
-        message_id_to_edit: Optional[int] = None,
-    ) -> Optional[Message]:
+        bot: Bot | None = None,
+        chat_id: int | None = None,
+        event: Message | CallbackQuery | None = None,
+        reply_markup: InlineKeyboardMarkup | None = None,
+        photo: str | None = None,
+        message_id_to_edit: int | None = None,
+    ) -> Message | None:
         """
         Единый метод отрисовки UI.
         Гарантирует отображение контекста строго в 1 сообщении.
@@ -75,10 +77,9 @@ class UIManager:
                 logger.info(
                     f"[UI] Cannot edit message {message_id_to_edit} ({e}). Re-creating UI frame."
                 )
-                try:
+                # Если сообщение уже удалено пользователем — просто отправляем новое
+                with contextlib.suppress(TelegramBadRequest):
                     await bot.delete_message(chat_id=chat_id, message_id=message_id_to_edit)
-                except TelegramBadRequest:
-                    pass  # Если сообщение уже удалено пользователем
 
         # 2. Отправка нового сообщения (если редактирование не требовалось или не удалось)
         if photo:

@@ -5,8 +5,9 @@
 """
 import asyncio
 import random
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Tuple, Type, TypeVar
+from typing import TypeVar
 
 from shopcrm_core.logging import logger
 
@@ -37,7 +38,7 @@ class RetryConfig:
 
 def is_transient(
     exc: BaseException,
-    extra: Tuple[Type[BaseException], ...] = (),
+    extra: tuple[type[BaseException], ...] = (),
 ) -> bool:
     """Определяет, является ли исключение временным (повтор имеет смысл).
 
@@ -50,9 +51,7 @@ def is_transient(
         return True
     if isinstance(exc, (ConnectionError, TimeoutError)):
         return True
-    if extra and isinstance(exc, extra):
-        return True
-    return False
+    return bool(extra and isinstance(exc, extra))
 
 
 def _compute_delay(attempt: int, cfg: RetryConfig) -> float:
@@ -68,7 +67,7 @@ async def retry_async(
     func: Callable[[], Awaitable[T]],
     *,
     config: RetryConfig | None = None,
-    retry_on: Tuple[Type[BaseException], ...] = (),
+    retry_on: tuple[type[BaseException], ...] = (),
     name: str = "operation",
 ) -> T:
     """Выполняет асинхронный `func` с повторами при временных ошибках.
@@ -87,7 +86,7 @@ async def retry_async(
     for attempt in range(1, max_attempts + 1):
         try:
             return await func()
-        except Exception as exc:  # noqa: BLE001 — намеренно широкий перехват
+        except Exception as exc:
             if not is_transient(exc, extra=retry_on):
                 raise
             last_exc = exc

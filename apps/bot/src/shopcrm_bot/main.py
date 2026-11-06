@@ -5,11 +5,6 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.base import BaseStorage
 from aiogram.fsm.storage.memory import MemoryStorage
-
-from sqlalchemy import inspect
-from sqlalchemy.ext.asyncio import AsyncEngine
-from sqlalchemy.exc import OperationalError
-
 from shopcrm_core.db.connection import (
     create_engine,
     create_session_factory,
@@ -17,6 +12,9 @@ from shopcrm_core.db.connection import (
 )
 from shopcrm_core.logging import setup_logging, shutdown_logging
 from shopcrm_core.utils.retry import RetryConfig, retry_async
+from sqlalchemy import inspect
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from shopcrm_bot.config import config
 from shopcrm_bot.errors import register_error_handlers

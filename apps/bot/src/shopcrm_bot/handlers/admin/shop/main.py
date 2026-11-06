@@ -1,5 +1,6 @@
 # handlers/admin/shop/main.py
 import logging
+
 from aiogram import F, Router
 from aiogram.types import CallbackQuery
 

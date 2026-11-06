@@ -1,10 +1,10 @@
 from sqlalchemy import and_
 from sqlalchemy.orm import selectinload
 
-from shopcrm_core.db.models import OrderItem, Order
+from shopcrm_core.constants import OrderStatus
+from shopcrm_core.db.models import Order, OrderItem
 from shopcrm_core.db.models.cart import CartItem
 from shopcrm_core.db.repositories.base_repo import BaseRepository
-from shopcrm_core.constants import OrderStatus, PaymentProofType
 from shopcrm_core.logging import logger
 
 
@@ -76,7 +76,7 @@ class UserOrderMixin:
         return await self._order_repo.get_all(
             and_(
                 Order.user_id == user_id,
-                Order.is_paid == False,
+                ~Order.is_paid,
                 Order.status.notin_([OrderStatus.COMPLETED.value, OrderStatus.CANCELLED.value])
             ),
             options=[selectinload(Order.items)],

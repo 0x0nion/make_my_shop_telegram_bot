@@ -8,10 +8,10 @@ loguru — единственный логгер приложения:
 Стандартный `logging` (используется в разных модулях) маршрутизируется
 в loguru через InterceptHandler, поэтому все записи попадают в один поток.
 """
+import contextlib
 import logging
 import sys
 from pathlib import Path
-from typing import Union
 
 from loguru import logger
 
@@ -44,7 +44,7 @@ class _InterceptHandler(logging.Handler):
         logger.patch(_patch).opt(exception=record.exc_info).log(level, record.getMessage())
 
 
-def setup_logging(level: str = "INFO", logs_dir: Union[str, Path] = "logs") -> None:
+def setup_logging(level: str = "INFO", logs_dir: str | Path = "logs") -> None:
     """Настраивает loguru и маршрутизирует stdlib logging в него.
 
     Идиотентична: повторный вызов пересоздаёт обработчики.
@@ -100,10 +100,8 @@ def shutdown_logging() -> None:
     Ожидает завершения enqueue-потоков (все отложенные записи дописаны в файлы),
     затем удаляет все обработчики. Вызывается при остановке приложения.
     """
-    try:
+    with contextlib.suppress(Exception):
         logger.complete()
-    except Exception:  # noqa: BLE001 — shutdown не должен падать
-        pass
     logger.remove()
 
 

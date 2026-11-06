@@ -3,15 +3,15 @@ import csv
 import io
 from datetime import datetime
 
-from shopcrm_core.db.models.cart import CartItem
-from shopcrm_core.db.models.order import Order
-from shopcrm_core.constants import OrderStatus
-from shopcrm_core.utils import format_price
 from shopcrm_bot.services.csv_export_service import (
     CSV_HEADERS,
     build_export_filename,
     build_orders_csv,
 )
+from shopcrm_core.constants import OrderStatus
+from shopcrm_core.db.models.cart import CartItem
+from shopcrm_core.db.models.order import Order
+from shopcrm_core.utils import format_price
 
 
 class TestBuildOrdersCsv:
@@ -34,7 +34,7 @@ class TestBuildOrdersCsv:
         assert rows[0] == CSV_HEADERS
         assert len(rows) == 2
 
-        row = dict(zip(CSV_HEADERS, rows[1]))
+        row = dict(zip(CSV_HEADERS, rows[1], strict=True))
         assert row["id"] == str(order.id)
         assert row["user_id"] == str(user_a.id)
         assert row["status"] == OrderStatus.PENDING.value
