@@ -25,6 +25,17 @@ PAID_STATUSES = frozenset({
 })
 
 
+def _utcnow_naive() -> datetime:
+    """Naive UTC — datetime-колонки core: ``TIMESTAMP WITHOUT TIME ZONE``.
+
+    asyncpg не кодирует aware-даты в этот тип
+    (``can't subtract offset-naive and offset-aware datetimes``),
+    поэтому пишем всегда naive UTC (та же конвенция, что в
+    ``retention_service``).
+    """
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
 class OrderAuditMixin:
     """Смена статуса заказа + запись в журнал аудита (общая для admin/user)."""
 
@@ -49,7 +60,7 @@ class OrderAuditMixin:
         if old_status == new_status:
             return order
 
-        now = datetime.now(UTC)
+        now = _utcnow_naive()
         order.status = new_status
 
         if new_status in PAID_STATUSES and not order.paid_at:
@@ -105,7 +116,7 @@ class OrderAuditMixin:
         if not order:
             return None
 
-        now = datetime.now(UTC)
+        now = _utcnow_naive()
         order.is_paid = True
         if not order.paid_at:
             order.paid_at = now

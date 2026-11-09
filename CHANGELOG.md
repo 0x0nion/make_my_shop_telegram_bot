@@ -28,6 +28,15 @@
   `add_settings_table`
 - Тесты: `tests/test_retention.py` (политика хранения) и
   `tests/test_order_audit.py` (журнал смены статусов, поля аудита)
+
+### Fixed
+
+- Аудит заказов: `paid_at`/`completed_at`/`cancelled_at` записывались как
+  aware-даты (`datetime.now(UTC)`) в колонки
+  `TIMESTAMP WITHOUT TIME ZONE` — на PostgreSQL (asyncpg) смена статуса
+  заказа падала с ошибкой
+  `can't subtract offset-naive and offset-aware datetimes`. Теперь
+  записывается naive UTC (та же конвенция, что в остальном core)
 - Склад: управление остатками товаров — физический остаток (`stock`),
   бронирование под активные заказы (`reserved`) и накопительные метрики
   (`total_arrived`, `total_written_off`, `total_sold`)

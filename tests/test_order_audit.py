@@ -54,6 +54,9 @@ class TestChangeOrderStatus:
 
         updated = await admin.change_order_status(order.id, OrderStatus.PROCESSING.value, changed_by=user_b.id)
         assert updated.paid_at is not None
+        # naive UTC: PostgreSQL/asyncpg не принимает aware-даты
+        # для TIMESTAMP WITHOUT TIME ZONE
+        assert updated.paid_at.tzinfo is None
         assert updated.paid_by == user_b.id
 
     async def test_completed_sets_completed_at(self, session, user_a, user_b, product_a):
@@ -63,6 +66,7 @@ class TestChangeOrderStatus:
 
         updated = await admin.change_order_status(order.id, OrderStatus.COMPLETED.value, changed_by=user_b.id)
         assert updated.completed_at is not None
+        assert updated.completed_at.tzinfo is None
 
     async def test_cancelled_sets_cancelled_at(self, session, user_a, user_b, product_a):
         repo = UserRepository(session)
@@ -71,6 +75,7 @@ class TestChangeOrderStatus:
 
         updated = await admin.change_order_status(order.id, OrderStatus.CANCELLED.value, changed_by=user_b.id)
         assert updated.cancelled_at is not None
+        assert updated.cancelled_at.tzinfo is None
 
     async def test_same_status_no_history(self, session, user_a, user_b, product_a):
         """Смена на тот же статус — запись в журнал не добавляется."""
@@ -127,6 +132,7 @@ class TestMarkOrderPaid:
         updated = await admin.mark_order_paid(order.id, changed_by=user_b.id)
         assert updated.is_paid is True
         assert updated.paid_at is not None
+        assert updated.paid_at.tzinfo is None
         assert updated.paid_by == user_b.id
 
 
