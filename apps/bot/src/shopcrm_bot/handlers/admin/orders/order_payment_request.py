@@ -136,9 +136,8 @@ async def process_admin_request_payment(
         await callback.answer(admin_locale.get_text("admin.orders.send_error"), show_alert=True)
         return
 
-    # 2. Обновление статуса в БД после отправки
-    order.status = OrderStatus.PAYMENT_REQUESTED.value
-    await admin_repo.update_order(order)
+    # 2. Обновление статуса в БД после отправки (с записью в журнал аудита)
+    await admin_repo.change_order_status(order_id, OrderStatus.PAYMENT_REQUESTED.value, changed_by=user.id)
 
     # 3. Перерисовка карточки у админа
     await render_order_detail(
@@ -176,10 +175,9 @@ async def process_approve_payment(
         await callback.answer(admin_locale.get_text("admin.orders.order_already_processed"), show_alert=True)
         return
 
-    # 1. Изменение статуса и флага оплаты
-    order.is_paid = True
-    order.status = OrderStatus.PROCESSING.value
-    await admin_repo.update_order(order)
+    # 1. Изменение статуса и флага оплаты (с записью в журнал аудита)
+    await admin_repo.mark_order_paid(order_id, changed_by=user.id)
+    order = await admin_repo.change_order_status(order_id, OrderStatus.PROCESSING.value, changed_by=user.id)
 
     await callback.answer(admin_locale.get_text("admin.orders.payment_approved_alert"), show_alert=False)
 
@@ -285,11 +283,12 @@ async def process_reject_payment(
     # Очищаем устаревшие данные отклонённого чека: цикл «запрос → ответ»
     # перезапускается, и кнопка «Запросить оплату» снова доступна у админа,
     # если клиент проигнорирует повторно отправленную форму.
+    # is_paid/чек меняем на том же объекте (identity map), смену статуса
+    # фиксируем в журнале аудита; всё коммитится одной транзакцией.
     order.is_paid = False
-    order.status = OrderStatus.PAYMENT_REQUESTED.value
     order.payment_proof_type = None
     order.payment_proof = None
-    await admin_repo.update_order(order)
+    await admin_repo.change_order_status(order_id, OrderStatus.PAYMENT_REQUESTED.value, changed_by=user.id)
 
     await callback.answer(admin_locale.get_text("admin.orders.payment_rejected_alert"), show_alert=False)
 

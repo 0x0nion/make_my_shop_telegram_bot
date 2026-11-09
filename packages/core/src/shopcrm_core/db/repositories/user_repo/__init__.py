@@ -1,3 +1,4 @@
+from shopcrm_core.db.repositories.order_audit import OrderAuditMixin
 from shopcrm_core.db.repositories.user_repo.account import UserAccountMixin
 from shopcrm_core.db.repositories.user_repo.cart import UserCartMixin
 from shopcrm_core.db.repositories.user_repo.locales import UserLocaleMixin
@@ -8,7 +9,8 @@ class UserRepository(
     UserAccountMixin,
     UserCartMixin,
     UserOrderMixin,
-    UserLocaleMixin
+    UserLocaleMixin,
+    OrderAuditMixin
 ):
     """Репозиторий для работы с аккаунтом пользователя, корзиной и заказами."""
 

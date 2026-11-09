@@ -28,9 +28,9 @@ class UserAccountMixin:
             user_id, options=options, populate_existing=True
         )
 
-    async def create_user(self, user_id: int) -> User:
+    async def create_user(self, user_id: int, first_name: str | None = None, username: str | None = None) -> User:
         logger.info(f"Creating user id={user_id}")
-        await self._user_repo.create(id=user_id)
+        await self._user_repo.create(id=user_id, first_name=first_name, username=username)
         # Гарантируем, что созданный юзер вернется с инициализированными связями
         user = await self.get_user_with_cart(user_id)
         return user if user else await self.get_user(user_id)
@@ -45,12 +45,29 @@ class UserAccountMixin:
         """
         Получает пользователя со связанной корзиной и заказами.
         Если его нет в БД — создает и сразу возвращает со всеми подгруженными связями.
+        Профиль (first_name/username) заполняется при создании и дополняется
+        для существующих пользователей, если поля были пустыми.
         """
         if not tg_user:
             return None
 
         user = await self.get_user_with_cart(tg_user.id)
         if not user:
-            user = await self.create_user(user_id=tg_user.id)
+            user = await self.create_user(
+                user_id=tg_user.id,
+                first_name=getattr(tg_user, "first_name", None),
+                username=getattr(tg_user, "username", None),
+            )
+            return user
+
+        # Backfill: дополняем профиль, если при создании он не был доступен
+        updates: dict[str, Any] = {}
+        if not user.first_name and getattr(tg_user, "first_name", None):
+            updates["first_name"] = tg_user.first_name
+        if not user.username and getattr(tg_user, "username", None):
+            updates["username"] = tg_user.username
+        if updates:
+            await self._user_repo.update(user.id, **updates)
+            user = await self.get_user_with_cart(user.id)
 
         return user

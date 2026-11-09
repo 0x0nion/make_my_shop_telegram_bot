@@ -126,9 +126,10 @@ class UserOrderMixin:
 
         order.payment_proof_type = proof_type
         order.payment_proof = proof_content
-        order.status = OrderStatus.AWAITING_CONFIRMATION.value
+        self._apply_status_change(order, OrderStatus.AWAITING_CONFIRMATION.value, changed_by=user_id)
 
         await self.session.commit()
+        await self.session.refresh(order)
         return order
 
     async def update_order_status(
@@ -141,8 +142,9 @@ class UserOrderMixin:
         order = await self.get_order_with_items(order_id, user_id)
         if not order:
             return None
-        order.status = status
+        self._apply_status_change(order, status, changed_by=user_id)
         await self.session.commit()
+        await self.session.refresh(order)
         return order
 
     async def cancel_order(self, order_id: int, user_id: int) -> Order | None:
@@ -155,8 +157,9 @@ class UserOrderMixin:
         if not order or not OrderStatus.is_cancellable_by_client(order.status):
             return None
 
-        order.status = OrderStatus.CANCELLED.value
+        self._apply_status_change(order, OrderStatus.CANCELLED.value, changed_by=user_id, reason="client_cancelled")
         await self.session.commit()
+        await self.session.refresh(order)
         return order
 
     async def append_order_chat_history(self, order_id: int, user_id: int, message_record: dict) -> Order | None:

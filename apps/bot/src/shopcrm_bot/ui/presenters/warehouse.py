@@ -12,6 +12,7 @@ from shopcrm_core.db.repositories.admin_repo import AdminRepository
 
 from shopcrm_bot.keyboards.warehouse import (
     build_warehouse_category_kb,
+    build_warehouse_delete_confirm_kb,
     build_warehouse_product_kb,
     build_warehouse_root_kb,
 )
@@ -159,11 +160,59 @@ class WarehouseUI:
             reserved=reserved,
             unit=locale.get_unit(product.unit),
         )
+        if not product.is_active:
+            text += f"\n\n{locale.get_text('admin.warehouse.archived_notice')}"
 
         reply_markup = build_warehouse_product_kb(
             locale.keyboards,
             product_id=product_id,
             category_id=product.category_id,
+            is_active=product.is_active,
+        )
+
+        await UIManager.show(
+            event=event,
+            text=text,
+            reply_markup=reply_markup,
+            message_id_to_edit=message_id_to_edit,
+        )
+
+    @staticmethod
+    async def show_delete_confirm(
+        event: Message | CallbackQuery,
+        admin_repo: AdminRepository,
+        user: User,
+        locale: Locale,
+        product_id: int,
+        message_id_to_edit: int | None = None,
+    ) -> None:
+        """Экран подтверждения полного удаления товара."""
+        product = await admin_repo.get_product_by_id(product_id)
+        if not product:
+            await WarehouseUI.show_root(
+                event=event,
+                admin_repo=admin_repo,
+                user=user,
+                locale=locale,
+                message_id_to_edit=message_id_to_edit,
+            )
+            return
+
+        prod_name = await admin_repo.get_locale_text(
+            entity_id=product.id,
+            entity_type="product_name",
+            language_code=user.language,
+        )
+        display_name = prod_name or product.name
+
+        text = locale.get_text(
+            "admin.warehouse.delete_confirm_text",
+            name=display_name,
+        )
+
+        reply_markup = build_warehouse_delete_confirm_kb(
+            locale.keyboards,
+            product_id=product_id,
         )
 
         await UIManager.show(
@@ -228,6 +277,7 @@ class WarehouseUI:
             line = locale.get_text(
                 "admin.warehouse.product_line",
                 idx=idx,
+                icon="🗄 " if not product.is_active else "",
                 name=product_names.get(product.id) or product.name,
                 available=(product.stock or 0) - (product.reserved or 0),
                 reserved=product.reserved or 0,
@@ -279,6 +329,7 @@ class WarehouseUI:
             return locale.get_text(
                 "admin.warehouse.product_line",
                 idx=idx,
+                icon="🗄 " if not p.is_active else "",
                 name=product_names.get(p.id) or p.name,
                 available=(p.stock or 0) - (p.reserved or 0),
                 reserved=p.reserved or 0,

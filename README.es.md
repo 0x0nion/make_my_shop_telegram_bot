@@ -59,6 +59,7 @@ Todas las configuraciones se definen mediante variables de entorno (archivo `.en
 | `REDIS_URL`     | URL de Redis (solo con `FSM_STORAGE=redis`)       | `redis://localhost:6379/0`         |
 | `MANAGER_URL`   | URL del gestor (botón en la tarjeta del producto); si está vacío — el botón se oculta | `https://t.me/your_manager` |
 | `LOGS_DIR`      | Directorio para los archivos de registro          | `logs`                             |
+| `AUDIT_RETENTION_DAYS` | Cuántos días conservar el registro de cambios de estado del pedido; `<= 0` desactiva la limpieza automática | `180` |
 
 ## Ejecución
 

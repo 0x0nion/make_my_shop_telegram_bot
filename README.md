@@ -59,6 +59,7 @@ cp .env.example .env
 | `REDIS_URL`     | URL Redis (только при `FSM_STORAGE=redis`)    | `redis://localhost:6379/0`     |
 | `MANAGER_URL`   | URL менеджера (кнопка в карточке товара); если пусто — кнопка скрыта | `https://t.me/your_manager` |
 | `LOGS_DIR`      | Каталог для лог-файлов                        | `logs`                         |
+| `AUDIT_RETENTION_DAYS` | Сколько дней хранить журнал смены статусов заказа; `<= 0` отключает автоочистку | `180` |
 
 ## Запуск
 

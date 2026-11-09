@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     # Directory for rotating log files (relative to the working directory).
     LOGS_DIR: str = "logs"
+    # Сколько дней хранить журнал смены статусов заказа (order_status_history).
+    # Значение <= 0 отключает автоматическую очистку (журнал хранится вечно).
+    # Саму очистку запускает консьюмер (бот); core предоставляет только метод.
+    AUDIT_RETENTION_DAYS: int = 180
 
     # ``extra="ignore"``: core — самодостаточный пакет, поэтому неизвестные env-переменные
     # (BOT_TOKEN, ADMIN_ID и т.д. — поля консьюмера) игнорируются, а не

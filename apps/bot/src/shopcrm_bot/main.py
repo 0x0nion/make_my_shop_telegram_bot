@@ -1,4 +1,6 @@
 import asyncio
+import contextlib
+import logging
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -11,10 +13,11 @@ from shopcrm_core.db.connection import (
     init_db,
 )
 from shopcrm_core.logging import setup_logging, shutdown_logging
+from shopcrm_core.services.retention_service import RetentionService
 from shopcrm_core.utils.retry import RetryConfig, retry_async
 from sqlalchemy import inspect
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
 from shopcrm_bot.config import config
 from shopcrm_bot.errors import register_error_handlers
@@ -22,6 +25,11 @@ from shopcrm_bot.handlers import routers as all_routers
 from shopcrm_bot.middlewares.callback_answer import CallbackAnswerMiddleware
 from shopcrm_bot.middlewares.db import DbSessionMiddleware
 from shopcrm_bot.services.commands_service import build_commands
+
+logger = logging.getLogger(__name__)
+
+# Интервал периодической очистки журналов аудита (24 часа).
+_RETENTION_INTERVAL_SECONDS = 24 * 60 * 60
 
 
 def _create_storage() -> BaseStorage:
@@ -73,6 +81,29 @@ async def _check_schema(engine: AsyncEngine) -> None:
         )
 
 
+async def _retention_loop(
+    session_factory: async_sessionmaker, retention_days: int
+) -> None:
+    """Фоновая очистка журналов аудита: сразу и далее каждые 24 часа.
+
+    Каждая итерация использует отдельную сессию. Ошибки логируются, но не
+    роняют бота; отмена задачи (shutdown) завершает цикл.
+    """
+    while True:
+        try:
+            async with session_factory() as session:
+                deleted = await RetentionService(session).cleanup_order_status_history(
+                    retention_days
+                )
+            if deleted:
+                logger.info(f"Retention cleanup: deleted {deleted} rows")
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Retention cleanup failed")
+        await asyncio.sleep(_RETENTION_INTERVAL_SECONDS)
+
+
 async def main():
     setup_logging(level=config.LOG_LEVEL, logs_dir=config.LOGS_DIR)
 
@@ -81,6 +112,14 @@ async def main():
 
     await _init_db_with_retry(engine)
     await _check_schema(engine)
+
+    # Фоновая очистка журналов аудита (retention). Запускается только если
+    # включена (AUDIT_RETENTION_DAYS > 0); отключается при shutdown.
+    retention_task = None
+    if config.AUDIT_RETENTION_DAYS and config.AUDIT_RETENTION_DAYS > 0:
+        retention_task = asyncio.create_task(
+            _retention_loop(session_factory, config.AUDIT_RETENTION_DAYS)
+        )
 
     bot = Bot(
         token=config.BOT_TOKEN.get_secret_value(),
@@ -104,6 +143,10 @@ async def main():
     try:
         await dp.start_polling(bot)
     finally:
+        if retention_task is not None:
+            retention_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await retention_task
         await bot.session.close()
         await engine.dispose()
         shutdown_logging()

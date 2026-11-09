@@ -7,6 +7,9 @@ Callback-данные:
   - ``admin_warehouse_prod_{id}``  — карточка товара
   - ``admin_warehouse_add_{id}``   — запрос количества для пополнения
   - ``admin_warehouse_off_{id}``   — запрос количества для списания
+  - ``admin_warehouse_del_{id}``   — экран подтверждения удаления
+  - ``admin_warehouse_del_confirm_{id}`` — подтверждение полного удаления
+  - ``admin_warehouse_restore_{id}`` — возврат архивного товара в каталог
 """
 import asyncio
 import logging
@@ -152,6 +155,151 @@ async def warehouse_start_write_off(
     )
 
 
+# ==================== ПОЛНОЕ УДАЛЕНИЕ ТОВАРА ====================
+
+@warehouse_router.callback_query(F.data.startswith("admin_warehouse_del_confirm_"))
+async def warehouse_confirm_delete(
+    callback: CallbackQuery,
+    admin_repo: AdminRepository,
+    warehouse_service: WarehouseService,
+    user: User,
+    locale: Locale,
+):
+    """Подтверждение полного удаления товара (необратимо)."""
+    product_id = _parse_id(callback.data)
+    if product_id is None:
+        await callback.answer()
+        return
+    await callback.answer()
+
+    # Запоминаем данные до удаления (объект будет отсоединён от сессии)
+    product_before = await admin_repo.get_product_by_id(product_id)
+    if not product_before:
+        msg = await callback.message.answer(
+            locale.get_text("admin.warehouse.product_not_found")
+        )
+        asyncio.create_task(self_destruct(message=msg, seconds=3))
+        return
+    name = product_before.name
+    category_id = product_before.category_id
+
+    _, error = await warehouse_service.delete_product(product_id, admin_id=user.id)
+
+    if error in ("has_stock", "has_orders"):
+        key = (
+            "admin.warehouse.delete_blocked_stock"
+            if error == "has_stock"
+            else "admin.warehouse.delete_blocked_orders"
+        )
+        msg = await callback.message.answer(locale.get_text(key))
+        asyncio.create_task(self_destruct(message=msg, seconds=5))
+        # Возврат в карточку товара
+        await WarehouseUI.show_product(
+            event=callback,
+            admin_repo=admin_repo,
+            user=user,
+            locale=locale,
+            product_id=product_id,
+            message_id_to_edit=callback.message.message_id,
+        )
+        return
+
+    # Успех: товар и история удалены
+    msg = await callback.message.answer(
+        locale.get_text("admin.warehouse.delete_success", name=name)
+    )
+    asyncio.create_task(self_destruct(message=msg, seconds=3))
+    if category_id:
+        await WarehouseUI.show_category(
+            event=callback,
+            admin_repo=admin_repo,
+            user=user,
+            locale=locale,
+            category_id=category_id,
+            message_id_to_edit=callback.message.message_id,
+        )
+    else:
+        await WarehouseUI.show_root(
+            event=callback,
+            admin_repo=admin_repo,
+            user=user,
+            locale=locale,
+            message_id_to_edit=callback.message.message_id,
+        )
+
+
+@warehouse_router.callback_query(F.data.startswith("admin_warehouse_del_"))
+async def warehouse_start_delete(
+    callback: CallbackQuery,
+    admin_repo: AdminRepository,
+    user: User,
+    locale: Locale,
+):
+    """Экран подтверждения полного удаления товара."""
+    product_id = _parse_id(callback.data)
+    if product_id is None:
+        await callback.answer()
+        return
+    product = await admin_repo.get_product_by_id(product_id)
+    if not product:
+        await callback.answer(
+            locale.get_text("admin.warehouse.product_not_found"), show_alert=True
+        )
+        return
+    await callback.answer()
+    await WarehouseUI.show_delete_confirm(
+        event=callback,
+        admin_repo=admin_repo,
+        user=user,
+        locale=locale,
+        product_id=product_id,
+        message_id_to_edit=callback.message.message_id,
+    )
+
+
+# ==================== ВОЗВРАТ ИЗ АРХИВА ====================
+
+@warehouse_router.callback_query(F.data.startswith("admin_warehouse_restore_"))
+async def warehouse_restore_product(
+    callback: CallbackQuery,
+    admin_repo: AdminRepository,
+    warehouse_service: WarehouseService,
+    user: User,
+    locale: Locale,
+):
+    """Возврат архивного товара в каталог (is_active=True)."""
+    product_id = _parse_id(callback.data)
+    if product_id is None:
+        await callback.answer()
+        return
+    await callback.answer()
+
+    product, error = await warehouse_service.restore_product(product_id, admin_id=user.id)
+    if error == "not_found":
+        msg = await callback.message.answer(
+            locale.get_text("admin.warehouse.product_not_found")
+        )
+        asyncio.create_task(self_destruct(message=msg, seconds=3))
+        return
+
+    if error is None:
+        # Успех: товар возвращён в каталог
+        msg = await callback.message.answer(
+            locale.get_text("admin.warehouse.restore_success", name=product.name)
+        )
+        asyncio.create_task(self_destruct(message=msg, seconds=3))
+    # error == "already_active" — просто показываем актуальную карточку
+
+    await WarehouseUI.show_product(
+        event=callback,
+        admin_repo=admin_repo,
+        user=user,
+        locale=locale,
+        product_id=product_id,
+        message_id_to_edit=callback.message.message_id,
+    )
+
+
 # ==================== ОБРАБОТКА ВВОДА ====================
 
 @warehouse_router.message(WarehouseState.add_stock, F.text)
@@ -185,7 +333,7 @@ async def warehouse_process_add_stock(
         asyncio.create_task(self_destruct(message=err, seconds=3))
         return
 
-    product = await warehouse_service.add_stock(product_id, qty)
+    product = await warehouse_service.add_stock(product_id, qty, admin_id=user.id)
     if not product:
         err = await message.answer(locale.get_text("admin.warehouse.product_not_found"))
         asyncio.create_task(self_destruct(message=err, seconds=3))
@@ -238,7 +386,7 @@ async def warehouse_process_write_off(
         asyncio.create_task(self_destruct(message=err, seconds=3))
         return
 
-    product = await warehouse_service.write_off_stock(product_id, qty)
+    product = await warehouse_service.write_off_stock(product_id, qty, admin_id=user.id)
     if not product:
         err = await message.answer(locale.get_text("admin.warehouse.product_not_found"))
         asyncio.create_task(self_destruct(message=err, seconds=3))

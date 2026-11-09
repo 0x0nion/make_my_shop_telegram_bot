@@ -21,11 +21,15 @@ def _display_name(names: dict[int, str] | None, obj_id: int, fallback: str) -> s
 
 
 def _product_button(product, product_names: dict[int, str] | None) -> InlineKeyboardButton:
-    """Кнопка товара склада: название + остаток (в наличии / заморожено)."""
+    """Кнопка товара склада: название + остаток (в наличии / заморожено).
+
+    Архивные товары (is_active=False) помечаются 🗄.
+    """
     available = (product.stock or 0) - (product.reserved or 0)
     reserved = product.reserved or 0
+    icon = "🗄" if not product.is_active else "📦"
     return InlineKeyboardButton(
-        text=f"📦 {_display_name(product_names, product.id, product.name)} — {available}/{reserved}",
+        text=f"{icon} {_display_name(product_names, product.id, product.name)} — {available}/{reserved}",
         callback_data=f"admin_warehouse_prod_{product.id}",
     )
 
@@ -98,11 +102,17 @@ def build_warehouse_product_kb(
     keyboard_factory,
     product_id: int,
     category_id: int | None,
+    is_active: bool = True,
 ) -> InlineKeyboardMarkup:
-    """Карточка товара склада: пополнение / списание / назад."""
-    txt = keyboard_factory.get_button_text(
-        "admin.warehouse", ["add_stock", "write_off", "back"]
-    )
+    """Карточка товара склада: пополнение / списание / (восстановление) / удаление / назад.
+
+    Для архивных товаров (``is_active=False``) добавляется кнопка
+    «Восстановить» (возврат в каталог).
+    """
+    btn_keys = ["add_stock", "write_off", "delete", "back"]
+    if not is_active:
+        btn_keys.append("restore")
+    txt = keyboard_factory.get_button_text("admin.warehouse", btn_keys)
 
     builder = InlineKeyboardBuilder()
     builder.row(
@@ -113,11 +123,49 @@ def build_warehouse_product_kb(
             text=txt["write_off"], callback_data=f"admin_warehouse_off_{product_id}"
         ),
     )
+    if not is_active:
+        builder.row(
+            InlineKeyboardButton(
+                text=txt["restore"],
+                callback_data=f"admin_warehouse_restore_{product_id}",
+            ),
+        )
+    builder.row(
+        InlineKeyboardButton(
+            text=txt["delete"], callback_data=f"admin_warehouse_del_{product_id}"
+        ),
+    )
 
     # Назад: в категорию товара (или в корень, если категории нет)
     back_cb = f"admin_warehouse_cat_{category_id}" if category_id else "admin_warehouse"
     builder.row(
         InlineKeyboardButton(text=txt["back"], callback_data=back_cb)
+    )
+
+    return builder.as_markup()
+
+
+def build_warehouse_delete_confirm_kb(
+    keyboard_factory,
+    product_id: int,
+) -> InlineKeyboardMarkup:
+    """Экран подтверждения полного удаления товара."""
+    txt = keyboard_factory.get_button_text(
+        "admin.warehouse", ["confirm_delete", "cancel"]
+    )
+
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(
+            text=txt["confirm_delete"],
+            callback_data=f"admin_warehouse_del_confirm_{product_id}",
+        ),
+    )
+    builder.row(
+        InlineKeyboardButton(
+            text=txt["cancel"],
+            callback_data=f"admin_warehouse_prod_{product_id}",
+        )
     )
 
     return builder.as_markup()

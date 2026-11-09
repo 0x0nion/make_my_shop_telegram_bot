@@ -35,6 +35,15 @@ class OrderStatus(str, Enum):  # noqa: UP042  # str-Enum: str() даёт value; 
         )
 
 
+class StockMovementType(str, Enum):  # noqa: UP042  # str-Enum: str() даёт value; StrEnum меняет поведение str()/format
+    """Типы складских движений (журнал ``stock_movements``)."""
+    ARRIVED = "arrived"            # Пополнение остатка (ручное)
+    WRITTEN_OFF = "written_off"    # Списание остатка (ручное)
+    RESERVED = "reserved"          # Бронирование под заказ
+    RELEASED = "released"          # Снятие брони (отмена заказа)
+    SOLD = "sold"                  # Списание по завершённому заказу
+
+
 # Единый источник истины для фильтров меню админ-ордеров:
 # callback-ключ кнопки -> значение статуса в БД.
 # Порядок ключей определяет порядок кнопок в меню (жизненный цикл заказа).

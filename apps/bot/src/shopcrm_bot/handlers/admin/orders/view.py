@@ -61,9 +61,8 @@ async def process_accept_order(
 
     # Заказ отработан администратором и переходит на стадию подготовки/сборки перед доставкой.
     # is_paid НЕ ставим: оплата ещё не подтверждена — админ запросит её отдельной кнопкой.
-    order.status = OrderStatus.PROCESSING.value
-
-    await admin_repo.update_order(order)
+    # Смена статуса фиксируется в журнале аудита.
+    await admin_repo.change_order_status(order_id, OrderStatus.PROCESSING.value, changed_by=user.id)
     await callback.answer(locale.get_text("admin.orders.order_accepted"), show_alert=True)
 
     await render_order_detail(

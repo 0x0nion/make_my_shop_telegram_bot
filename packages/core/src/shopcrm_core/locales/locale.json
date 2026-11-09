@@ -675,9 +675,9 @@
           "ru": "🛒 Товары:"
         },
         "product_line": {
-          "en": "{idx}. {name} — {available} / {reserved} {unit}",
-          "es": "{idx}. {name} — {available} / {reserved} {unit}",
-          "ru": "{idx}. {name} — {available} / {reserved} {unit}"
+          "en": "{idx}. {icon}{name} — {available} / {reserved} {unit}",
+          "es": "{idx}. {icon}{name} — {available} / {reserved} {unit}",
+          "ru": "{idx}. {icon}{name} — {available} / {reserved} {unit}"
         },
         "available": {
           "en": "Available",
@@ -728,6 +728,36 @@
           "en": "❌ Product not found.",
           "es": "❌ Producto no encontrado.",
           "ru": "❌ Товар не найден."
+        },
+        "delete_confirm_text": {
+          "en": "⚠️ Delete product <b>{name}</b> completely?\n\nThis removes the product, its stock history and all records. This action cannot be undone.",
+          "es": "⚠️ ¿Eliminar el producto <b>{name}</b> por completo?\n\nSe eliminará el producto, su historial de stock y todos los registros. Esta acción no se puede deshacer.",
+          "ru": "⚠️ Полностью удалить товар <b>{name}</b>?\n\nБудут удалены товар, история остатков и все записи. Действие необратимо."
+        },
+        "delete_success": {
+          "en": "✅ Product {name} has been deleted.",
+          "es": "✅ Producto {name} eliminado.",
+          "ru": "✅ Товар {name} удалён."
+        },
+        "delete_blocked_stock": {
+          "en": "❌ Cannot delete: the product has stock. Write off the stock first.",
+          "es": "❌ No se puede eliminar: el producto tiene stock. Primero descargue el stock.",
+          "ru": "❌ Нельзя удалить: у товара есть остаток. Сначала спишите остаток."
+        },
+        "delete_blocked_orders": {
+          "en": "❌ Cannot delete: there are active orders with this product.",
+          "es": "❌ No se puede eliminar: hay pedidos activos con este producto.",
+          "ru": "❌ Нельзя удалить: есть активные заказы с этим товаром."
+        },
+        "archived_notice": {
+          "en": "🗄 The product is archived (hidden from the catalog).",
+          "es": "🗄 El producto está archivado (oculto del catálogo).",
+          "ru": "🗄 Товар архивирован (скрыт из каталога)."
+        },
+        "restore_success": {
+          "en": "✅ Product {name} has been restored to the catalog.",
+          "es": "✅ Producto {name} restaurado en el catálogo.",
+          "ru": "✅ Товар {name} возвращён в каталог."
         }
       }
     },
@@ -1730,6 +1760,26 @@
             "en": "➖ Write off",
             "es": "➖ Descargar",
             "ru": "➖ Списать"
+          },
+          "delete": {
+            "en": "🗑 Delete",
+            "es": "🗑 Eliminar",
+            "ru": "🗑 Удалить"
+          },
+          "confirm_delete": {
+            "en": "✅ Confirm delete",
+            "es": "✅ Confirmar eliminación",
+            "ru": "✅ Подтвердить удаление"
+          },
+          "cancel": {
+            "en": "❌ Cancel",
+            "es": "❌ Cancelar",
+            "ru": "❌ Отмена"
+          },
+          "restore": {
+            "en": "♻️ Restore to catalog",
+            "es": "♻️ Restaurar al catálogo",
+            "ru": "♻️ Восстановить"
           }
         },
         "sizes": [

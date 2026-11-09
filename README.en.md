@@ -59,6 +59,7 @@ All settings are provided via environment variables (`.env` file):
 | `REDIS_URL`     | Redis URL (only when `FSM_STORAGE=redis`)         | `redis://localhost:6379/0`         |
 | `MANAGER_URL`   | Manager URL (button on the product card); if empty — the button is hidden | `https://t.me/your_manager` |
 | `LOGS_DIR`      | Directory for log files                           | `logs`                             |
+| `AUDIT_RETENTION_DAYS` | How many days to keep the order status change journal; `<= 0` disables auto-cleanup | `180` |
 
 ## Running
 

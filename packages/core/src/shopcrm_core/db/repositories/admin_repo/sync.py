@@ -40,7 +40,12 @@ class AdminSyncMixin:
                 tc.parent_id = real_to_temp_cat_id.get(cat.parent_id)
 
         # 3. Синхронизация продуктов
-        prods = await BaseRepository(Product, self.session).get_all()
+        # Только активные товары попадают в черновик каталога. Архивные
+        # (is_active=False) не показываются в редакторе — иначе при
+        # публикации они «оживли» бы. Возврат в каталог = новый товар.
+        prods = await BaseRepository(Product, self.session).get_all(
+            Product.is_active.is_not(False)
+        )
         temp_prods_pairs = []
         for p in prods:
             tp = TempProduct(
@@ -100,23 +105,34 @@ class AdminSyncMixin:
         prod_repo = BaseRepository(Product, self.session)
         locale_repo = BaseRepository(LocaleText, self.session)
 
-        # 1. Удаление старых данных
-        if alive_prod_ids:
-            await prod_repo.delete_where(~Product.id.in_(alive_prod_ids))
-        else:
-            await prod_repo.delete_where()
+        # 1. Архивация товаров, удалённых из каталога (is_active=False).
+        #    Строка товара, остатки, журнал и заказы сохраняются — статистику
+        #    не теряем. Полное удаление — только вручную из раздела «Склад».
+        all_real_prods = await prod_repo.get_all()
+        alive_prod_set = set(alive_prod_ids)
+        for p in all_real_prods:
+            if p.id not in alive_prod_set:
+                p.is_active = False
 
+        # Категории не хранят остатки/журнал — удаляем как раньше
+        # (у товаров category_id → SET NULL, данные не теряются).
         if alive_cat_ids:
             await cat_repo.delete_where(~Category.id.in_(alive_cat_ids))
         else:
             await cat_repo.delete_where()
 
-        # Удаляем локали несуществующих сущностей
-        await locale_repo.delete_where(
-            ~((LocaleText.entity_id.in_(alive_prod_ids) & LocaleText.entity_type.like('%product%')) |
-              (LocaleText.entity_id.in_(alive_cat_ids) & LocaleText.entity_type.like('%category%')) |
-              (LocaleText.entity_id == 0))
-        )
+        # Локали товаров сохраняются (товары архивируются, а не удаляются —
+        # склад показывает локализованные названия). Удаляем только локали
+        # удалённых категорий.
+        if alive_cat_ids:
+            await locale_repo.delete_where(
+                LocaleText.entity_type.like('%category%'),
+                ~LocaleText.entity_id.in_(alive_cat_ids)
+            )
+        else:
+            await locale_repo.delete_where(
+                LocaleText.entity_type.like('%category%')
+            )
 
         # 2. Обновление и создание категорий
         real_cats = await cat_repo.get_all(Category.id.in_(alive_cat_ids)) if alive_cat_ids else []
@@ -130,8 +146,9 @@ class AdminSyncMixin:
                 temp_to_real_id[tc.id] = tc.original_id
                 if real_cats_dict.get(tc.original_id):
                     real_cats_dict[tc.original_id].name = tc.name
+                    real_cats_dict[tc.original_id].updated_by = admin_id
             else:
-                new_cat = Category(name=tc.name)
+                new_cat = Category(name=tc.name, updated_by=admin_id)
                 self.session.add(new_cat)
                 new_cats_pairs.append((tc, new_cat))
 
@@ -162,10 +179,14 @@ class AdminSyncMixin:
                     real_prod.name, real_prod.description = tp.name, tp.description
                     real_prod.price, real_prod.unit = tp.price, tp.unit
                     real_prod.image_id, real_prod.category_id = tp.image_id, real_cat_id
+                    # Товар снова в каталоге — реактивируем (если был в архиве)
+                    real_prod.is_active = True
+                    real_prod.updated_by = admin_id
             else:
                 new_prod = Product(
                     name=tp.name, description=tp.description, price=tp.price,
-                    unit=tp.unit, image_id=tp.image_id, category_id=real_cat_id
+                    unit=tp.unit, image_id=tp.image_id, category_id=real_cat_id,
+                    updated_by=admin_id
                 )
                 self.session.add(new_prod)
                 new_prods_pairs.append((tp, new_prod))

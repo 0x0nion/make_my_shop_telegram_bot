@@ -1,7 +1,8 @@
 # database/models/user.py
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, String
+from sqlalchemy import BigInteger, DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from shopcrm_core.constants import OrderStatus
@@ -18,6 +19,11 @@ class User(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
     language: Mapped[str | None] = mapped_column(String, nullable=True)
     role: Mapped[str] = mapped_column(String, default='client')
+    # Профиль клиента (из Telegram): имя и username для отчётов/карточек.
+    # Заполняются при первом обращении и обновляются, если были пустыми.
+    first_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    username: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     # Добавляем lazy="selectin" для автоматической асинхронной подгрузки
     # order_by по id гарантирует стабильный порядок (порядок добавления),
@@ -30,10 +36,12 @@ class User(Base):
         order_by="CartItem.id",
     )
 
+    # foreign_keys: в orders два FK на users (user_id и paid_by) — указываем явно.
     orders: Mapped[list["Order"]] = relationship(
         "Order",
         back_populates="user",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        foreign_keys="Order.user_id",
     )
 
     @property

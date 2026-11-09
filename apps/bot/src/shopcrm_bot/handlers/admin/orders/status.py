@@ -112,9 +112,8 @@ async def process_set_order_status(
         )
         return
 
-    # Обновляем статус
-    order.status = new_status
-    await admin_repo.update_order(order)
+    # Обновляем статус (с записью в журнал аудита order_status_history)
+    order = await admin_repo.change_order_status(order_id, new_status, changed_by=user.id)
 
     # Синхронизируем остаток со статусом заказа:
     #   COMPLETED → списываем товар со склада (confirm);
@@ -162,8 +161,7 @@ async def process_mark_order_paid(
         await callback.answer(locale.get_text("admin.orders.order_not_found"), show_alert=True)
         return
 
-    order.is_paid = True
-    await admin_repo.update_order(order)
+    await admin_repo.mark_order_paid(order_id, changed_by=user.id)
 
     await callback.answer(locale.get_text("admin.orders.marked_paid"), show_alert=True)
 
@@ -204,10 +202,9 @@ async def process_confirm_close_order(
         await callback.answer(locale.get_text("admin.orders.order_not_found"), show_alert=True)
         return
 
-    order.status = OrderStatus.COMPLETED.value
     if paid_flag == "paid":
-        order.is_paid = True
-    await admin_repo.update_order(order)
+        await admin_repo.mark_order_paid(order_id, changed_by=user.id)
+    order = await admin_repo.change_order_status(order_id, OrderStatus.COMPLETED.value, changed_by=user.id)
 
     # Закрытие заказа = завершение: списываем товар со склада (confirm).
     await warehouse_service.apply_order_stock(order, "confirm")

@@ -1,7 +1,8 @@
 # database/models/category.py
+from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, ForeignKey, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from shopcrm_core.db.models.base import Base
@@ -19,6 +20,11 @@ class Category(Base):
 
     # Новое поле флага активности
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+
+    # Аудит: когда категория создана, когда и кем последний раз изменялась
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, onupdate=func.now())
+    updated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     subcategories: Mapped[list["Category"]] = relationship("Category", back_populates="parent")
     parent: Mapped[Optional["Category"]] = relationship("Category", remote_side=[id], back_populates="subcategories")
