@@ -1,15 +1,15 @@
 import asyncio
 from logging.config import fileConfig
 
+# 1. Импортируем ваш экземпляр конфигурации и базовый класс моделей
+from shopcrm_core.config import get_config
+
+# Импортируем все модели из пакета database.models (благодаря __init__.py они зарегистрируются в Base.metadata)
+from shopcrm_core.db.models import Base  # noqa: F401
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-
-# 1. Импортируем ваш экземпляр конфигурации и базовый класс моделей
-from shopcrm_core.config import get_config
-# Импортируем все модели из пакета database.models (благодаря __init__.py они зарегистрируются в Base.metadata)
-from shopcrm_core.db.models import Base  # noqa: F401
 
 # Это объект конфигурации Alembic (берет значения из alembic.ini)
 config = context.config
