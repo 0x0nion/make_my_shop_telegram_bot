@@ -7,6 +7,7 @@ from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.db.repositories.shop_repo import ShopRepository
 from shopcrm_core.db.repositories.user_repo import UserRepository
 from shopcrm_core.services.admin_shop_service import AdminShopService
+from shopcrm_core.services.admin_user_service import AdminUserService
 from shopcrm_core.services.warehouse_service import WarehouseService
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
@@ -44,12 +45,14 @@ class DbSessionMiddleware(BaseMiddleware):
             # Создаем сервисы и прокидываем в них репозитории
             admin_shop_service = AdminShopService(admin_repo)
             warehouse_service = WarehouseService(admin_repo)
+            admin_user_service = AdminUserService(admin_repo)
 
             data["admin_repo"] = admin_repo
             data["user_repo"] = user_repo
             data["shop_repo"] = shop_repo
             data["admin_service"] = admin_shop_service
             data["warehouse_service"] = warehouse_service
+            data["admin_user_service"] = admin_user_service
             # Админы для контроля доступа и уведомлений:
             # переданные при инициализации или из конфига.
             data["admin_ids"] = self._admin_ids if self._admin_ids is not None else config.ADMIN_ID

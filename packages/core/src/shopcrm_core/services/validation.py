@@ -80,3 +80,20 @@ def validate_quantity(value: str, lang: str) -> tuple[int | None, str | None]:
     if qty <= 0:
         return None, _t(lang, "admin.warehouse.invalid_quantity")
     return qty, None
+
+
+def validate_discount(value: str, lang: str) -> tuple[float | None, str | None]:
+    """Парсит и валидирует скидку в процентах (0–100).
+
+    Допускает десятичную точку или запятую (``15,5``).
+    :return: (discount, error). discount — float или None; error — локализованная
+             ошибка или None.
+    """
+    clean = (value or "").strip().replace(",", ".", 1)
+    try:
+        discount = float(clean)
+    except (ValueError, TypeError):
+        return None, _t(lang, "admin.users.discount_invalid")
+    if discount < 0 or discount > 100:
+        return None, _t(lang, "admin.users.discount_invalid")
+    return discount, None

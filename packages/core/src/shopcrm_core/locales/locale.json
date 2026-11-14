@@ -69,16 +69,6 @@
           "es": "🗑 Producto eliminado",
           "ru": "🗑 Товар удален"
         },
-        "warehouse": {
-          "en": "📦 'Warehouse' section is under development...",
-          "es": "📦 La sección 'Almacén' está en desarrollo...",
-          "ru": "📦 Раздел 'Склад' в разработке..."
-        },
-        "users": {
-          "en": "👥 'Users' section is under development...",
-          "es": "👥 La sección 'Usuarios' está en desarrollo...",
-          "ru": "👥 Раздел 'Юзеры' в разработке..."
-        },
         "workers": {
           "en": "⚒ 'Workers' section is under development...",
           "es": "⚒ La sección 'Trabajadores' está en desarrollo...",
@@ -653,6 +643,133 @@
           "es": "❌ Pago rechazado"
         }
       },
+      "users": {
+        "list_header": {
+          "ru": "👥 <b>Список пользователей</b>",
+          "en": "👥 <b>User list</b>",
+          "es": "👥 <b>Lista de usuarios</b>"
+        },
+        "list_line": {
+          "ru": "ID: <code>{id}</code> | {name} | {username} | 📦 {orders}",
+          "en": "ID: <code>{id}</code> | {name} | {username} | 📦 {orders}",
+          "es": "ID: <code>{id}</code> | {name} | {username} | 📦 {orders}"
+        },
+        "list_empty": {
+          "ru": "<i>Пользователи не найдены.</i>",
+          "en": "<i>No users found.</i>",
+          "es": "<i>No se encontraron usuarios.</i>"
+        },
+        "list_button": {
+          "ru": "#{id} {name}",
+          "en": "#{id} {name}",
+          "es": "#{id} {name}"
+        },
+        "find_button": {
+          "ru": "🔍 Найти по ID",
+          "en": "🔍 Find by ID",
+          "es": "🔍 Buscar por ID"
+        },
+        "find_prompt": {
+          "ru": "🔍 Отправьте ID пользователя (число):",
+          "en": "🔍 Send the user ID (a number):",
+          "es": "🔍 Envía el ID del usuario (un número):"
+        },
+        "find_invalid": {
+          "ru": "❌ Пожалуйста, отправьте числовой ID.",
+          "en": "❌ Please send a numeric ID.",
+          "es": "❌ Por favor, envía un ID numérico."
+        },
+        "find_not_found": {
+          "ru": "❌ Пользователь с ID {id} не найден.",
+          "en": "❌ User with ID {id} not found.",
+          "es": "❌ No se encontró el usuario con ID {id}."
+        },
+        "card_title": {
+          "ru": "👤 <b>Пользователь #{id}</b>",
+          "en": "👤 <b>User #{id}</b>",
+          "es": "👤 <b>Usuario #{id}</b>"
+        },
+        "card_name": {
+          "ru": "Имя: {name}",
+          "en": "Name: {name}",
+          "es": "Nombre: {name}"
+        },
+        "card_username": {
+          "ru": "@username: {username}",
+          "en": "@username: {username}",
+          "es": "@usuario: {username}"
+        },
+        "card_registered": {
+          "ru": "Зарегистрирован: {date}",
+          "en": "Registered: {date}",
+          "es": "Registrado: {date}"
+        },
+        "card_language": {
+          "ru": "Язык: {lang}",
+          "en": "Language: {lang}",
+          "es": "Idioma: {lang}"
+        },
+        "card_role": {
+          "ru": "Роль: {role}",
+          "en": "Role: {role}",
+          "es": "Rol: {role}"
+        },
+        "role_admin": {
+          "ru": "администратор",
+          "en": "admin",
+          "es": "administrador"
+        },
+        "role_client": {
+          "ru": "клиент",
+          "en": "client",
+          "es": "cliente"
+        },
+        "card_active": {
+          "ru": "Статус: ✅ Активен ({count} активных заказов)",
+          "en": "Status: ✅ Active ({count} active orders)",
+          "es": "Estado: ✅ Activo ({count} pedidos activos)"
+        },
+        "card_inactive": {
+          "ru": "Статус: ⚪ Неактивен",
+          "en": "Status: ⚪ Inactive",
+          "es": "Estado: ⚪ Inactivo"
+        },
+        "card_orders": {
+          "ru": "Заказов: {count}",
+          "en": "Orders: {count}",
+          "es": "Pedidos: {count}"
+        },
+        "card_total_spent": {
+          "ru": "Потрачено: {total}",
+          "en": "Total spent: {total}",
+          "es": "Gastado: {total}"
+        },
+        "card_discount": {
+          "ru": "Скидка: {discount}%",
+          "en": "Discount: {discount}%",
+          "es": "Descuento: {discount}%"
+        },
+        "change_discount": {
+          "ru": "🏷️ Изменить скидку",
+          "en": "🏷️ Change discount",
+          "es": "🏷️ Cambiar descuento"
+        },
+        "discount_prompt": {
+          "ru": "🏷️ Введите % скидки для пользователя (0–100):",
+          "en": "🏷️ Enter the discount % for the user (0–100):",
+          "es": "🏷️ Introduce el % de descuento del usuario (0–100):"
+        },
+        "discount_success": {
+          "ru": "✅ Скидка пользователя #{id} установлена: {discount}%",
+          "en": "✅ Discount for user #{id} set: {discount}%",
+          "es": "✅ Descuento del usuario #{id} establecido: {discount}%"
+        },
+        "discount_invalid": {
+          "ru": "❌ Введите число от 0 до 100 (например: 10 или 15,5).",
+          "en": "❌ Enter a number from 0 to 100 (e.g. 10 or 15.5).",
+          "es": "❌ Introduce un número de 0 a 100 (p. ej. 10 o 15,5)."
+        }
+      },
       "warehouse": {
         "root_title": {
           "en": "📦 Warehouse",
@@ -1093,36 +1210,6 @@
         "en": "🗑 Product deleted",
         "es": "🗑 Producto eliminado",
         "ru": "🗑 Товар удален"
-      },
-      "warehouse": {
-        "en": "📦 'Warehouse' section is under development...",
-        "es": "📦 La sección 'Almacén' está en desarrollo...",
-        "ru": "📦 Раздел 'Склад' в разработке..."
-      },
-      "users": {
-        "en": "👥 'Users' section is under development...",
-        "es": "👥 La sección 'Usuarios' está en desarrollo...",
-        "ru": "👥 Раздел 'Юзеры' в разработке..."
-      },
-      "workers": {
-        "en": "⚒ 'Workers' section is under development...",
-        "es": "⚒ La sección 'Trabajadores' está en desarrollo...",
-        "ru": "⚒ Раздел 'Работники' в разработке..."
-      },
-      "alert": {
-        "en": "📢 'Broadcast' section is under development...",
-        "es": "📢 La sección 'Difusión' está en desarrollo...",
-        "ru": "📢 Раздел 'Рассылка' в разработке..."
-      },
-      "stat": {
-        "en": "📈 'Statistics' section is under development...",
-        "es": "📈 La sección 'Estadísticas' está en desarrollo...",
-        "ru": "📈 Раздел 'Статистика' в разработке..."
-      },
-      "default": {
-        "en": "Section under development...",
-        "es": "Sección en desarrollo...",
-        "ru": "Раздел в разработке..."
       }
     },
     "catalog": {

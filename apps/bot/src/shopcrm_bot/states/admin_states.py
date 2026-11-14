@@ -34,3 +34,9 @@ class WarehouseState(StatesGroup):
     """Ввод количества для операций склада (пополнение / списание)."""
     add_stock = State()
     write_off_stock = State()
+
+
+class AdminUserState(StatesGroup):
+    """Ввод в разделе «Юзеры»: поиск по ID и скидка в карточке."""
+    find_by_id = State()
+    set_discount = State()

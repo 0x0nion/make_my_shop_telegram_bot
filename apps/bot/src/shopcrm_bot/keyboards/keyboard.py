@@ -656,6 +656,94 @@ class KeyboardFactory:
 
         return builder.as_markup()
 
+    def get_users_list_kb(
+            self,
+            users: list,
+            current_page: int,
+            total_pages: int,
+    ) -> InlineKeyboardMarkup:
+        """Список пользователей админа с круговой пагинацией (по 5 на страницу).
+
+        Кнопка юзера ведёт в карточку, передавая текущую страницу,
+        чтобы «Назад» из карточки возвращал в тот же список на ту же страницу.
+        """
+        builder = InlineKeyboardBuilder()
+
+        button_template = self.get_button_text(
+            "text.admin.users.list_button", default="#{id} {name}"
+        )
+        find_text = self.get_button_text(
+            "text.admin.users.find_button", default="🔍 Find by ID"
+        )
+        back_text = self.get_button_text("base.back", default="⬅️ Back")
+
+        for user in users:
+            name = user.first_name or (
+                f"@{user.username}" if user.username else "—"
+            )
+            button_text = self.get_button_text(
+                button_template, id=user.id, name=name
+            )
+            builder.row(
+                InlineKeyboardButton(
+                    text=button_text,
+                    callback_data=f"admin_user_card:{user.id}:{current_page}",
+                )
+            )
+
+        # Блок круговой пагинации
+        if users and total_pages > 0:
+            prev_page = total_pages if current_page == 1 else current_page - 1
+            next_page = 1 if current_page == total_pages else current_page + 1
+
+            builder.row(
+                InlineKeyboardButton(
+                    text="⬅️",
+                    callback_data=f"admin_users_page:{prev_page}",
+                ),
+                InlineKeyboardButton(
+                    text=f"{current_page}/{total_pages}",
+                    callback_data="noop",
+                ),
+                InlineKeyboardButton(
+                    text="➡️",
+                    callback_data=f"admin_users_page:{next_page}",
+                ),
+            )
+
+        builder.row(
+            InlineKeyboardButton(text=find_text, callback_data="admin_users_find")
+        )
+
+        builder.row(
+            InlineKeyboardButton(text=back_text, callback_data="admin_main_menu")
+        )
+
+        return builder.as_markup()
+
+    def get_user_card_kb(self, user_id: int, page: int = 1) -> InlineKeyboardMarkup:
+        """Клавиатура карточки пользователя.
+
+        «Изменить скидку» открывает FSM-ввод, «Назад» возвращает в список
+        на ту же страницу, с которой открыли карточку.
+        """
+        change_discount_text = self.get_button_text(
+            "text.admin.users.change_discount", default="🏷️ Change discount"
+        )
+        back_text = self.get_button_text("base.back", default="⬅️ Back")
+
+        builder = InlineKeyboardBuilder()
+        builder.row(
+            InlineKeyboardButton(
+                text=change_discount_text,
+                callback_data=f"admin_user_discount:{user_id}:{page}",
+            )
+        )
+        builder.row(
+            InlineKeyboardButton(text=back_text, callback_data=f"admin_users_page:{page}")
+        )
+        return builder.as_markup()
+
     def get_order_detail_kb(
             self,
             order: Any,
