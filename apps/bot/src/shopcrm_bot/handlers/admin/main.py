@@ -36,50 +36,6 @@ async def admin_main_menu(
     )
 
 
-# ###########################
-
-# @admin_main_router.callback_query(F.data == "admin_shop_settings")
-# async def cb_shop_settings(callback: CallbackQuery, user: User):
-#     """Открытие подменю 'Настройка магазина'."""
-#     locale = Locale(user.language)
-#
-#     markup = locale.keyboards.get_shop_settings_kb()
-#     title_text = locale.get_text("admin.main_menu")
-#     text = f"{title_text}\n\n⚙️ <b>Настройка магазина:</b>"
-#
-#     await UIManager.show(
-#         event=callback,
-#         text=text,
-#         reply_markup=markup,
-#     )
-#
-#
-# @admin_main_router.callback_query(F.data == "admin_shop_start")
-# async def cb_open_shop_root(
-#     callback: CallbackQuery,
-#     admin_service: AdminShopService,
-#     admin_repo: AdminRepository,
-#     user: User
-# ):
-#     """Единственная точка старта сессии: синхронизация через сервис + открытие корня каталога."""
-#     await admin_service.start_editing_session(admin_id=callback.from_user.id)
-#     await render_shop_menu(callback, admin_repo, current_cat_id=None, user=user)
-#     await callback.answer()
-#
-#
-# @admin_main_router.callback_query(F.data == "admin_save_shop")
-# async def cb_admin_save(
-#     callback: CallbackQuery,
-#     admin_service: AdminShopService,
-#     user: User
-# ):
-#     """Сохранение изменений через сервис."""
-#     await admin_service.save_editing_session(admin_id=callback.from_user.id)
-#     await show_admin_panel(
-#         callback, user=user, is_saved=True
-#     )
-
-
 @admin_main_router.callback_query(
     F.data.startswith("admin_")
     & ~F.data.startswith("admin_shop")
