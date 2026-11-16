@@ -94,13 +94,6 @@ def _repo(users: list, total: int | None = None) -> AsyncMock:
     return repo
 
 
-def _message(text: str) -> AsyncMock:
-    msg = AsyncMock()
-    msg.text = text
-    msg.from_user = SimpleNamespace(id=1, language="ru")
-    return msg
-
-
 def _kb_callbacks(markup) -> list[str]:
     """Все callback_data клавиатуры в порядке строк."""
     return [
@@ -199,37 +192,58 @@ class TestUsersList:
 
 
 class TestUsersFindById:
-    async def _handle(self, text: str, repo) -> AsyncMock:
-        """Запускает handle_users_find_input с моком render_user_card."""
+    async def _handle(self, text: str, repo) -> tuple[AsyncMock, AsyncMock, AsyncMock]:
+        """Запускает handle_users_find_input с моком render_user_card.
+
+        Возвращает (message, state, card).
+        """
         from shopcrm_bot.locales import Locale
 
-        state = AsyncMock()
+        state = _fsm_state(
+            {
+                "menu_message_id": 42,
+                "prompt_message_id": 43,
+            }
+        )
+        msg = _discount_message(text)
         with patch(
             "shopcrm_bot.handlers.admin.users.list.render_user_card"
         ) as card:
             await handle_users_find_input(
-                _message(text), state, repo, Locale("ru")
+                msg, state, repo, Locale("ru")
             )
-        return card
+        return msg, state, card
 
     async def test_invalid_input(self):
+        """Невалидный ввод: ошибка, без карточки; промпт и ввод удалены."""
         repo = _repo([])
-        card = await self._handle("abc", repo)
+        msg, state, card = await self._handle("abc", repo)
         card.assert_not_awaited()
+        state.clear.assert_awaited_once()
+        msg.bot.delete_message.assert_awaited_once_with(1, 43)
+        msg.delete.assert_awaited_once()
+        msg.answer.assert_awaited_once()  # сообщение об ошибке
 
     async def test_user_not_found(self):
+        """Юзер не найден: ошибка, без карточки."""
         repo = _repo([])
         repo.get_user_by_id = AsyncMock(return_value=None)
-        card = await self._handle("999", repo)
+        msg, _, card = await self._handle("999", repo)
         card.assert_not_awaited()
+        msg.answer.assert_awaited_once()  # «не найден»
 
-    async def test_user_found_opens_card(self):
+    async def test_user_found_opens_card_in_place(self):
+        """Найден: карточка рендерится in-place вместо списка (1 сообщение)."""
         target = _user(id=100)
         repo = _repo([target])
         repo.get_user_by_id = AsyncMock(return_value=target)
-        card = await self._handle("100", repo)
+        msg, _, card = await self._handle("100", repo)
         card.assert_awaited_once()
         assert card.call_args.kwargs["target"].id == 100
+        assert card.call_args.kwargs["message_id_to_edit"] == 42
+        # Промпт и ввод удалены
+        msg.bot.delete_message.assert_awaited_once_with(1, 43)
+        msg.delete.assert_awaited_once()
 
 
 class TestUserCard:

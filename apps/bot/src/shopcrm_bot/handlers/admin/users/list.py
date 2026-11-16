@@ -1,13 +1,17 @@
 # handlers/admin/users/list.py
+import asyncio
 import logging
 import math
+from contextlib import suppress
 
 from aiogram import F, Router
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 
 from shopcrm_bot.handlers.admin.users.card import render_user_card
+from shopcrm_bot.handlers.admin.utils import self_destruct
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.states.admin_states import AdminUserState
 from shopcrm_bot.ui import UIManager
@@ -147,8 +151,12 @@ async def route_users_find_by_id(
     """Запрос ID пользователя для поиска."""
     await state.set_state(AdminUserState.find_by_id)
     await callback.answer()
-    await callback.message.answer(
+    prompt_message = await callback.message.answer(
         locale.get_text("admin.users.find_prompt")
+    )
+    await state.update_data(
+        menu_message_id=callback.message.message_id,
+        prompt_message_id=prompt_message.message_id,
     )
 
 
@@ -159,29 +167,50 @@ async def handle_users_find_input(
         admin_repo: AdminRepository,
         locale: Locale,
 ):
-    """Обработка введённого ID: открытие карточки найденного пользователя."""
+    """Обработка введённого ID: открытие карточки найденного пользователя.
+
+    Система «1 сообщения»: промпт и ввод удаляются, ошибки показываются
+    временными сообщениями (self-destruct), карточка рендерится in-place
+    вместо списка.
+    """
+    data = await state.get_data()
+    menu_message_id = data.get("menu_message_id")
+    prompt_message_id = data.get("prompt_message_id")
+    await state.clear()
+
+    # Удаляем сообщение-промпт (бот удаляет своё сообщение — работает и в личке)
+    if prompt_message_id:
+        with suppress(TelegramBadRequest):
+            await message.bot.delete_message(message.chat.id, prompt_message_id)
+
+    # Удаляем ввод пользователя (в личке — ограничение Telegram, в группах работает)
+    with suppress(TelegramBadRequest):
+        await message.delete()
+
     text = (message.text or "").strip()
 
     if not text.isdigit():
-        await message.answer(locale.get_text("admin.users.find_invalid"))
+        err = await message.answer(locale.get_text("admin.users.find_invalid"))
+        asyncio.create_task(self_destruct(message=err, seconds=3))
         return
 
     user_id = int(text)
     target = await admin_repo.get_user_by_id(user_id)
 
     if not target:
-        await state.clear()
-        await message.answer(
+        err = await message.answer(
             locale.get_text("admin.users.find_not_found", id=user_id)
         )
+        asyncio.create_task(self_destruct(message=err, seconds=3))
         return
 
-    await state.clear()
+    # Карточка вместо списка (in-place) — «Назад» вернёт список
     await render_user_card(
         event=message,
         target=target,
         page=1,
         locale=locale,
+        message_id_to_edit=menu_message_id,
     )
 
 
