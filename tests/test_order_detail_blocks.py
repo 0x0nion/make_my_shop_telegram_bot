@@ -26,6 +26,7 @@ def _fake_order(user=_UNSET, **overrides) -> SimpleNamespace:
         user=user,
         items=[],
         delivery_price=0,
+        discount_percent=0,
         total_price=10.0,
         delivery_address=None,
         delivery_address_type=None,

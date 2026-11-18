@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Index, Numeric, String, Text, func
+from sqlalchemy import JSON, DateTime, ForeignKey, Index, Numeric, String, Text, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from shopcrm_core.db.models.base import Base
@@ -26,6 +26,16 @@ class Order(Base):
     user_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
     manager_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
     delivery_price: Mapped[float] = mapped_column(Numeric(28, 18), default=0.0)
+
+    # Снапшот персональной скидки покупателя (в процентах, 0–100) на момент
+    # оформления заказа. Сумма скидки не хранится, а выводится из состава
+    # заказа: items_sum * discount_percent / 100 (см. order_calc).
+    # Скидка применяется только к товарам, не к доставке.
+    # server_default — чтобы DDL из create_all совпадал с миграцией
+    # (NUMERIC(5,2) NOT NULL DEFAULT 0) на всех схемах.
+    discount_percent: Mapped[float] = mapped_column(
+        Numeric(5, 2), default=0.0, server_default=text("0"), nullable=False
+    )
 
     total_price: Mapped[float] = mapped_column(Numeric(28, 18))
 

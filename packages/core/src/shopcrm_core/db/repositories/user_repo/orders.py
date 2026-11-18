@@ -6,6 +6,7 @@ from shopcrm_core.db.models import Order, OrderItem
 from shopcrm_core.db.models.cart import CartItem
 from shopcrm_core.db.repositories.base_repo import BaseRepository
 from shopcrm_core.logging import logger
+from shopcrm_core.services.order_calc import calc_order_total
 
 
 class UserOrderMixin:
@@ -31,12 +32,12 @@ class UserOrderMixin:
         if not user or not user.cart:
             return None
 
-        total_price = 0.0
+        items_sum = 0.0
         order_items = []
 
         for cart_item in user.cart:
             current_price = float(cart_item.product.price)
-            total_price += current_price * cart_item.quantity
+            items_sum += current_price * cart_item.quantity
 
             order_items.append(
                 OrderItem(
@@ -46,10 +47,17 @@ class UserOrderMixin:
                 )
             )
 
+        # Снапшот персональной скидки покупателя на момент оформления:
+        # дальше заказ не зависит от изменений скидки юзера.
+        # Скидка — только на товары, доставка на этом этапе ещё не задана (0).
+        discount_percent = float(user.discount or 0)
+        total_price = calc_order_total(items_sum, 0.0, discount_percent)
+
         # 1. Создаем заказ с флагом is_paid=False и статусом PENDING
         new_order = await self._order_repo.create_without_commit(
             user_id=user_id,
             total_price=total_price,
+            discount_percent=discount_percent,
             delivery_address=delivery_address,
             delivery_address_type=delivery_address_type,
             user_comment=user_comment,

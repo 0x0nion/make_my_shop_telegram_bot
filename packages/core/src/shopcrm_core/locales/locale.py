@@ -7,6 +7,11 @@ from pathlib import Path
 from typing import Any
 
 from shopcrm_core.locales.utils import SafeDict
+from shopcrm_core.services.order_calc import (
+    calc_discount_amount,
+    calc_order_total,
+    format_discount_percent,
+)
 from shopcrm_core.utils import format_price
 
 logger = logging.getLogger(__name__)
@@ -168,6 +173,26 @@ class Locale:
 
     # --- Форматирование заказов ---
 
+    def build_discount_block(self, items_price, discount_percent) -> str:
+        """Строка скидки для карточки заказа (пустая строка, если скидки нет).
+
+        Скидка — только на товары, не на доставку. Показывается только при
+        скидке > 0, чтобы не засорять карточки без скидки. Используется и в
+        клиентских экранах (format_order), и в админ-карточке заказа.
+        """
+        percent = float(discount_percent or 0)
+        if percent <= 0:
+            return ""
+        return (
+            self.get_text(
+                "client.discount_line",
+                percent=format_discount_percent(percent),
+                amount=format_price(calc_discount_amount(items_price, percent)),
+                currency=self.get_currency_symbol(),
+            )
+            + "\n"
+        )
+
     def format_order(
         self,
         order,
@@ -238,12 +263,19 @@ class Locale:
             info_lines.append(f"{self.get_text('client.order_comment_label')} {user_comment}")
         info_block = "\n".join(info_lines) + "\n\n" if info_lines else ""
 
+        delivery_price = getattr(order, "delivery_price", 0) or 0
+
+        # Скидка: снапшот персональной скидки покупателя на заказе
+        # (для корзины — текущая скидка юзера, передаётся как discount_percent).
+        # Применяется только к товарам, не к доставке.
+        discount_percent = float(getattr(order, "discount_percent", 0) or 0)
+        discount_block = self.build_discount_block(items_price, discount_percent)
+
         total_price = (
             order.total_price
             if getattr(order, "total_price", None) is not None
-            else items_price
+            else calc_order_total(items_price, delivery_price, discount_percent)
         )
-        delivery_price = getattr(order, "delivery_price", 0) or 0
 
         created_at = getattr(order, "created_at", None)
         created_at_str = created_at.strftime("%d.%m.%Y %H:%M") if created_at else "—"
@@ -258,6 +290,7 @@ class Locale:
             "created_at": created_at_str,
             "status": self.get_order_status_label(getattr(order, "status", None)),
             "items_price": format_price(items_price),
+            "discount_block": discount_block,
             "delivery_price": format_price(delivery_price),
             "total_price": format_price(total_price),
             "currency": currency_sym,

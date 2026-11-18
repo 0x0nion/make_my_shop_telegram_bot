@@ -6,6 +6,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from shopcrm_core.constants import OrderStatus
 from shopcrm_core.locales.utils import SafeDict
+from shopcrm_core.services.order_calc import format_discount_marker
 from shopcrm_core.utils import format_price
 
 logger = logging.getLogger(__name__)
@@ -226,6 +227,10 @@ class KeyboardFactory:
                 id=order.id,
                 date=date_str,
                 price=format_price(getattr(order, "total_price", 0) or 0),
+                # Маркер скидки (🏷️15%) — наглядно в списке, пусто если нет
+                discount_marker=format_discount_marker(
+                    getattr(order, "discount_percent", 0)
+                ),
                 currency=self.locale.get_currency_symbol(),
             )
             builder.row(
@@ -610,6 +615,10 @@ class KeyboardFactory:
                 button_template,
                 id=order.id,
                 price=format_price(getattr(order, "total_price", 0) or 0),
+                # Маркер скидки (🏷️15%) — наглядно в списке, пусто если нет
+                discount_marker=format_discount_marker(
+                    getattr(order, "discount_percent", 0)
+                ),
                 status=self.locale.get_order_status_label(order.status),
                 currency=self.locale.get_currency_symbol(),
             )

@@ -4,6 +4,7 @@ from aiogram import F, Router
 from aiogram.types import CallbackQuery
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
+from shopcrm_core.services.order_calc import calc_items_sum, calc_order_total
 from shopcrm_core.services.order_service import get_admin_order_product_names
 from shopcrm_core.utils import format_price
 
@@ -141,9 +142,11 @@ async def process_dec_order_item(
             else:
                 order.items.remove(item)
 
-            items_sum = sum(i.quantity * float(i.price_at_purchase) for i in order.items)
-            current_delivery = float(order.delivery_price or 0.0)
-            order.total_price = items_sum + current_delivery
+            # Итог: товары − скидка + доставка (скидка — только на товары)
+            items_sum = calc_items_sum(order.items)
+            order.total_price = calc_order_total(
+                items_sum, order.delivery_price or 0.0, order.discount_percent
+            )
 
             await admin_repo.update_order(order)
 
@@ -175,9 +178,11 @@ async def process_inc_order_item(
         if item:
             item.quantity += 1
 
-            items_sum = sum(i.quantity * float(i.price_at_purchase) for i in order.items)
-            current_delivery = float(order.delivery_price or 0.0)
-            order.total_price = items_sum + current_delivery
+            # Итог: товары − скидка + доставка (скидка — только на товары)
+            items_sum = calc_items_sum(order.items)
+            order.total_price = calc_order_total(
+                items_sum, order.delivery_price or 0.0, order.discount_percent
+            )
 
             await admin_repo.update_order(order)
 
@@ -209,10 +214,11 @@ async def process_delete_order_item(
         if item_to_remove:
             order.items.remove(item_to_remove)
 
-            items_sum = sum(i.quantity * float(i.price_at_purchase) for i in order.items)
-            current_delivery = float(order.delivery_price or 0.0)
-
-            order.total_price = items_sum + current_delivery
+            # Итог: товары − скидка + доставка (скидка — только на товары)
+            items_sum = calc_items_sum(order.items)
+            order.total_price = calc_order_total(
+                items_sum, order.delivery_price or 0.0, order.discount_percent
+            )
             await admin_repo.update_order(order)
 
     await render_edit_order_items_ui(

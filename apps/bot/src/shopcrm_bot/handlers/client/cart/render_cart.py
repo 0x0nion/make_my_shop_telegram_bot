@@ -89,12 +89,15 @@ async def render_cart(
     )
 
     # 2c. Единая карточка (тот же format_order, что и заказ):
-    #     позиции корзины не имеют price_at_purchase — цена берется из product.price
+    #     позиции корзины не имеют price_at_purchase — цена берется из product.price.
+    #     discount_percent — текущая скидка юзера: клиент видит итог со скидкой
+    #     ещё до оформления (при создании заказа она фиксируется снапшотом).
     cart_order = SimpleNamespace(
         id=None,
         items=user.cart,
         total_price=None,
         delivery_price=0,
+        discount_percent=user.discount or 0,
         delivery_address=address,
         delivery_address_type=addr_type,
         user_comment=comment,

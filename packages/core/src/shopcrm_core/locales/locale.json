@@ -208,9 +208,9 @@
           "ru": "📋 <b>Управление заказами</b>\n\nВыберите категорию или фильтр для просмотра:"
         },
         "detail_card": {
-          "ru": "📦 <b>Заказ #{order_id}</b>\n📅 <b>Дата:</b> {created_at}\n📦 <b>Статус:</b> {status} ({is_paid_status})\n💬 <b>Комментарий менеджера:</b>\n{manager_comment}\n\n{separator}\n\n👤 <b>Покупатель:</b> {buyer_info}\n📍 <b>Адрес доставки:</b> {delivery_address}\n💬 <b>Комментарий клиента:</b>\n{user_comment}\n💳 <b>Подтверждение оплаты:</b> {payment_proof_info}\n\n{separator}\n\n🛒 <b>Состав заказа:</b>\n{items_block}\n\n{separator}\n\n💰 <b>Расчёт стоимости:</b>\n🛒 Товары: {items_price} {currency}\n🚚 Доставка: {delivery_price} {currency}\n💵 Итого к оплате: <b>{total_price} {currency}</b>",
-          "en": "📦 <b>Order #{order_id}</b>\n📅 <b>Date:</b> {created_at}\n📦 <b>Status:</b> {status} ({is_paid_status})\n💬 <b>Manager Comment:</b>\n{manager_comment}\n\n{separator}\n\n👤 <b>Customer:</b> {buyer_info}\n📍 <b>Delivery Address:</b> {delivery_address}\n💬 <b>Client Comment:</b>\n{user_comment}\n💳 <b>Payment Proof:</b> {payment_proof_info}\n\n{separator}\n\n🛒 <b>Order Items:</b>\n{items_block}\n\n{separator}\n\n💰 <b>Cost Breakdown:</b>\n🛒 Items: {items_price} {currency}\n🚚 Delivery: {delivery_price} {currency}\n💵 Total to Pay: <b>{total_price} {currency}</b>",
-          "es": "📦 <b>Pedido #{order_id}</b>\n📅 <b>Fecha:</b> {created_at}\n📦 <b>Estado:</b> {status} ({is_paid_status})\n💬 <b>Comentario del Gerente:</b>\n{manager_comment}\n\n{separator}\n\n👤 <b>Cliente:</b> {buyer_info}\n📍 <b>Dirección de Envío:</b> {delivery_address}\n💬 <b>Comentario del Cliente:</b>\n{user_comment}\n💳 <b>Comprobante de Pago:</b> {payment_proof_info}\n\n{separator}\n\n🛒 <b>Artículos del Pedido:</b>\n{items_block}\n\n{separator}\n\n💰 <b>Desglose de Costos:</b>\n🛒 Artículos: {items_price} {currency}\n🚚 Envío: {delivery_price} {currency}\n💵 Total a Pagar: <b>{total_price} {currency}</b>"
+          "ru": "📦 <b>Заказ #{order_id}</b>\n📅 <b>Дата:</b> {created_at}\n📦 <b>Статус:</b> {status} ({is_paid_status})\n💬 <b>Комментарий менеджера:</b>\n{manager_comment}\n\n{separator}\n\n👤 <b>Покупатель:</b> {buyer_info}\n📍 <b>Адрес доставки:</b> {delivery_address}\n💬 <b>Комментарий клиента:</b>\n{user_comment}\n💳 <b>Подтверждение оплаты:</b> {payment_proof_info}\n\n{separator}\n\n🛒 <b>Состав заказа:</b>\n{items_block}\n\n{separator}\n\n💰 <b>Расчёт стоимости:</b>\n🛒 Товары: {items_price} {currency}\n{discount_block}🚚 Доставка: {delivery_price} {currency}\n💵 Итого к оплате: <b>{total_price} {currency}</b>",
+          "en": "📦 <b>Order #{order_id}</b>\n📅 <b>Date:</b> {created_at}\n📦 <b>Status:</b> {status} ({is_paid_status})\n💬 <b>Manager Comment:</b>\n{manager_comment}\n\n{separator}\n\n👤 <b>Customer:</b> {buyer_info}\n📍 <b>Delivery Address:</b> {delivery_address}\n💬 <b>Client Comment:</b>\n{user_comment}\n💳 <b>Payment Proof:</b> {payment_proof_info}\n\n{separator}\n\n🛒 <b>Order Items:</b>\n{items_block}\n\n{separator}\n\n💰 <b>Cost Breakdown:</b>\n🛒 Items: {items_price} {currency}\n{discount_block}🚚 Delivery: {delivery_price} {currency}\n💵 Total to Pay: <b>{total_price} {currency}</b>",
+          "es": "📦 <b>Pedido #{order_id}</b>\n📅 <b>Fecha:</b> {created_at}\n📦 <b>Estado:</b> {status} ({is_paid_status})\n💬 <b>Comentario del Gerente:</b>\n{manager_comment}\n\n{separator}\n\n👤 <b>Cliente:</b> {buyer_info}\n📍 <b>Dirección de Envío:</b> {delivery_address}\n💬 <b>Comentario del Cliente:</b>\n{user_comment}\n💳 <b>Comprobante de Pago:</b> {payment_proof_info}\n\n{separator}\n\n🛒 <b>Artículos del Pedido:</b>\n{items_block}\n\n{separator}\n\n💰 <b>Desglose de Costos:</b>\n🛒 Artículos: {items_price} {currency}\n{discount_block}🚚 Envío: {delivery_price} {currency}\n💵 Total a Pagar: <b>{total_price} {currency}</b>"
         },
         "no_items": {
           "ru": "<i>Список товаров пуст.</i>",
@@ -243,14 +243,14 @@
           "es": "<i>No se encontraron pedidos.</i>"
         },
         "list_line": {
-          "ru": "ID: <code>{id}</code> | {price} {currency} - <b>{status}</b>",
-          "en": "ID: <code>{id}</code> | {price} {currency} - <b>{status}</b>",
-          "es": "ID: <code>{id}</code> | {price} {currency} - <b>{status}</b>"
+          "ru": "ID: <code>{id}</code> | {price} {currency}{discount_marker} - <b>{status}</b>",
+          "en": "ID: <code>{id}</code> | {price} {currency}{discount_marker} - <b>{status}</b>",
+          "es": "ID: <code>{id}</code> | {price} {currency}{discount_marker} - <b>{status}</b>"
         },
         "list_button": {
-          "ru": "#{id}: {price} {currency} - {status}",
-          "en": "#{id}: {price} {currency} - {status}",
-          "es": "#{id}: {price} {currency} - {status}"
+          "ru": "#{id}: {price} {currency}{discount_marker} - {status}",
+          "en": "#{id}: {price} {currency}{discount_marker} - {status}",
+          "es": "#{id}: {price} {currency}{discount_marker} - {status}"
         },
         "export_csv_button": {
           "ru": "📤 Экспорт CSV",
@@ -930,9 +930,14 @@
         "es": "🛒 <b>Tu carrito está vacío.</b>"
       },
       "cart_template": {
-        "ru": "🛒 <b>Корзина</b>\n\n{info_block}🛒 <b>Состав корзины:</b>\n{items}\n\n💰 <b>Расчёт стоимости:</b>\n🛒 Товары: {items_price} {currency}\n🚚 Доставка: {delivery_price} {currency}\n💵 Итого к оплате: <b>{total_price} {currency}</b>",
-        "en": "🛒 <b>Cart</b>\n\n{info_block}🛒 <b>Cart Items:</b>\n{items}\n\n💰 <b>Cost Breakdown:</b>\n🛒 Items: {items_price} {currency}\n🚚 Delivery: {delivery_price} {currency}\n💵 Total to Pay: <b>{total_price} {currency}</b>",
-        "es": "🛒 <b>Carrito</b>\n\n{info_block}🛒 <b>Artículos del Carrito:</b>\n{items}\n\n💰 <b>Desglose de Costos:</b>\n🛒 Artículos: {items_price} {currency}\n🚚 Envío: {delivery_price} {currency}\n💵 Total a Pagar: <b>{total_price} {currency}</b>"
+        "ru": "🛒 <b>Корзина</b>\n\n{info_block}🛒 <b>Состав корзины:</b>\n{items}\n\n💰 <b>Расчёт стоимости:</b>\n🛒 Товары: {items_price} {currency}\n{discount_block}🚚 Доставка: {delivery_price} {currency}\n💵 Итого к оплате: <b>{total_price} {currency}</b>",
+        "en": "🛒 <b>Cart</b>\n\n{info_block}🛒 <b>Cart Items:</b>\n{items}\n\n💰 <b>Cost Breakdown:</b>\n🛒 Items: {items_price} {currency}\n{discount_block}🚚 Delivery: {delivery_price} {currency}\n💵 Total to Pay: <b>{total_price} {currency}</b>",
+        "es": "🛒 <b>Carrito</b>\n\n{info_block}🛒 <b>Artículos del Carrito:</b>\n{items}\n\n💰 <b>Desglose de Costos:</b>\n🛒 Artículos: {items_price} {currency}\n{discount_block}🚚 Envío: {delivery_price} {currency}\n💵 Total a Pagar: <b>{total_price} {currency}</b>"
+      },
+      "discount_line": {
+        "ru": "🏷️ Скидка ({percent}%): -{amount} {currency}",
+        "en": "🏷️ Discount ({percent}%): -{amount} {currency}",
+        "es": "🏷️ Descuento ({percent}%): -{amount} {currency}"
       },
       "cart_address_not_specified": {
         "ru": "Не указан",
@@ -970,9 +975,9 @@
         "es": "❌ ¡Tu carrito está vacío!"
       },
       "user_checkout_confirm": {
-        "ru": "✅ <b>Заказ #{id} успешно оформлен!</b>\n\n🧾 <b>Заказ #{id}</b>\n📅 <b>Дата:</b> {created_at}\n📦 <b>Статус:</b> {status}\n\n{info_block}🛒 <b>Состав заказа:</b>\n{items}\n\n💰 <b>Расчёт стоимости:</b>\n🛒 Товары: {items_price} {currency}\n🚚 Доставка: {delivery_price} {currency}\n💵 Итого к оплате: <b>{total_price} {currency}</b>",
-        "en": "✅ <b>Order #{id} placed successfully!</b>\n\n🧾 <b>Order #{id}</b>\n📅 <b>Date:</b> {created_at}\n📦 <b>Status:</b> {status}\n\n{info_block}🛒 <b>Order Items:</b>\n{items}\n\n💰 <b>Cost Breakdown:</b>\n🛒 Items: {items_price} {currency}\n🚚 Delivery: {delivery_price} {currency}\n💵 Total to Pay: <b>{total_price} {currency}</b>",
-        "es": "✅ <b>¡Pedido #{id} creado con éxito!</b>\n\n🧾 <b>Pedido #{id}</b>\n📅 <b>Fecha:</b> {created_at}\n📦 <b>Estado:</b> {status}\n\n{info_block}🛒 <b>Artículos del Pedido:</b>\n{items}\n\n💰 <b>Desglose de Costos:</b>\n🛒 Artículos: {items_price} {currency}\n🚚 Envío: {delivery_price} {currency}\n💵 Total a Pagar: <b>{total_price} {currency}</b>"
+        "ru": "✅ <b>Заказ #{id} успешно оформлен!</b>\n\n🧾 <b>Заказ #{id}</b>\n📅 <b>Дата:</b> {created_at}\n📦 <b>Статус:</b> {status}\n\n{info_block}🛒 <b>Состав заказа:</b>\n{items}\n\n💰 <b>Расчёт стоимости:</b>\n🛒 Товары: {items_price} {currency}\n{discount_block}🚚 Доставка: {delivery_price} {currency}\n💵 Итого к оплате: <b>{total_price} {currency}</b>",
+        "en": "✅ <b>Order #{id} placed successfully!</b>\n\n🧾 <b>Order #{id}</b>\n📅 <b>Date:</b> {created_at}\n📦 <b>Status:</b> {status}\n\n{info_block}🛒 <b>Order Items:</b>\n{items}\n\n💰 <b>Cost Breakdown:</b>\n🛒 Items: {items_price} {currency}\n{discount_block}🚚 Delivery: {delivery_price} {currency}\n💵 Total to Pay: <b>{total_price} {currency}</b>",
+        "es": "✅ <b>¡Pedido #{id} creado con éxito!</b>\n\n🧾 <b>Pedido #{id}</b>\n📅 <b>Fecha:</b> {created_at}\n📦 <b>Estado:</b> {status}\n\n{info_block}🛒 <b>Artículos del Pedido:</b>\n{items}\n\n💰 <b>Desglose de Costos:</b>\n🛒 Artículos: {items_price} {currency}\n{discount_block}🚚 Envío: {delivery_price} {currency}\n💵 Total a Pagar: <b>{total_price} {currency}</b>"
       },
       "user_empty_orders": {
         "ru": "📦 У вас пока нет заказов.",
@@ -985,9 +990,9 @@
         "es": "📦 <b>Tus pedidos:</b>\n\nSelecciona un pedido para ver los detalles:"
       },
       "user_order_details": {
-        "ru": "🧾 <b>Заказ #{id}</b>\n📅 <b>Дата:</b> {created_at}\n📦 <b>Статус:</b> {status}\n\n{info_block}🛒 <b>Состав заказа:</b>\n{items}\n\n💰 <b>Расчёт стоимости:</b>\n🛒 Товары: {items_price} {currency}\n🚚 Доставка: {delivery_price} {currency}\n💵 Итого к оплате: <b>{total_price} {currency}</b>",
-        "en": "🧾 <b>Order #{id}</b>\n📅 <b>Date:</b> {created_at}\n📦 <b>Status:</b> {status}\n\n{info_block}🛒 <b>Order Items:</b>\n{items}\n\n💰 <b>Cost Breakdown:</b>\n🛒 Items: {items_price} {currency}\n🚚 Delivery: {delivery_price} {currency}\n💵 Total to Pay: <b>{total_price} {currency}</b>",
-        "es": "🧾 <b>Pedido #{id}</b>\n📅 <b>Fecha:</b> {created_at}\n📦 <b>Estado:</b> {status}\n\n{info_block}🛒 <b>Artículos del Pedido:</b>\n{items}\n\n💰 <b>Desglose de Costos:</b>\n🛒 Artículos: {items_price} {currency}\n🚚 Envío: {delivery_price} {currency}\n💵 Total a Pagar: <b>{total_price} {currency}</b>"
+        "ru": "🧾 <b>Заказ #{id}</b>\n📅 <b>Дата:</b> {created_at}\n📦 <b>Статус:</b> {status}\n\n{info_block}🛒 <b>Состав заказа:</b>\n{items}\n\n💰 <b>Расчёт стоимости:</b>\n🛒 Товары: {items_price} {currency}\n{discount_block}🚚 Доставка: {delivery_price} {currency}\n💵 Итого к оплате: <b>{total_price} {currency}</b>",
+        "en": "🧾 <b>Order #{id}</b>\n📅 <b>Date:</b> {created_at}\n📦 <b>Status:</b> {status}\n\n{info_block}🛒 <b>Order Items:</b>\n{items}\n\n💰 <b>Cost Breakdown:</b>\n🛒 Items: {items_price} {currency}\n{discount_block}🚚 Delivery: {delivery_price} {currency}\n💵 Total to Pay: <b>{total_price} {currency}</b>",
+        "es": "🧾 <b>Pedido #{id}</b>\n📅 <b>Fecha:</b> {created_at}\n📦 <b>Estado:</b> {status}\n\n{info_block}🛒 <b>Artículos del Pedido:</b>\n{items}\n\n💰 <b>Desglose de Costos:</b>\n🛒 Artículos: {items_price} {currency}\n{discount_block}🚚 Envío: {delivery_price} {currency}\n💵 Total a Pagar: <b>{total_price} {currency}</b>"
       },
       "user_order_not_found": {
         "ru": "❌ Заказ не найден или доступ запрещен!",
@@ -1060,9 +1065,9 @@
         "es": "💳 Transferencia directa"
       },
       "order_payment_request_text": {
-        "ru": "💳 <b>Запрос оплаты заказа #{id}</b>\n\n📅 <b>Дата:</b> {created_at}\n📦 <b>Статус:</b> {status}\n\n{info_block}🛒 <b>Состав заказа:</b>\n{items}\n\n💰 <b>Расчёт стоимости:</b>\n🛒 Товары: {items_price} {currency}\n🚚 Доставка: {delivery_price} {currency}\n💵 Итого к оплате: <b>{total_price} {currency}</b>\n\n💳 <b>Реквизиты для оплаты:</b>\n{payment_details}\n\nПожалуйста, совершите оплату и нажмите кнопку <b>«✅ Я оплатил»</b> или выберите <b>«💵 Наличными (курьеру)»</b>:",
-        "en": "💳 <b>Payment request for order #{id}</b>\n\n📅 <b>Date:</b> {created_at}\n📦 <b>Status:</b> {status}\n\n{info_block}🛒 <b>Order Items:</b>\n{items}\n\n💰 <b>Cost Breakdown:</b>\n🛒 Items: {items_price} {currency}\n🚚 Delivery: {delivery_price} {currency}\n💵 Total to Pay: <b>{total_price} {currency}</b>\n\n💳 <b>Payment Details:</b>\n{payment_details}\n\nPlease complete the payment and press <b>«✅ I paid»</b> or choose <b>«💵 Cash (on delivery)»</b>:",
-        "es": "💳 <b>Solicitud de pago para el pedido #{id}</b>\n\n📅 <b>Fecha:</b> {created_at}\n📦 <b>Estado:</b> {status}\n\n{info_block}🛒 <b>Artículos del Pedido:</b>\n{items}\n\n💰 <b>Desglose de Costos:</b>\n🛒 Artículos: {items_price} {currency}\n🚚 Envío: {delivery_price} {currency}\n💵 Total a Pagar: <b>{total_price} {currency}</b>\n\n💳 <b>Detalles de Pago:</b>\n{payment_details}\n\nPor favor realiza el pago y presiona <b>«✅ Ya pagué»</b> o selecciona <b>«💵 Efectivo (al repartidor)»</b>:"
+        "ru": "💳 <b>Запрос оплаты заказа #{id}</b>\n\n📅 <b>Дата:</b> {created_at}\n📦 <b>Статус:</b> {status}\n\n{info_block}🛒 <b>Состав заказа:</b>\n{items}\n\n💰 <b>Расчёт стоимости:</b>\n🛒 Товары: {items_price} {currency}\n{discount_block}🚚 Доставка: {delivery_price} {currency}\n💵 Итого к оплате: <b>{total_price} {currency}</b>\n\n💳 <b>Реквизиты для оплаты:</b>\n{payment_details}\n\nПожалуйста, совершите оплату и нажмите кнопку <b>«✅ Я оплатил»</b> или выберите <b>«💵 Наличными (курьеру)»</b>:",
+        "en": "💳 <b>Payment request for order #{id}</b>\n\n📅 <b>Date:</b> {created_at}\n📦 <b>Status:</b> {status}\n\n{info_block}🛒 <b>Order Items:</b>\n{items}\n\n💰 <b>Cost Breakdown:</b>\n🛒 Items: {items_price} {currency}\n{discount_block}🚚 Delivery: {delivery_price} {currency}\n💵 Total to Pay: <b>{total_price} {currency}</b>\n\n💳 <b>Payment Details:</b>\n{payment_details}\n\nPlease complete the payment and press <b>«✅ I paid»</b> or choose <b>«💵 Cash (on delivery)»</b>:",
+        "es": "💳 <b>Solicitud de pago para el pedido #{id}</b>\n\n📅 <b>Fecha:</b> {created_at}\n📦 <b>Estado:</b> {status}\n\n{info_block}🛒 <b>Artículos del Pedido:</b>\n{items}\n\n💰 <b>Desglose de Costos:</b>\n🛒 Artículos: {items_price} {currency}\n{discount_block}🚚 Envío: {delivery_price} {currency}\n💵 Total a Pagar: <b>{total_price} {currency}</b>\n\n💳 <b>Detalles de Pago:</b>\n{payment_details}\n\nPor favor realiza el pago y presiona <b>«✅ Ya pagué»</b> o selecciona <b>«💵 Efectivo (al repartidor)»</b>:"
       },
       "payment_approved_alert": {
         "ru": "✅ Оплата успешно подтверждена!",
@@ -2001,9 +2006,9 @@
       "orders_list": {
         "buttons": {
           "order_template": {
-            "en": "📦 Order #{id} of {date} ({price} {currency})",
-            "es": "📦 Pedido #{id} del {date} ({price} {currency})",
-            "ru": "📦 Заказ #{id} от {date} ({price} {currency})"
+            "en": "📦 Order #{id} of {date} ({price} {currency}{discount_marker})",
+            "es": "📦 Pedido #{id} del {date} ({price} {currency}{discount_marker})",
+            "ru": "📦 Заказ #{id} от {date} ({price} {currency}{discount_marker})"
           },
           "client_main": {
             "en": "🔙 Back to menu",

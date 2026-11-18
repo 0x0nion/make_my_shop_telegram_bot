@@ -8,6 +8,7 @@ from aiogram.types import CallbackQuery, InputFile
 from shopcrm_core.constants import ADMIN_ORDER_STATUS_FILTERS
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
+from shopcrm_core.services.order_calc import format_discount_marker
 from shopcrm_core.utils import format_price
 
 from shopcrm_bot.locales import Locale
@@ -158,6 +159,8 @@ async def render_orders_list(
                     "admin.orders.list_line",
                     id=order.id,
                     price=format_price(order.total_price),
+                    # Маркер скидки (🏷️15%) — наглядно в списке, пусто если нет
+                    discount_marker=format_discount_marker(order.discount_percent),
                     currency=locale.get_currency_symbol(),
                     status=locale.get_order_status_label(order.status),
                 )

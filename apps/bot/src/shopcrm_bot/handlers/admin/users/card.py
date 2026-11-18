@@ -10,6 +10,7 @@ from aiogram.types import CallbackQuery, Message
 from shopcrm_core.constants import OrderStatus
 from shopcrm_core.db.models.user import User
 from shopcrm_core.services.admin_user_service import AdminUserService
+from shopcrm_core.services.order_calc import format_discount_percent
 from shopcrm_core.services.validation import validate_discount
 from shopcrm_core.utils import format_price
 
@@ -21,11 +22,6 @@ from shopcrm_bot.ui import UIManager
 logger = logging.getLogger(__name__)
 
 user_card_router = Router()
-
-
-def _format_discount(value: float) -> str:
-    """Форматирует скидку без хвостовых нулей: 10.0 -> "10", 15.5 -> "15.5"."""
-    return f"{value:g}"
 
 
 def _build_card_text(target: User, locale: Locale) -> str:
@@ -71,7 +67,7 @@ def _build_card_text(target: User, locale: Locale) -> str:
     )
     lines.append(
         locale.get_text(
-            "admin.users.card_discount", discount=_format_discount(target.discount or 0)
+            "admin.users.card_discount", discount=format_discount_percent(target.discount or 0)
         )
     )
 
@@ -220,7 +216,7 @@ async def handle_user_discount_input(
         locale.get_text(
             "admin.users.discount_success",
             id=target.id,
-            discount=_format_discount(target.discount or 0),
+            discount=format_discount_percent(target.discount or 0),
         )
     )
     asyncio.create_task(self_destruct(message=success, seconds=3))

@@ -20,8 +20,8 @@ def _user(lang: str = "ru") -> SimpleNamespace:
     return SimpleNamespace(language=lang)
 
 
-def _order(id: int = 1, status: str = "pending", total_price=10) -> SimpleNamespace:
-    return SimpleNamespace(id=id, status=status, total_price=total_price)
+def _order(id: int = 1, status: str = "pending", total_price=10, discount_percent=0) -> SimpleNamespace:
+    return SimpleNamespace(id=id, status=status, total_price=total_price, discount_percent=discount_percent)
 
 
 def _repo(orders: list, counts: dict | None = None) -> AsyncMock:

@@ -7,6 +7,7 @@ from shopcrm_core.db.models.order import OrderItem
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.locales.currencies import get_currency_symbol
+from shopcrm_core.services.order_calc import calc_items_sum, calc_order_total
 from shopcrm_core.utils import format_price
 
 from shopcrm_bot.locales import Locale
@@ -441,14 +442,11 @@ async def process_execute_add_product(
         )
         order.items.append(new_item)
 
-    # Безопасный расчет типов для SQLAlchemy Numeric(10, 2)
-    items_sum = sum(
-        int(i.quantity) * float(i.price_at_purchase)
-        for i in order.items
-    )
+    # Итог: товары − скидка + доставка (скидка — только на товары)
+    items_sum = calc_items_sum(order.items)
     delivery = float(order.delivery_price) if order.delivery_price is not None else 0.0
 
-    order.total_price = items_sum + delivery
+    order.total_price = calc_order_total(items_sum, delivery, order.discount_percent)
 
     await admin_repo.update_order(order)
 

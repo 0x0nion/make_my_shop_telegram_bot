@@ -8,9 +8,15 @@ import io
 from datetime import datetime
 
 from shopcrm_core.db.models.order import Order
+from shopcrm_core.services.order_calc import (
+    calc_discount_amount,
+    calc_items_sum,
+    format_discount_percent,
+)
 from shopcrm_core.utils import format_price
 
-# Заголовки CSV (порядок колонок = порядок полей в строке)
+# Заголовки CSV (порядок колонок = порядок полей в строке).
+# Блок цен самосогласован: items_sum - discount_amount + delivery_price = total_price.
 CSV_HEADERS = [
     "id",
     "created_at",
@@ -19,6 +25,10 @@ CSV_HEADERS = [
     "is_paid",
     "items",
     "items_count",
+    "items_sum",
+    "discount_percent",
+    "discount_amount",
+    "delivery_price",
     "total_price",
     "delivery_address",
     "user_comment",
@@ -41,6 +51,11 @@ def build_orders_csv(orders: list[Order]) -> str:
     writer.writerow(CSV_HEADERS)
 
     for order in orders:
+        items_sum = calc_items_sum(order.items)
+        discount_percent = float(order.discount_percent or 0)
+        discount_amount = calc_discount_amount(items_sum, discount_percent)
+        delivery_price = float(order.delivery_price or 0)
+
         writer.writerow([
             order.id,
             order.created_at.isoformat(sep=" ", timespec="minutes") if order.created_at else "",
@@ -49,6 +64,10 @@ def build_orders_csv(orders: list[Order]) -> str:
             "yes" if order.is_paid else "no",
             _format_items(order),
             sum(item.quantity for item in order.items or []),
+            format_price(items_sum),
+            format_discount_percent(discount_percent),
+            format_price(discount_amount),
+            format_price(delivery_price),
             format_price(order.total_price),
             order.delivery_address or "",
             order.user_comment or "",

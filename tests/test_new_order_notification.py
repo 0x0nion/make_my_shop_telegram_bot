@@ -20,6 +20,7 @@ def _fake_order(order_id: int = 42) -> SimpleNamespace:
         user=SimpleNamespace(id=100, username="buyer"),
         items=[],
         delivery_price=0,
+        discount_percent=0,
         total_price=10.0,
         delivery_address=None,
         delivery_address_type=None,

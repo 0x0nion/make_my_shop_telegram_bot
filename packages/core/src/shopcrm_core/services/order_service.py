@@ -121,6 +121,12 @@ async def build_order_detail_text(
 
     items_block = "\n".join(items_text)
 
+    # 2b. Скидка: снапшот персональной скидки покупателя на заказе.
+    # Применяется только к товарам, не к доставке. Строка показывается
+    # только при скидке > 0 (иначе — шум).
+    discount_percent = float(getattr(order, "discount_percent", 0) or 0)
+    discount_block = locale.build_discount_block(items_price, discount_percent)
+
     # 3. Поля заказа: пустые значения показываем единым плейсхолдером
     empty_str = locale.get_text("admin.orders.empty_value")
 
@@ -164,6 +170,7 @@ async def build_order_detail_text(
         items_block=items_block,
         user_comment=user_comment,
         items_price=format_price(items_price),
+        discount_block=discount_block,
         delivery_price=format_price(delivery_price),
         total_price=format_price(total_price),
         currency=locale.get_currency_symbol(),

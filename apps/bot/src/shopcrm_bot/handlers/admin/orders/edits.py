@@ -8,6 +8,7 @@ from aiogram.types import CallbackQuery, Message
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.services.address_service import build_location_address, normalize_text_address
+from shopcrm_core.services.order_calc import calc_items_sum, calc_order_total
 
 from shopcrm_bot.handlers.admin.orders.common import render_order_detail
 from shopcrm_bot.locales import Locale
@@ -190,9 +191,9 @@ async def process_edit_shipping(
     if order:
         order.delivery_price = new_cost
 
-        # Пересчитываем итоговую стоимость (товары + новая доставка)
-        items_sum = sum(i.quantity * float(i.price_at_purchase) for i in order.items) if order.items else 0.0
-        order.total_price = items_sum + new_cost
+        # Пересчитываем итоговую стоимость (товары − скидка + новая доставка)
+        items_sum = calc_items_sum(order.items)
+        order.total_price = calc_order_total(items_sum, new_cost, order.discount_percent)
 
         await admin_repo.update_order(order)
 
