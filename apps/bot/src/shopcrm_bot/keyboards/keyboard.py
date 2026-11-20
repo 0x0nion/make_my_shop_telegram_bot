@@ -753,6 +753,99 @@ class KeyboardFactory:
         )
         return builder.as_markup()
 
+    def get_workers_list_kb(
+            self,
+            workers: list,
+            current_page: int,
+            total_pages: int,
+    ) -> InlineKeyboardMarkup:
+        """Список работников админа с круговой пагинацией (по 5 на страницу).
+
+        Кнопка работника ведёт на экран подтверждения удаления.
+        Главный админ (``is_main``) без кнопки — его удалить нельзя.
+        """
+        builder = InlineKeyboardBuilder()
+
+        button_template = self.get_button_text(
+            "admin.workers.list_button", default="🗑 {position} (#{id})"
+        )
+        add_text = self.get_button_text(
+            "admin.workers.add_button", default="➕ Add worker"
+        )
+        back_text = self.get_button_text("base.back", default="⬅️ Back")
+
+        for worker in workers:
+            if worker.is_main:
+                continue
+            builder.row(
+                InlineKeyboardButton(
+                    text=self.get_button_text(
+                        button_template,
+                        id=worker.telegram_id,
+                        position=worker.position,
+                    ),
+                    callback_data=f"admin_worker_del:{worker.telegram_id}",
+                )
+            )
+
+        # Блок круговой пагинации
+        if workers and total_pages > 0:
+            prev_page = total_pages if current_page == 1 else current_page - 1
+            next_page = 1 if current_page == total_pages else current_page + 1
+
+            builder.row(
+                InlineKeyboardButton(
+                    text="⬅️",
+                    callback_data=f"admin_workers_page:{prev_page}",
+                ),
+                InlineKeyboardButton(
+                    text=f"{current_page}/{total_pages}",
+                    callback_data="noop",
+                ),
+                InlineKeyboardButton(
+                    text="➡️",
+                    callback_data=f"admin_workers_page:{next_page}",
+                ),
+            )
+
+        builder.row(
+            InlineKeyboardButton(text=add_text, callback_data="admin_worker_add")
+        )
+
+        builder.row(
+            InlineKeyboardButton(text=back_text, callback_data="admin_main_menu")
+        )
+
+        return builder.as_markup()
+
+    def get_worker_delete_confirm_kb(
+            self,
+            telegram_id: int,
+    ) -> InlineKeyboardMarkup:
+        """Экран подтверждения удаления работника."""
+        confirm_text = self.get_button_text(
+            "admin.workers.confirm_delete", default="✅ Remove"
+        )
+        cancel_text = self.get_button_text(
+            "admin.workers.cancel", default="❌ Cancel"
+        )
+
+        builder = InlineKeyboardBuilder()
+        builder.row(
+            InlineKeyboardButton(
+                text=confirm_text,
+                callback_data=f"admin_worker_del_confirm:{telegram_id}",
+            ),
+        )
+        builder.row(
+            InlineKeyboardButton(
+                text=cancel_text,
+                callback_data="admin_workers",
+            )
+        )
+
+        return builder.as_markup()
+
     def get_order_detail_kb(
             self,
             order: Any,

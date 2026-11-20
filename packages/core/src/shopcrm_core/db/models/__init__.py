@@ -10,6 +10,7 @@ from shopcrm_core.db.models.stock_movement import StockMovement
 from shopcrm_core.db.models.temp_models import TempCategory, TempLocaleText, TempProduct
 from shopcrm_core.db.models.template import Template
 from shopcrm_core.db.models.user import User
+from shopcrm_core.db.models.worker import Worker
 
 __all__ = [
            "Base",
@@ -27,4 +28,5 @@ __all__ = [
            "TempProduct",
            "Template",
            "User",
+            "Worker",
 ]

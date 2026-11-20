@@ -40,3 +40,9 @@ class AdminUserState(StatesGroup):
     """Ввод в разделе «Юзеры»: поиск по ID и скидка в карточке."""
     find_by_id = State()
     set_discount = State()
+
+
+class AdminWorkerState(StatesGroup):
+    """Ввод в разделе «Работники»: добавление (Telegram ID → должность)."""
+    add_id = State()
+    add_position = State()

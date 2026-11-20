@@ -50,6 +50,7 @@ async def admin_main_menu(
     & ~F.data.startswith("admin_edit_wel")
     & ~F.data.startswith("admin_order")     # <-- Исключаем все действия с заказами
     & ~F.data.startswith("admin_warehouse") # <-- Исключаем раздел склада
+    & ~F.data.startswith("admin_worker")    # <-- Исключаем раздел «Работники»
 )
 async def catch_other_admin_actions(callback: CallbackQuery, user: User):
     """Безопасная заглушка для нереализованных разделов админки (без ложных срабатываний)."""

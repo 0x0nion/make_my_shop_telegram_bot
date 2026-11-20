@@ -69,11 +69,6 @@
           "es": "🗑 Producto eliminado",
           "ru": "🗑 Товар удален"
         },
-        "workers": {
-          "en": "⚒ 'Workers' section is under development...",
-          "es": "⚒ La sección 'Trabajadores' está en desarrollo...",
-          "ru": "⚒ Раздел 'Работники' в разработке..."
-        },
         "alert": {
           "en": "📢 'Broadcast' section is under development...",
           "es": "📢 La sección 'Difusión' está en desarrollo...",
@@ -768,6 +763,98 @@
           "ru": "❌ Введите число от 0 до 100 (например: 10 или 15,5).",
           "en": "❌ Enter a number from 0 to 100 (e.g. 10 or 15.5).",
           "es": "❌ Introduce un número de 0 a 100 (p. ej. 10 o 15,5)."
+        }
+      },
+      "workers": {
+        "list_header": {
+          "ru": "🛠️ <b>Список работников</b>",
+          "en": "🛠️ <b>Workers list</b>",
+          "es": "🛠️ <b>Lista de trabajadores</b>"
+        },
+        "list_line": {
+          "ru": "ID: <code>{id}</code> | {marker}{position}",
+          "en": "ID: <code>{id}</code> | {marker}{position}",
+          "es": "ID: <code>{id}</code> | {marker}{position}"
+        },
+        "list_empty": {
+          "ru": "<i>Работники не найдены.</i>",
+          "en": "<i>No workers found.</i>",
+          "es": "<i>No se encontraron trabajadores.</i>"
+        },
+        "list_button": {
+          "ru": "🗑 {position} (#{id})",
+          "en": "🗑 {position} (#{id})",
+          "es": "🗑 {position} (#{id})"
+        },
+        "add_button": {
+          "ru": "➕ Добавить работника",
+          "en": "➕ Add worker",
+          "es": "➕ Añadir trabajador"
+        },
+        "add_id_prompt": {
+          "ru": "🛠️ Отправьте Telegram ID работника (число):",
+          "en": "🛠️ Send the worker's Telegram ID (a number):",
+          "es": "🛠️ Envía el ID de Telegram del trabajador (un número):"
+        },
+        "add_position_prompt": {
+          "ru": "📋 Отправьте должность работника (текст):",
+          "en": "📋 Send the worker's position (text):",
+          "es": "📋 Envía el cargo del trabajador (texto):"
+        },
+        "add_invalid_id": {
+          "ru": "❌ Пожалуйста, отправьте числовой ID.",
+          "en": "❌ Please send a numeric ID.",
+          "es": "❌ Por favor, envía un ID numérico."
+        },
+        "add_exists": {
+          "ru": "❌ Пользователь с ID {id} уже является работником.",
+          "en": "❌ User with ID {id} is already a worker.",
+          "es": "❌ El usuario con ID {id} ya es trabajador."
+        },
+        "add_empty_position": {
+          "ru": "❌ Пожалуйста, отправьте должность текстом.",
+          "en": "❌ Please send the position as text.",
+          "es": "❌ Por favor, envía el cargo como texto."
+        },
+        "add_success": {
+          "ru": "✅ Работник #{id} добавлен: {position}. Доступ к админке выдан.",
+          "en": "✅ Worker #{id} added: {position}. Admin access granted.",
+          "es": "✅ Trabajador #{id} añadido: {position}. Acceso de administrador concedido."
+        },
+        "delete_confirm_text": {
+          "ru": "⚠️ Удалить работника <b>{position}</b> (ID: <code>{id}</code>)?\n\nДоступ к админ-панели будет снят. Действие необратимо.",
+          "en": "⚠️ Remove worker <b>{position}</b> (ID: <code>{id}</code>)?\n\nAdmin panel access will be revoked. This action cannot be undone.",
+          "es": "⚠️ ¿Eliminar al trabajador <b>{position}</b> (ID: <code>{id}</code>)?\n\nSe revocará el acceso al panel de administración. Esta acción no se puede deshacer."
+        },
+        "confirm_delete": {
+          "ru": "✅ Удалить",
+          "en": "✅ Remove",
+          "es": "✅ Eliminar"
+        },
+        "cancel": {
+          "ru": "❌ Отмена",
+          "en": "❌ Cancel",
+          "es": "❌ Cancelar"
+        },
+        "delete_success": {
+          "ru": "✅ Работник #{id} удалён.",
+          "en": "✅ Worker #{id} removed.",
+          "es": "✅ Trabajador #{id} eliminado."
+        },
+        "delete_main_forbidden": {
+          "ru": "❌ Главного администратора удалить нельзя.",
+          "en": "❌ The main administrator cannot be removed.",
+          "es": "❌ No se puede eliminar al administrador principal."
+        },
+        "delete_not_found": {
+          "ru": "❌ Работник с ID {id} не найден.",
+          "en": "❌ Worker with ID {id} not found.",
+          "es": "❌ No se encontró el trabajador con ID {id}."
+        },
+        "main_position": {
+          "ru": "Главный администратор",
+          "en": "Main administrator",
+          "es": "Administrador principal"
         }
       },
       "warehouse": {

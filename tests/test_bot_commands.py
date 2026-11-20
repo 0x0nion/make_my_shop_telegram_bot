@@ -120,6 +120,12 @@ class TestMiddlewareSetsCommands:
         monkeypatch.setattr(db_mw, "ShopRepository", lambda s: AsyncMock())
         monkeypatch.setattr(db_mw, "AdminShopService", lambda r: AsyncMock())
 
+        from shopcrm_bot.config import config
+
+        worker_service = AsyncMock()
+        worker_service.get_admin_ids = AsyncMock(return_value=list(config.ADMIN_ID))
+        monkeypatch.setattr(db_mw, "AdminWorkerService", lambda r: worker_service)
+
         ensure_mock = AsyncMock()
         monkeypatch.setattr(db_mw, "ensure_bot_commands", ensure_mock)
 

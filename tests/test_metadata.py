@@ -1,7 +1,7 @@
 """Тесты API метаданных БД (для миграций)."""
 from shopcrm_core.db import Base, get_metadata
 
-# Ожидаемые таблицы core (14 шт.).
+# Ожидаемые таблицы core (15 шт.).
 EXPECTED_TABLES = {
     "users",
     "categories",
@@ -17,6 +17,7 @@ EXPECTED_TABLES = {
     "temp_locale_texts",
     "stock_movements",
     "settings",
+    "workers",
 }
 
 

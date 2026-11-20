@@ -8,6 +8,7 @@ from shopcrm_core.db.repositories.shop_repo import ShopRepository
 from shopcrm_core.db.repositories.user_repo import UserRepository
 from shopcrm_core.services.admin_shop_service import AdminShopService
 from shopcrm_core.services.admin_user_service import AdminUserService
+from shopcrm_core.services.admin_worker_service import AdminWorkerService
 from shopcrm_core.services.warehouse_service import WarehouseService
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
@@ -46,6 +47,7 @@ class DbSessionMiddleware(BaseMiddleware):
             admin_shop_service = AdminShopService(admin_repo)
             warehouse_service = WarehouseService(admin_repo)
             admin_user_service = AdminUserService(admin_repo)
+            admin_worker_service = AdminWorkerService(admin_repo)
 
             data["admin_repo"] = admin_repo
             data["user_repo"] = user_repo
@@ -53,9 +55,21 @@ class DbSessionMiddleware(BaseMiddleware):
             data["admin_service"] = admin_shop_service
             data["warehouse_service"] = warehouse_service
             data["admin_user_service"] = admin_user_service
+            data["admin_worker_service"] = admin_worker_service
             # Админы для контроля доступа и уведомлений:
-            # переданные при инициализации или из конфига.
-            data["admin_ids"] = self._admin_ids if self._admin_ids is not None else config.ADMIN_ID
+            # главный админ (переданный при инициализации или из конфига)
+            # + работники из БД (добавленные в админ-панели «Работники»).
+            # Читаем из БД на каждый апдейт — выданный/снятый доступ
+            # применяется мгновенно, без перезапуска.
+            main_admin_ids = (
+                self._admin_ids if self._admin_ids is not None else config.ADMIN_ID
+            )
+            data["admin_ids"] = await admin_worker_service.get_admin_ids(main_admin_ids)
+            # Только env-админы: для раздела «Работники» (виртуальный
+            # «главный админ» в списке и защита от удаления). НЕ передавать
+            # сюда объединённый admin_ids — работники из БД станут
+            # «главными» и будут дублироваться в списке.
+            data["main_admin_ids"] = list(main_admin_ids)
 
             db_user = None
             user_lang = "en"

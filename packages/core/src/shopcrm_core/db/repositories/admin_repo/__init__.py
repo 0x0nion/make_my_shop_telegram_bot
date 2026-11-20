@@ -5,6 +5,7 @@ from shopcrm_core.db.repositories.admin_repo.products import AdminProductsMixin
 from shopcrm_core.db.repositories.admin_repo.settings import AdminSettingsMixin
 from shopcrm_core.db.repositories.admin_repo.sync import AdminSyncMixin
 from shopcrm_core.db.repositories.admin_repo.users import AdminUsersMixin
+from shopcrm_core.db.repositories.admin_repo.workers import AdminWorkersMixin
 from shopcrm_core.db.repositories.order_audit import OrderAuditMixin
 
 
@@ -16,6 +17,7 @@ class AdminRepository(
     AdminOrdersMixin,
     AdminSettingsMixin,
     AdminUsersMixin,
+    AdminWorkersMixin,
     OrderAuditMixin
 ):
     SUPPORTED_LANGUAGES = ["ru", "en", "es"]
