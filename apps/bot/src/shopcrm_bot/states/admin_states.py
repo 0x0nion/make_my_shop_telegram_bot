@@ -46,3 +46,8 @@ class AdminWorkerState(StatesGroup):
     """Ввод в разделе «Работники»: добавление (Telegram ID → должность)."""
     add_id = State()
     add_position = State()
+
+
+class BroadcastState(StatesGroup):
+    """Ввод в разделе «Рассылка»: текст сообщения."""
+    text = State()

@@ -1,5 +1,6 @@
 # /database/models/__init__.py
 from shopcrm_core.db.models.base import Base
+from shopcrm_core.db.models.broadcast import Broadcast, BroadcastRecipient, BroadcastStatus, RecipientStatus
 from shopcrm_core.db.models.cart import CartItem
 from shopcrm_core.db.models.category import Category
 from shopcrm_core.db.models.locales import LocaleText
@@ -14,6 +15,9 @@ from shopcrm_core.db.models.worker import Worker
 
 __all__ = [
            "Base",
+           "Broadcast",
+           "BroadcastRecipient",
+           "BroadcastStatus",
            "CartItem",
            "Category",
            "LocaleText",

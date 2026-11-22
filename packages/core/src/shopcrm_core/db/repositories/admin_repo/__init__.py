@@ -1,3 +1,4 @@
+from shopcrm_core.db.repositories.admin_repo.broadcasts import AdminBroadcastsMixin
 from shopcrm_core.db.repositories.admin_repo.categories import AdminCategoriesMixin
 from shopcrm_core.db.repositories.admin_repo.locales import AdminLocalesMixin
 from shopcrm_core.db.repositories.admin_repo.orders import AdminOrdersMixin
@@ -18,6 +19,7 @@ class AdminRepository(
     AdminSettingsMixin,
     AdminUsersMixin,
     AdminWorkersMixin,
+    AdminBroadcastsMixin,
     OrderAuditMixin
 ):
     SUPPORTED_LANGUAGES = ["ru", "en", "es"]

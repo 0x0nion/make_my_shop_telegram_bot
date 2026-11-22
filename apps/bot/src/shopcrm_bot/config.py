@@ -28,6 +28,25 @@ class Settings(CoreSettings):
     # on the product card. If empty, the button is hidden.
     MANAGER_URL: str = ""
 
+    # ==================== РАССЫЛКА (BROADCAST) ====================
+    # Сколько часов «охлаждения» после отправки: пользователям, которым уже
+    # присылали в этом окне, повторная рассылка не отправляется (анти-спам).
+    # <= 0 отключает cooldown.
+    BROADCAST_COOLDOWN_HOURS: float = 24.0
+    # Лимит отправки сообщений (сообщений в секунду на магазин).
+    BROADCAST_MAX_RPS: float = 10.0
+    # Сколько сообщений отправляется параллельно (семафор).
+    BROADCAST_CONCURRENCY: int = 10
+    # Размер чанка: получателей за один проход + коммит отметок.
+    BROADCAST_CHUNK_SIZE: int = 50
+    # Сколько раз повторять отправку при временных сбоях (сеть/429).
+    BROADCAST_RETRY_ATTEMPTS: int = 3
+    # Базовая задержка между повторами при сетевых сбоях (сек, растёт линейно).
+    BROADCAST_RETRY_DELAY: float = 5.0
+    # Прерванные рассылки старше этого возраста (часов) не возобновляются
+    # автоматически после рестарта бота. <= 0 отключает авто-возобновление.
+    BROADCAST_RESUME_MAX_AGE_HOURS: float = 24.0
+
     @field_validator("ADMIN_ID")
     @classmethod
     def _validate_admin_id(cls, v: list[int]) -> list[int]:

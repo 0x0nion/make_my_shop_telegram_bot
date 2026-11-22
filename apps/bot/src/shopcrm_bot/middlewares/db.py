@@ -9,21 +9,30 @@ from shopcrm_core.db.repositories.user_repo import UserRepository
 from shopcrm_core.services.admin_shop_service import AdminShopService
 from shopcrm_core.services.admin_user_service import AdminUserService
 from shopcrm_core.services.admin_worker_service import AdminWorkerService
+from shopcrm_core.services.broadcast_service import BroadcastService
 from shopcrm_core.services.warehouse_service import WarehouseService
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from shopcrm_bot.config import config
 from shopcrm_bot.locales import Locale
+from shopcrm_bot.services.broadcast_sender import BroadcastSender
 from shopcrm_bot.services.commands_service import ensure_bot_commands
 
 
 class DbSessionMiddleware(BaseMiddleware):
-    def __init__(self, session_pool: async_sessionmaker, admin_ids: list[int] | None = None):
+    def __init__(
+        self,
+        session_pool: async_sessionmaker,
+        admin_ids: list[int] | None = None,
+        broadcast_sender: BroadcastSender | None = None,
+    ):
         super().__init__()
         self.session_pool = session_pool
         # Опциональные админы, переданные при инициализации;
         # по умолчанию используется config.ADMIN_ID.
         self._admin_ids = admin_ids
+        # Фоновый отправщик рассылки (синглтон, создаётся в main.py).
+        self._broadcast_sender = broadcast_sender
 
     async def __call__(
         self,
@@ -48,6 +57,7 @@ class DbSessionMiddleware(BaseMiddleware):
             warehouse_service = WarehouseService(admin_repo)
             admin_user_service = AdminUserService(admin_repo)
             admin_worker_service = AdminWorkerService(admin_repo)
+            broadcast_service = BroadcastService(admin_repo, config.BROADCAST_COOLDOWN_HOURS)
 
             data["admin_repo"] = admin_repo
             data["user_repo"] = user_repo
@@ -56,6 +66,8 @@ class DbSessionMiddleware(BaseMiddleware):
             data["warehouse_service"] = warehouse_service
             data["admin_user_service"] = admin_user_service
             data["admin_worker_service"] = admin_worker_service
+            data["broadcast_service"] = broadcast_service
+            data["broadcast_sender"] = self._broadcast_sender
             # Админы для контроля доступа и уведомлений:
             # главный админ (переданный при инициализации или из конфига)
             # + работники из БД (добавленные в админ-панели «Работники»).

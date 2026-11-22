@@ -3,6 +3,7 @@ from aiogram import Router
 
 from shopcrm_bot.filters.admin import IsAdminFilter
 
+from .broadcast import broadcast_router
 from .main import admin_main_router
 from .orders import admin_orders_group_router
 from .shop import admin_shop_group_router
@@ -20,5 +21,6 @@ admin_group_router.include_routers(
     warehouse_router,
     admin_workers_router,
     admin_users_router,
+    broadcast_router,
     admin_main_router,
 )

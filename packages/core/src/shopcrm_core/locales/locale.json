@@ -963,6 +963,88 @@
           "es": "✅ Producto {name} restaurado en el catálogo.",
           "ru": "✅ Товар {name} возвращён в каталог."
         }
+      },
+      "broadcast": {
+        "title": {
+          "en": "📢 Broadcast",
+          "es": "📢 Difusión",
+          "ru": "📢 Рассылка"
+        },
+        "description": {
+          "en": "Send a message to all shop customers. Administrators and users who blocked the bot will not receive it. Repeat broadcasts within {cooldown} h will be skipped.",
+          "es": "Envía un mensaje a todos los clientes de la tienda. Los administradores y los usuarios que bloquearon al bot no lo recibirán. Las difusiones repetidas dentro de {cooldown} h se omitirán.",
+          "ru": "Отправьте сообщение всем клиентам магазина. Администраторы и пользователи, заблокировавшие бота, не получат его. Повторная рассылка в течение {cooldown} ч будет пропущена."
+        },
+        "text_prompt": {
+          "en": "📝 Send the broadcast text (up to 4096 characters):",
+          "es": "📝 Envía el texto de la difusión (hasta 4096 caracteres):",
+          "ru": "📝 Отправьте текст рассылки (до 4096 символов):"
+        },
+        "confirm_title": {
+          "en": "📢 Confirm broadcast",
+          "es": "📢 Confirmar difusión",
+          "ru": "📢 Подтверждение рассылки"
+        },
+        "confirm_text": {
+          "en": "Recipients: {recipients}\nSkipped (cooldown/blocked): {skipped}",
+          "es": "Destinatarios: {recipients}\nOmitidos (cooldown/bloqueados): {skipped}",
+          "ru": "Получателей: {recipients}\nПропущено (cooldown/блокировки): {skipped}"
+        },
+        "progress_title": {
+          "en": "📢 Broadcast in progress",
+          "es": "📢 Difusión en curso",
+          "ru": "📢 Идёт рассылка"
+        },
+        "progress_text": {
+          "en": "Sent: {sent}\nFailed: {failed}\nBlocked: {blocked}\nRemaining: {remaining}",
+          "es": "Enviados: {sent}\nErrores: {failed}\nBloqueados: {blocked}\nRestantes: {remaining}",
+          "ru": "Отправлено: {sent}\nОшибок: {failed}\nЗаблокировано: {blocked}\nОсталось: {remaining}"
+        },
+        "cancelling_text": {
+          "en": "⏹ Stopping the broadcast (waiting for the current chunk)...",
+          "es": "⏹ Deteniendo la difusión (esperando el bloque actual)...",
+          "ru": "⏹ Останавливаю рассылку (дождусь текущего чанка)..."
+        },
+        "result_completed": {
+          "en": "✅ Broadcast completed",
+          "es": "✅ Difusión completada",
+          "ru": "✅ Рассылка завершена"
+        },
+        "result_cancelled": {
+          "en": "⏹ Broadcast stopped",
+          "es": "⏹ Difusión detenida",
+          "ru": "⏹ Рассылка остановлена"
+        },
+        "result_interrupted": {
+          "en": "⚠️ Broadcast interrupted (bot was restarted)",
+          "es": "⚠️ Difusión interrumpida (el bot se reinició)",
+          "ru": "⚠️ Рассылка прервана (бот перезапускался)"
+        },
+        "result_text": {
+          "en": "Sent: {sent}\nFailed: {failed}\nBlocked: {blocked}\nSkipped: {skipped}",
+          "es": "Enviados: {sent}\nErrores: {failed}\nBloqueados: {blocked}\nOmitidos: {skipped}",
+          "ru": "Отправлено: {sent}\nОшибок: {failed}\nЗаблокировано: {blocked}\nПропущено: {skipped}"
+        },
+        "error_already_active": {
+          "en": "A broadcast is already in progress — please wait for it to finish.",
+          "es": "Ya hay una difusión en curso — espera a que termine.",
+          "ru": "Уже идёт рассылка — дождитесь её завершения."
+        },
+        "error_no_recipients": {
+          "en": "No recipients: all customers already received a broadcast (cooldown) or blocked the bot.",
+          "es": "No hay destinatarios: todos los clientes ya recibieron una difusión (cooldown) o bloquearon al bot.",
+          "ru": "Нет получателей: все клиенты уже получили рассылку (cooldown) или заблокировали бота."
+        },
+        "error_empty": {
+          "en": "Text is empty — send the broadcast text.",
+          "es": "El texto está vacío — envía el texto de la difusión.",
+          "ru": "Текст пуст — отправьте текст рассылки."
+        },
+        "cancel_success": {
+          "en": "Broadcast cancelled.",
+          "es": "Difusión cancelada.",
+          "ru": "Рассылка отменена."
+        }
       }
     },
     "client": {
@@ -1963,6 +2045,54 @@
         },
         "sizes": [
           2,
+          1
+        ]
+      },
+      "broadcast": {
+        "buttons": {
+          "admin_broadcast_start": {
+            "en": "📝 New broadcast",
+            "es": "📝 Nueva difusión",
+            "ru": "📝 Новая рассылка"
+          },
+          "admin_broadcast_confirm": {
+            "en": "✅ Send",
+            "es": "✅ Enviar",
+            "ru": "✅ Отправить"
+          },
+          "admin_broadcast_cancel": {
+            "en": "❌ Cancel",
+            "es": "❌ Cancelar",
+            "ru": "❌ Отмена"
+          },
+          "admin_broadcast_progress": {
+            "en": "🔄 Refresh",
+            "es": "🔄 Actualizar",
+            "ru": "🔄 Обновить"
+          },
+          "admin_broadcast_stop": {
+            "en": "⏹ Stop",
+            "es": "⏹ Detener",
+            "ru": "⏹ Остановить"
+          },
+          "admin_broadcast_resume": {
+            "en": "▶️ Resume",
+            "es": "▶️ Reanudar",
+            "ru": "▶️ Продолжить"
+          },
+          "admin_broadcast_back": {
+            "en": "⬅️ Back",
+            "es": "⬅️ Volver",
+            "ru": "⬅️ Назад"
+          }
+        },
+        "sizes": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
           1
         ]
       }

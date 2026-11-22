@@ -23,6 +23,9 @@ class User(Base):
     # Заполняются при первом обращении и обновляются, если были пустыми.
     first_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     username: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Когда пользователь заблокировал бота (Telegram сообщает об этом при
+    # попытке отправки). Неактивным пользователям рассылки не отправляются.
+    blocked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     # Персональная скидка клиента в процентах (0–100), устанавливается
     # администратором в карточке пользователя.

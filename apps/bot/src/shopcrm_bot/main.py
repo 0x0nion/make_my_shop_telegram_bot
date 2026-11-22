@@ -12,6 +12,7 @@ from shopcrm_core.db.connection import (
     create_session_factory,
     init_db,
 )
+from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.logging import setup_logging, shutdown_logging
 from shopcrm_core.services.retention_service import RetentionService
 from shopcrm_core.utils.retry import RetryConfig, retry_async
@@ -24,6 +25,7 @@ from shopcrm_bot.errors import register_error_handlers
 from shopcrm_bot.handlers import routers as all_routers
 from shopcrm_bot.middlewares.callback_answer import CallbackAnswerMiddleware
 from shopcrm_bot.middlewares.db import DbSessionMiddleware
+from shopcrm_bot.services.broadcast_sender import BroadcastSender, BroadcastSettings
 from shopcrm_bot.services.commands_service import build_commands
 
 logger = logging.getLogger(__name__)
@@ -104,6 +106,58 @@ async def _retention_loop(
         await asyncio.sleep(_RETENTION_INTERVAL_SECONDS)
 
 
+async def _recover_broadcasts(
+    session_factory: async_sessionmaker, sender: BroadcastSender
+) -> None:
+    """Восстановление рассылок после рестарта бота.
+
+    1. «Осиротевшие» рассылки (status=running, а бот перезапустился)
+       помечаются как ``interrupted``.
+    2. Свежие прерванные рассылки (не старше
+       ``BROADCAST_RESUME_MAX_AGE_HOURS``) возобновляются автоматически:
+       отправляются только ещё не отправленные получатели (БД — источник
+       истины, повторов не будет).
+    """
+    try:
+        async with session_factory() as session:
+            repo = AdminRepository(session)
+            interrupted = await repo.interrupt_orphans()
+            resumable = await repo.get_resumable_broadcasts(
+                config.BROADCAST_RESUME_MAX_AGE_HOURS
+            )
+    except Exception:
+        logger.exception("Broadcast recovery failed")
+        return
+
+    if interrupted:
+        logger.info(f"Broadcast recovery: interrupted {len(interrupted)} orphan(s)")
+    for broadcast in resumable:
+        if sender.start(broadcast.id):
+            logger.info(f"Broadcast recovery: auto-resumed broadcast {broadcast.id}")
+
+
+async def _shutdown_broadcasts(
+    session_factory: async_sessionmaker, sender: BroadcastSender
+) -> None:
+    """Graceful-остановка рассылок при shutdown бота.
+
+    Сначала останавливаем фоновые задачи отправки, затем помечаем
+    незавершённые рассылки как ``interrupted`` — после рестарта их можно
+    будет возобновить (отправятся только не отправленные получатели).
+    """
+    await sender.shutdown()
+    try:
+        async with session_factory() as session:
+            repo = AdminRepository(session)
+            interrupted = await repo.interrupt_orphans()
+            if interrupted:
+                logger.info(
+                    f"Broadcast shutdown: marked {len(interrupted)} broadcast(s) interrupted"
+                )
+    except Exception:
+        logger.exception("Broadcast shutdown failed")
+
+
 async def main():
     setup_logging(level=config.LOG_LEVEL, logs_dir=config.LOGS_DIR)
 
@@ -130,9 +184,22 @@ async def main():
     # /admin выставляется per-chat только администраторам (middlewares/db.py).
     await bot.set_my_commands(build_commands(is_admin=False))
 
+    # Фоновый отправщик рассылки (синглтон на процесс).
+    broadcast_sender = BroadcastSender(
+        bot, session_factory, BroadcastSettings.from_config(config)
+    )
+
+    # Восстановление рассылок после рестарта: «осиротевшие» помечаем
+    # interrupted, свежие — возобновляем автоматически.
+    await _recover_broadcasts(session_factory, broadcast_sender)
+
     dp = Dispatcher(storage=_create_storage())
 
-    dp.update.middleware(DbSessionMiddleware(session_pool=session_factory))
+    dp.update.middleware(
+        DbSessionMiddleware(
+            session_pool=session_factory, broadcast_sender=broadcast_sender
+        )
+    )
     # Страховка от «часиков»: отвечает на callback, если хэндлер не ответил.
     dp.callback_query.middleware(CallbackAnswerMiddleware())
 
@@ -147,6 +214,8 @@ async def main():
             retention_task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await retention_task
+        # Graceful-остановка рассылок до закрытия БД/сессии бота.
+        await _shutdown_broadcasts(session_factory, broadcast_sender)
         await bot.session.close()
         await engine.dispose()
         shutdown_logging()
