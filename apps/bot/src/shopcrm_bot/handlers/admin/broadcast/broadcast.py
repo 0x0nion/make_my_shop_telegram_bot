@@ -1,5 +1,10 @@
 # handlers/admin/broadcast/broadcast.py
-"""Админ-раздел «Рассылка»: создание, подтверждение, остановка, возобновление.
+"""Админ-раздел «Рассылка»: создание и ожидание завершения.
+
+Поток: админ вводит текст -> рассылка создаётся и запускается сразу,
+экран показывает прогресс (только «Назад»). Пока идёт рассылка, новую
+запустить нельзя (per-shop блокировка). По завершении бот присылает
+админу разовое уведомление с итогами.
 
 Паттерн FSM-ввода — как в разделе «Склад» (warehouse.py): промпт через
 ``callback.message.answer``, после ввода — удалить промпт и ввод юзера,
@@ -17,7 +22,6 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from shopcrm_core.constants import OrderStatus
-from shopcrm_core.db.models.broadcast import BroadcastStatus
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.services.broadcast_service import BroadcastService
@@ -93,9 +97,10 @@ async def broadcast_text(
     user: User,
     locale: Locale,
     broadcast_service: BroadcastService,
+    broadcast_sender: BroadcastSender,
     admin_ids: list[int],
 ):
-    """Обработка ввода текста: создание рассылки + экран подтверждения."""
+    """Обработка ввода текста: создание + немедленный запуск рассылки."""
     data = await state.get_data()
     menu_message_id = data.get("menu_message_id")
     prompt_message_id = data.get("prompt_message_id")
@@ -131,165 +136,14 @@ async def broadcast_text(
         await _show_screen(message, admin_repo, user, locale, menu_message_id)
         return
 
-    # Экран подтверждения (broadcast_id храним в state data;
-    # состояние не ставим — подтверждение только по кнопкам)
-    await state.update_data(broadcast_id=result.broadcast.id)
-    await BroadcastUI.show_confirm(
+    # Запуск фоновой отправки: БД — источник истины, рассылка переживает рестарт
+    broadcast_sender.start(result.broadcast.id)
+    await BroadcastUI.show_progress(
         event=message,
         locale=locale,
-        text=result.broadcast.text,
-        recipients=result.recipients,
-        skipped=result.skipped,
+        broadcast=result.broadcast,
         message_id_to_edit=menu_message_id,
     )
-
-
-# ==================== ПОДТВЕРЖДЕНИЕ / ОТМЕНА ====================
-
-@broadcast_router.callback_query(F.data == "admin_broadcast_confirm")
-async def broadcast_confirm(
-    callback: CallbackQuery,
-    state: FSMContext,
-    admin_repo: AdminRepository,
-    user: User,
-    locale: Locale,
-    broadcast_sender: BroadcastSender,
-):
-    """Подтверждение: запуск фоновой отправки."""
-    data = await state.get_data()
-    broadcast_id = data.get("broadcast_id")
-    await state.clear()
-    await callback.answer()
-
-    broadcast = await admin_repo.get_broadcast(broadcast_id) if broadcast_id else None
-    if (
-        not broadcast
-        or broadcast.admin_id != user.id
-        or broadcast.status != BroadcastStatus.PENDING.value
-    ):
-        # Рассылка не найдена или уже запущена/изменена — показываем актуальный экран
-        await _show_screen(callback, admin_repo, user, locale, callback.message.message_id)
-        return
-
-    broadcast_sender.start(broadcast.id)
-    await BroadcastUI.show_progress(
-        event=callback,
-        locale=locale,
-        broadcast=broadcast,
-        message_id_to_edit=callback.message.message_id,
-    )
-
-
-@broadcast_router.callback_query(F.data == "admin_broadcast_cancel")
-async def broadcast_cancel(
-    callback: CallbackQuery,
-    state: FSMContext,
-    admin_repo: AdminRepository,
-    user: User,
-    locale: Locale,
-    broadcast_service: BroadcastService,
-):
-    """Отмена на экране подтверждения (рассылка ещё не запускалась)."""
-    data = await state.get_data()
-    broadcast_id = data.get("broadcast_id")
-    await state.clear()
-    await callback.answer()
-
-    if broadcast_id:
-        await broadcast_service.delete_pending(user.id, broadcast_id)
-
-    msg = await callback.message.answer(locale.get_text("admin.broadcast.cancel_success"))
-    asyncio.create_task(self_destruct(message=msg, seconds=3))
-    await _show_screen(callback, admin_repo, user, locale, callback.message.message_id)
-
-
-# ==================== ПРОГРЕСС / ОСТАНОВКА / ВОЗОБНОВЛЕНИЕ ====================
-
-@broadcast_router.callback_query(F.data == "admin_broadcast_progress")
-async def broadcast_progress(
-    callback: CallbackQuery,
-    admin_repo: AdminRepository,
-    user: User,
-    locale: Locale,
-):
-    """Обновление экрана прогресса (polling: данные всегда из БД)."""
-    await callback.answer()
-    active = await admin_repo.get_active_broadcast(user.id)
-    if active:
-        await BroadcastUI.show_progress(
-            event=callback,
-            locale=locale,
-            broadcast=active,
-            message_id_to_edit=callback.message.message_id,
-        )
-        return
-    # Рассылка завершилась, пока админ смотрел экран — показываем результат
-    last = await admin_repo.get_latest_broadcast(user.id)
-    if last:
-        await BroadcastUI.show_result(
-            event=callback,
-            locale=locale,
-            broadcast=last,
-            message_id_to_edit=callback.message.message_id,
-        )
-    else:
-        await _show_screen(callback, admin_repo, user, locale, callback.message.message_id)
-
-
-@broadcast_router.callback_query(F.data == "admin_broadcast_stop")
-async def broadcast_stop(
-    callback: CallbackQuery,
-    admin_repo: AdminRepository,
-    user: User,
-    locale: Locale,
-    broadcast_service: BroadcastService,
-):
-    """Остановка идущей рассылки (graceful: дождётся текущего чанка)."""
-    await callback.answer()
-    active = await admin_repo.get_active_broadcast(user.id)
-    if not active:
-        await _show_screen(callback, admin_repo, user, locale, callback.message.message_id)
-        return
-
-    await broadcast_service.cancel(user.id, active.id)
-    # Перечитываем: статус сменился на cancelling
-    active = await admin_repo.get_active_broadcast(user.id)
-    if active:
-        await BroadcastUI.show_progress(
-            event=callback,
-            locale=locale,
-            broadcast=active,
-            message_id_to_edit=callback.message.message_id,
-        )
-    else:
-        await _show_screen(callback, admin_repo, user, locale, callback.message.message_id)
-
-
-@broadcast_router.callback_query(F.data == "admin_broadcast_resume")
-async def broadcast_resume(
-    callback: CallbackQuery,
-    admin_repo: AdminRepository,
-    user: User,
-    locale: Locale,
-    broadcast_sender: BroadcastSender,
-):
-    """Возобновление прерванной рассылки (после рестарта бота)."""
-    await callback.answer()
-    last = await admin_repo.get_latest_broadcast(user.id)
-    if (
-        last
-        and last.admin_id == user.id
-        and last.status == BroadcastStatus.INTERRUPTED.value
-        and broadcast_sender.start(last.id)
-    ):
-        await BroadcastUI.show_progress(
-            event=callback,
-            locale=locale,
-            broadcast=last,
-            message_id_to_edit=callback.message.message_id,
-        )
-        return
-    await _show_screen(callback, admin_repo, user, locale, callback.message.message_id)
 
 
 # ==================== НАВИГАЦИЯ ====================

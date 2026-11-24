@@ -980,16 +980,6 @@
           "es": "📝 Envía el texto de la difusión (hasta 4096 caracteres):",
           "ru": "📝 Отправьте текст рассылки (до 4096 символов):"
         },
-        "confirm_title": {
-          "en": "📢 Confirm broadcast",
-          "es": "📢 Confirmar difusión",
-          "ru": "📢 Подтверждение рассылки"
-        },
-        "confirm_text": {
-          "en": "Recipients: {recipients}\nSkipped (cooldown/blocked): {skipped}",
-          "es": "Destinatarios: {recipients}\nOmitidos (cooldown/bloqueados): {skipped}",
-          "ru": "Получателей: {recipients}\nПропущено (cooldown/блокировки): {skipped}"
-        },
         "progress_title": {
           "en": "📢 Broadcast in progress",
           "es": "📢 Difusión en curso",
@@ -999,11 +989,6 @@
           "en": "Sent: {sent}\nFailed: {failed}\nBlocked: {blocked}\nRemaining: {remaining}",
           "es": "Enviados: {sent}\nErrores: {failed}\nBloqueados: {blocked}\nRestantes: {remaining}",
           "ru": "Отправлено: {sent}\nОшибок: {failed}\nЗаблокировано: {blocked}\nОсталось: {remaining}"
-        },
-        "cancelling_text": {
-          "en": "⏹ Stopping the broadcast (waiting for the current chunk)...",
-          "es": "⏹ Deteniendo la difusión (esperando el bloque actual)...",
-          "ru": "⏹ Останавливаю рассылку (дождусь текущего чанка)..."
         },
         "result_completed": {
           "en": "✅ Broadcast completed",
@@ -1025,6 +1010,11 @@
           "es": "Enviados: {sent}\nErrores: {failed}\nBloqueados: {blocked}\nOmitidos: {skipped}",
           "ru": "Отправлено: {sent}\nОшибок: {failed}\nЗаблокировано: {blocked}\nПропущено: {skipped}"
         },
+        "done_notification": {
+          "en": "✅ Broadcast completed: sent {sent}, failed {failed}, blocked {blocked}",
+          "es": "✅ Difusión completada: enviados {sent}, errores {failed}, bloqueados {blocked}",
+          "ru": "✅ Рассылка завершена: отправлено {sent}, ошибок {failed}, заблокировано {blocked}"
+        },
         "error_already_active": {
           "en": "A broadcast is already in progress — please wait for it to finish.",
           "es": "Ya hay una difusión en curso — espera a que termine.",
@@ -1039,11 +1029,6 @@
           "en": "Text is empty — send the broadcast text.",
           "es": "El texto está vacío — envía el texto de la difusión.",
           "ru": "Текст пуст — отправьте текст рассылки."
-        },
-        "cancel_success": {
-          "en": "Broadcast cancelled.",
-          "es": "Difusión cancelada.",
-          "ru": "Рассылка отменена."
         }
       }
     },
@@ -2055,31 +2040,6 @@
             "es": "📝 Nueva difusión",
             "ru": "📝 Новая рассылка"
           },
-          "admin_broadcast_confirm": {
-            "en": "✅ Send",
-            "es": "✅ Enviar",
-            "ru": "✅ Отправить"
-          },
-          "admin_broadcast_cancel": {
-            "en": "❌ Cancel",
-            "es": "❌ Cancelar",
-            "ru": "❌ Отмена"
-          },
-          "admin_broadcast_progress": {
-            "en": "🔄 Refresh",
-            "es": "🔄 Actualizar",
-            "ru": "🔄 Обновить"
-          },
-          "admin_broadcast_stop": {
-            "en": "⏹ Stop",
-            "es": "⏹ Detener",
-            "ru": "⏹ Остановить"
-          },
-          "admin_broadcast_resume": {
-            "en": "▶️ Resume",
-            "es": "▶️ Reanudar",
-            "ru": "▶️ Продолжить"
-          },
           "admin_broadcast_back": {
             "en": "⬅️ Back",
             "es": "⬅️ Volver",
@@ -2087,11 +2047,6 @@
           }
         },
         "sizes": [
-          1,
-          1,
-          1,
-          1,
-          1,
           1,
           1
         ]

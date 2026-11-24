@@ -7,13 +7,15 @@
   атомарный ``claim_running`` исключает двойную отправку;
 - rate-limiter (RPS) + семафор параллельности — защита от 429 Telegram;
 - классификация ошибок:
-    * ``blocked/deactivated/forbidden`` -> получатель ``blocked``,
-      ``users.blocked_at`` заполняется — неактивным больше не пишем;
+    * 403 (заблокировал бота), 400 «chat not found» (удалил чат),
+      400 «deactivated» -> получатель ``blocked``, ``users.blocked_at``
+      заполняется — недоступным больше не пишем (метка сбрасывается
+      при следующей активности пользователя);
     * ``429`` -> ждём ``retry_after`` и повторяем;
-    * сетевые сбои -> повтор с линейным бэкоффом, затем ``failed``
+    * сетевые сбои и 5xx -> повтор с линейным бэкоффом, затем ``failed``
       (рассылка продолжается дальше по списку);
 - отметки коммитятся чанками: один сбой не роняет весь процесс;
-- флаг отмены проверяется между чанками (graceful-остановка).
+- по завершении админ получает разовое уведомление с итогами.
 """
 import asyncio
 import contextlib
@@ -25,12 +27,17 @@ from aiogram import Bot
 from aiogram.exceptions import (
     TelegramAPIError,
     TelegramBadRequest,
+    TelegramForbiddenError,
     TelegramNetworkError,
     TelegramRetryAfter,
+    TelegramServerError,
 )
 from shopcrm_core.db.models.broadcast import BroadcastStatus, RecipientStatus
+from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from shopcrm_bot.locales import Locale
 
 logger = logging.getLogger(__name__)
 
@@ -144,6 +151,7 @@ class BroadcastSender:
                 current = await repo.get_broadcast(broadcast_id)
                 if current and current.status == BroadcastStatus.CANCELLING.value:
                     await self._finalize(session, broadcast_id, cancelled=True)
+                    await self._notify_admin(broadcast_id)
                 return
             broadcast = await repo.get_broadcast(broadcast_id)
             if broadcast is None:
@@ -161,6 +169,7 @@ class BroadcastSender:
                     return
                 if current.status == BroadcastStatus.CANCELLING.value:
                     await self._finalize(session, broadcast_id, cancelled=True)
+                    await self._notify_admin(broadcast_id)
                     return
                 if current.status != BroadcastStatus.RUNNING.value:
                     # Уже завершена кем-то другим — выходим
@@ -184,6 +193,7 @@ class BroadcastSender:
                 await repo.refresh_counters(broadcast_id)
 
         # 3. Финализация.
+        finalized = False
         async with self._session_factory() as session:
             repo = AdminRepository(session)
             current = await repo.get_broadcast(broadcast_id)
@@ -191,9 +201,16 @@ class BroadcastSender:
                 return
             if current.status == BroadcastStatus.RUNNING.value:
                 await self._finalize(session, broadcast_id, cancelled=False)
+                finalized = True
             elif current.status == BroadcastStatus.CANCELLING.value:
                 # Отмена пришла в самый последний момент
                 await self._finalize(session, broadcast_id, cancelled=True)
+                finalized = True
+
+        # 4. Разовое уведомление админу о завершении (только если
+        #    финализировали мы — иначе уведомит другой процесс).
+        if finalized:
+            await self._notify_admin(broadcast_id)
 
     # ==================== ВНУТРЕННЕЕ ====================
 
@@ -205,6 +222,31 @@ class BroadcastSender:
         )
         await repo.set_status(broadcast_id, status, finished_at=_utcnow())
         logger.info(f"Broadcast {broadcast_id} finalized: {status}")
+
+    async def _notify_admin(self, broadcast_id: int) -> None:
+        """Разовое уведомление создавшему админу: итоги рассылки.
+
+        Ошибка уведомления не влияет на статус рассылки (она уже
+        финализирована) — только лог.
+        """
+        try:
+            async with self._session_factory() as session:
+                broadcast = await AdminRepository(session).get_broadcast(broadcast_id)
+                if broadcast is None:
+                    return
+                admin = await session.get(User, broadcast.admin_id)
+                lang = admin.language if admin else "en"
+            locale = Locale(lang=lang)
+            text = locale.get_text(
+                "admin.broadcast.done_notification",
+                sent=broadcast.sent,
+                failed=broadcast.failed,
+                blocked=broadcast.blocked,
+            )
+            await self._bot.send_message(broadcast.admin_id, text)
+            logger.info(f"Broadcast {broadcast_id}: admin {broadcast.admin_id} notified")
+        except Exception:
+            logger.exception(f"Broadcast {broadcast_id}: failed to notify admin")
 
     async def _send_chunk(self, chunk_data: list[tuple[int, int]], text: str) -> list[tuple]:
         """Отправить чанк параллельно (семафор + rate-limiter)."""
@@ -218,7 +260,16 @@ class BroadcastSender:
         return list(await asyncio.gather(*(_one(rid, uid) for rid, uid in chunk_data)))
 
     async def _send_one(self, user_id: int, text: str) -> tuple[str, int, str | None]:
-        """Отправить одно сообщение с retry. Возвращает (status, attempts, error)."""
+        """Отправить одно сообщение с retry. Возвращает (status, attempts, error).
+
+        Классификация:
+          - 403 (заблокировал бота), 400 «chat not found» (удалил чат),
+            400 «deactivated» -> BLOCKED: пользователь недоступен,
+            ``users.blocked_at`` заполняется, повторов не будет;
+          - 429 -> ждём retry_after и повторяем;
+          - сетевые сбои и 5xx (транзитные) -> повтор с бэкоффом, затем FAILED;
+          - прочие 4xx -> FAILED (повторять бессмысленно).
+        """
         max_attempts = max(1, self._settings.retry_attempts)
         for attempt in range(1, max_attempts + 1):
             try:
@@ -229,16 +280,25 @@ class BroadcastSender:
                 if attempt >= max_attempts:
                     return RecipientStatus.FAILED.value, attempt, "retry_after exceeded"
                 await asyncio.sleep(e.retry_after)
+            except TelegramForbiddenError as e:
+                # 403: пользователь заблокировал бота — недоступен, повторов не будет
+                return RecipientStatus.BLOCKED.value, attempt, str(e)
             except TelegramBadRequest as e:
                 msg = str(e).lower()
-                if "blocked" in msg or "deactivated" in msg or "forbidden" in msg:
-                    # Пользователь заблокировал бота — неактивен, повторов не будет
+                if (
+                    "chat not found" in msg
+                    or "deactivated" in msg
+                    or "blocked" in msg
+                    or "forbidden" in msg
+                ):
+                    # Удалил чат бота / деактивирован / заблокировал — недоступен
                     return RecipientStatus.BLOCKED.value, attempt, str(e)
                 if "not modified" in msg:
                     return RecipientStatus.SENT.value, attempt, None
                 # Прочие 4xx — повторять бессмысленно
                 return RecipientStatus.FAILED.value, attempt, str(e)
-            except TelegramNetworkError as e:
+            except (TelegramNetworkError, TelegramServerError) as e:
+                # Транзитный сбой (сеть / серверы Telegram) — повтор с бэкоффом
                 if attempt >= max_attempts:
                     return RecipientStatus.FAILED.value, attempt, str(e)
                 await asyncio.sleep(self._settings.retry_delay * attempt)

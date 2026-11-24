@@ -110,12 +110,14 @@ class AdminBroadcastsMixin:
             .limit(1)
         )
 
-    async def get_active_broadcast(self, admin_id: int) -> Broadcast | None:
-        """Активная рассылка админа (pending/running/cancelling)."""
+    async def get_active_broadcast(self) -> Broadcast | None:
+        """Активная рассылка магазина (pending/running/cancelling).
+
+        Per-shop: пока идёт любая рассылка, новую запустить нельзя.
+        """
         return await self.session.scalar(
             select(Broadcast)
             .where(
-                Broadcast.admin_id == admin_id,
                 Broadcast.status.in_(
                     [
                         BroadcastStatus.PENDING.value,
@@ -152,28 +154,6 @@ class AdminBroadcastsMixin:
         values.update(fields)
         await self.session.execute(update(Broadcast).where(Broadcast.id == broadcast_id).values(**values))
         await self.session.commit()
-
-    async def request_cancel(self, broadcast_id: int) -> bool:
-        """Запрос остановки: pending/running -> cancelling (атомарно)."""
-        result = await self.session.execute(
-            update(Broadcast)
-            .where(
-                Broadcast.id == broadcast_id,
-                Broadcast.status.in_(
-                    [BroadcastStatus.PENDING.value, BroadcastStatus.RUNNING.value]
-                ),
-            )
-            .values(status=BroadcastStatus.CANCELLING.value)
-        )
-        await self.session.commit()
-        return (result.rowcount or 0) > 0
-
-    async def delete_broadcast(self, broadcast_id: int) -> None:
-        """Удаление рассылки вместе со снапшотом (отмена до запуска)."""
-        broadcast = await self.get_broadcast(broadcast_id)
-        if broadcast:
-            await self.session.delete(broadcast)
-            await self.session.commit()
 
     # ==================== ПОЛУЧАТЕЛИ ====================
 

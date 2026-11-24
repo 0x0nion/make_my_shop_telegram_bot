@@ -1,5 +1,6 @@
 from typing import Any
 
+from sqlalchemy import update
 from sqlalchemy.orm import selectinload
 
 from shopcrm_core.db.models.user import User
@@ -40,6 +41,20 @@ class UserAccountMixin:
         await self._user_repo.update(user_id, language=language)
         # Подтягиваем актуальный state после коммита
         return await self.get_user_with_cart(user_id)
+
+    async def unblock_user(self, user_id: int) -> None:
+        """Пользователь снова активен (разблокировал бота / нажал /start) —
+        сбрасываем метку «недоступен», чтобы он снова попадал в рассылки.
+
+        Явный commit: возрождение должно сохраниться, даже если хэндлер
+        текущего апдейта сессию не коммитит.
+        """
+        await self.session.execute(
+            update(User)
+            .where(User.id == user_id, User.blocked_at.isnot(None))
+            .values(blocked_at=None)
+        )
+        await self.session.commit()
 
     async def get_or_create_user(self, tg_user: Any) -> User | None:
         """

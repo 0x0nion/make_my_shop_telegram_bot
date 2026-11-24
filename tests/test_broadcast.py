@@ -8,12 +8,19 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
 import pytest_asyncio
-from aiogram.exceptions import TelegramBadRequest, TelegramNetworkError, TelegramRetryAfter
+from aiogram.exceptions import (
+    TelegramBadRequest,
+    TelegramForbiddenError,
+    TelegramNetworkError,
+    TelegramRetryAfter,
+    TelegramServerError,
+)
 from shopcrm_bot.services.broadcast_sender import BroadcastSender, BroadcastSettings
 from shopcrm_core.db.models.base import Base
 from shopcrm_core.db.models.broadcast import BroadcastRecipient
 from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
+from shopcrm_core.db.repositories.user_repo import UserRepository
 from shopcrm_core.services.broadcast_service import BroadcastService
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -89,8 +96,9 @@ async def repo(session_factory) -> AdminRepository:
 
 
 async def _create_broadcast(session_factory, user_ids: list[int], admin_id: int = 1) -> int:
-    """Создать пользователей + pending-рассылку. Возвращает broadcast_id."""
+    """Создать админа + пользователей + pending-рассылку. Возвращает broadcast_id."""
     async with session_factory() as session:
+        _make_user(session, admin_id, role="admin")
         for uid in user_ids:
             _make_user(session, uid)
         await session.commit()
@@ -145,6 +153,38 @@ class TestSnapshot:
         assert ids == [100, 200]
 
 
+# ==================== СБРОС «НЕДОСТУПЕН» (возрождение пользователя) ====================
+
+class TestUnblockUser:
+    async def test_unblock_clears_mark(self, session_factory):
+        async with session_factory() as session:
+            _make_user(session, 100, blocked_at=_utcnow())
+            await session.commit()
+
+        async with session_factory() as session:
+            await UserRepository(session).unblock_user(100)
+
+        async with session_factory() as session:
+            user = await session.get(User, 100)
+            assert user.blocked_at is None
+
+    async def test_unblocked_user_back_in_snapshot(self, session_factory):
+        """Пользователь снова активен — попадает в следующую рассылку."""
+        async with session_factory() as session:
+            _make_user(session, 100, blocked_at=_utcnow())
+            await session.commit()
+            # Пока метка стоит — в снапшоте нет
+            ids = await AdminRepository(session).snapshot_recipients(admin_ids=[])
+            assert ids == []
+
+        async with session_factory() as session:
+            await UserRepository(session).unblock_user(100)
+
+        async with session_factory() as session:
+            ids = await AdminRepository(session).snapshot_recipients(admin_ids=[])
+        assert ids == [100]
+
+
 # ==================== СЕРВИС ====================
 
 class TestBroadcastService:
@@ -162,11 +202,16 @@ class TestBroadcastService:
         assert result.error == "no_recipients"
 
     async def test_create_already_active(self, session_factory):
+        """Per-shop блокировка: пока идёт рассылка, новую нельзя
+        запустить ни одному админу."""
         await _create_broadcast(session_factory, [100])
         async with session_factory() as session:
             service = BroadcastService(AdminRepository(session), 24.0)
             result = await service.create(1, "text", [])
-        assert result.error == "already_active"
+            assert result.error == "already_active"
+            # Другой админ тоже не может запустить
+            result = await service.create(2, "text", [])
+            assert result.error == "already_active"
 
     async def test_create_success(self, session_factory):
         async with session_factory() as session:
@@ -185,32 +230,6 @@ class TestBroadcastService:
             counts = await r.count_recipients(result.broadcast.id)
             assert counts["pending"] == 2
 
-    async def test_cancel_running(self, session_factory):
-        bid = await _create_broadcast(session_factory, [100])
-        async with session_factory() as session:
-            r = AdminRepository(session)
-            await r.set_status(bid, "running", started_at=_utcnow())
-            service = BroadcastService(AdminRepository(session), 24.0)
-            status = await service.cancel(1, bid)
-        assert status == "cancelled"
-        async with session_factory() as session:
-            b = await AdminRepository(session).get_broadcast(bid)
-            assert b.status == "cancelling"
-
-    async def test_cancel_not_found(self, session_factory):
-        async with session_factory() as session:
-            service = BroadcastService(AdminRepository(session), 24.0)
-            assert await service.cancel(1, 999) == "not_found"
-
-    async def test_delete_pending(self, session_factory):
-        bid = await _create_broadcast(session_factory, [100])
-        async with session_factory() as session:
-            service = BroadcastService(AdminRepository(session), 24.0)
-            assert await service.delete_pending(1, bid) is True
-            assert await service.delete_pending(1, bid) is False  # уже удалена
-            b = await AdminRepository(session).get_broadcast(bid)
-            assert b is None
-
 
 # ==================== ОТПРАВИТЕЛЬ (отказоустойчивость) ====================
 
@@ -228,12 +247,31 @@ class TestBroadcastSender:
             assert b.sent == 3
             assert b.failed == 0
             assert b.blocked == 0
-        assert sorted(u for u, _ in bot.sent) == [100, 200, 300]
+        # 1 — админ (уведомление о завершении)
+        assert sorted(u for u, _ in bot.sent) == [1, 100, 200, 300]
 
-    async def test_blocked_user_marked_and_no_repeat(self, session_factory):
+    async def test_completion_notification(self, session_factory):
+        """По завершении админ получает разовое уведомление с итогами."""
         bid = await _create_broadcast(session_factory, [100, 200])
         bot = FakeBot(behavior={
-            100: _raise(TelegramBadRequest(method=MagicMock(), message="blocked by the user")),
+            200: _raise(TelegramBadRequest(method=MagicMock(), message="blocked by the user")),
+        })
+        sender = BroadcastSender(bot, session_factory, _settings())
+        await sender.run(bid)
+
+        # Уведомление отправлено админу (id=1)
+        notifications = [text for uid, text in bot.sent if uid == 1]
+        assert len(notifications) == 1
+        # Админ в тесте с language="ru" — текст на русском, с итогами
+        assert "Рассылка завершена" in notifications[0]
+        assert "отправлено 1" in notifications[0]
+        assert "заблокировано 1" in notifications[0]
+
+    async def test_blocked_user_marked_and_no_repeat(self, session_factory):
+        """403 (пользователь заблокировал бота) — метка «недоступен», без повторов."""
+        bid = await _create_broadcast(session_factory, [100, 200])
+        bot = FakeBot(behavior={
+            100: _raise(TelegramForbiddenError(method=MagicMock(), message="bot was blocked by the user")),
         })
         sender = BroadcastSender(bot, session_factory, _settings())
         await sender.run(bid)
@@ -247,9 +285,28 @@ class TestBroadcastSender:
             # Пользователь помечен заблокированным (повторов не будет)
             user = await session.get(User, 100)
             assert user.blocked_at is not None
-        # 100 не отправляли повторно, 200 — доставили
-        assert sorted(u for u, _ in bot.sent) == [200]
+        # 100 не отправляли повторно, 200 — доставили (1 — уведомление админу)
+        assert sorted(u for u, _ in bot.sent) == [1, 200]
         assert bot.attempts[100] == 1  # blocked — без повторов
+
+    async def test_chat_not_found_marked_blocked(self, session_factory):
+        """400 «chat not found» (пользователь удалил чат бота) — «недоступен», без повторов."""
+        bid = await _create_broadcast(session_factory, [100, 200])
+        bot = FakeBot(behavior={
+            100: _raise(TelegramBadRequest(method=MagicMock(), message="chat not found")),
+        })
+        sender = BroadcastSender(bot, session_factory, _settings())
+        await sender.run(bid)
+
+        async with session_factory() as session:
+            b = await AdminRepository(session).get_broadcast(bid)
+            assert b.status == "completed"
+            assert b.sent == 1
+            assert b.blocked == 1
+            user = await session.get(User, 100)
+            assert user.blocked_at is not None
+        assert bot.attempts[100] == 1  # без повторов
+        assert sorted(u for u, _ in bot.sent) == [1, 200]
 
     async def test_429_retried_then_sent(self, session_factory):
         bid = await _create_broadcast(session_factory, [100])
@@ -284,7 +341,24 @@ class TestBroadcastSender:
             assert b.sent == 1  # 200 доставлен
             assert b.failed == 1  # 100 после исчерпания повторов
         assert bot.attempts[100] == 3  # retry_attempts
-        assert sorted(u for u, _ in bot.sent) == [200]
+        assert sorted(u for u, _ in bot.sent) == [1, 200]
+
+    async def test_server_error_retried_then_failed(self, session_factory):
+        """5xx (серверы Telegram) — транзитно: повтор с бэкоффом, затем failed."""
+        bid = await _create_broadcast(session_factory, [100, 200])
+        bot = FakeBot(behavior={
+            100: _raise(TelegramServerError(method=MagicMock(), message="Bad Gateway")),
+        })
+        sender = BroadcastSender(bot, session_factory, _settings())
+        await sender.run(bid)
+
+        async with session_factory() as session:
+            b = await AdminRepository(session).get_broadcast(bid)
+            assert b.status == "completed"  # рассылка не упала
+            assert b.sent == 1  # 200 доставлен
+            assert b.failed == 1  # 100 после исчерпания повторов
+        assert bot.attempts[100] == 3  # retry_attempts
+        assert sorted(u for u, _ in bot.sent) == [1, 200]
 
     async def test_cancel_before_claim_finalizes(self, session_factory):
         """Отмена до claim (рассылка ещё не стартовала) — статус не висит."""
@@ -298,7 +372,8 @@ class TestBroadcastSender:
         async with session_factory() as session:
             b = await AdminRepository(session).get_broadcast(bid)
             assert b.status == "cancelled"
-        assert bot.sent == []
+        # Рассылку не отправляли, но админ получил уведомление
+        assert [u for u, _ in bot.sent] == [1]
 
     async def test_claim_prevents_double_run(self, session_factory):
         bid = await _create_broadcast(session_factory, [100])
@@ -306,7 +381,8 @@ class TestBroadcastSender:
         sender = BroadcastSender(bot, session_factory, _settings())
         await sender.run(bid)
         await sender.run(bid)  # вторая попытка: claim не проходит
-        assert len(bot.sent) == 1  # дублей нет
+        # 100 — рассылка (один раз), 1 — уведомление админу (один раз)
+        assert sorted(u for u, _ in bot.sent) == [1, 100]
 
     async def test_resume_after_interrupt(self, session_factory):
         """Прерванная рассылка: отправляются только не отправленные."""
@@ -332,8 +408,8 @@ class TestBroadcastSender:
             b = await AdminRepository(session).get_broadcast(bid)
             assert b.status == "completed"
             assert b.sent == 3
-        # 100 не отправляли повторно
-        assert sorted(u for u, _ in bot.sent) == [200, 300]
+        # 100 не отправляли повторно (1 — уведомление админу)
+        assert sorted(u for u, _ in bot.sent) == [1, 200, 300]
 
     async def test_interrupt_orphans(self, session_factory):
         bid = await _create_broadcast(session_factory, [100])

@@ -131,15 +131,15 @@ class TestMiddlewareSetsCommands:
 
         from shopcrm_bot.middlewares.db import DbSessionMiddleware
 
-        return DbSessionMiddleware(session_pool=pool), ensure_mock
+        return DbSessionMiddleware(session_pool=pool), ensure_mock, user_repo
 
     async def test_admin_gets_per_chat_commands(self, monkeypatch):
         """Админ (id из config.ADMIN_ID) — команды с /admin."""
         from shopcrm_bot.config import config
 
         admin_id = config.ADMIN_ID[0]
-        mw, ensure_mock = self._make_middleware(
-            monkeypatch, SimpleNamespace(id=admin_id, language="ru")
+        mw, ensure_mock, _ = self._make_middleware(
+            monkeypatch, SimpleNamespace(id=admin_id, language="ru", blocked_at=None)
         )
 
         async def handler(event, data):
@@ -159,8 +159,8 @@ class TestMiddlewareSetsCommands:
         from shopcrm_bot.config import config
 
         non_admin_id = max(config.ADMIN_ID) + 1
-        mw, ensure_mock = self._make_middleware(
-            monkeypatch, SimpleNamespace(id=non_admin_id, language="en")
+        mw, ensure_mock, _ = self._make_middleware(
+            monkeypatch, SimpleNamespace(id=non_admin_id, language="en", blocked_at=None)
         )
 
         async def handler(event, data):
@@ -187,8 +187,8 @@ class TestMiddlewareSetsCommands:
 
         admin_id = config.ADMIN_ID[0]
         chat_id = admin_id + 1000  # chat_id != user_id, чтобы не спутать
-        mw, ensure_mock = self._make_middleware(
-            monkeypatch, SimpleNamespace(id=admin_id, language="ru")
+        mw, ensure_mock, _ = self._make_middleware(
+            monkeypatch, SimpleNamespace(id=admin_id, language="ru", blocked_at=None)
         )
 
         async def handler(event, data):
@@ -209,8 +209,8 @@ class TestMiddlewareSetsCommands:
         from shopcrm_bot.config import config
 
         admin_id = config.ADMIN_ID[0]
-        mw, ensure_mock = self._make_middleware(
-            monkeypatch, SimpleNamespace(id=admin_id, language="ru")
+        mw, ensure_mock, _ = self._make_middleware(
+            monkeypatch, SimpleNamespace(id=admin_id, language="ru", blocked_at=None)
         )
 
         async def handler(event, data):
@@ -225,3 +225,21 @@ class TestMiddlewareSetsCommands:
 
         assert result == "ok"
         ensure_mock.assert_not_awaited()
+
+    async def test_blocked_user_revived_on_activity(self, monkeypatch):
+        """Пользователь с blocked_at (недоступен для рассылок) прислал
+        апдейт — метка сбрасывается, он снова попадает в рассылки."""
+        from shopcrm_bot.config import config
+
+        user_id = max(config.ADMIN_ID) + 1
+        mw, _, user_repo = self._make_middleware(
+            monkeypatch,
+            SimpleNamespace(id=user_id, language="ru", blocked_at=datetime(2026, 1, 1)),
+        )
+
+        async def handler(event, data):
+            return "ok"
+
+        await mw(handler, self._make_message(user_id), {"bot": AsyncMock()})
+
+        user_repo.unblock_user.assert_awaited_once_with(user_id)

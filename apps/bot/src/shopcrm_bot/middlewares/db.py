@@ -90,6 +90,11 @@ class DbSessionMiddleware(BaseMiddleware):
                 db_user = await user_repo.get_or_create_user(tg_user)
                 if db_user:
                     user_lang = db_user.language
+                    # Пользователь снова активен (разблокировал бота / нажал
+                    # /start) — сбрасываем метку «недоступен», чтобы он снова
+                    # попадал в рассылки.
+                    if db_user.blocked_at is not None:
+                        await user_repo.unblock_user(db_user.id)
 
             data["user"] = db_user
             data["locale"] = Locale(lang=user_lang)

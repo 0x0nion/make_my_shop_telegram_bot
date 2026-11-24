@@ -4,9 +4,9 @@
 Отвечает за:
   - создание рассылки со снапшотом получателей (cooldown против спама,
     исключение админов и заблокировавших бота);
-  - отмену (до запуска — удаление, во время — graceful-остановка);
   - выдачу результата последней рассылки для UI.
 
+Пока идёт рассылка, новую запустить нельзя (per-shop блокировка).
 Отправку сообщений выполняет консьюмер (бот) — ``BroadcastSender``:
 core не знает про Telegram API.
 """
@@ -14,7 +14,7 @@ import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
-from shopcrm_core.db.models.broadcast import Broadcast, BroadcastStatus
+from shopcrm_core.db.models.broadcast import Broadcast
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class BroadcastCreateResult:
     :param broadcast: созданная рассылка (``None`` при ошибке);
     :param error: код ошибки (``None`` при успехе):
         ``"empty_text"`` — текст пуст;
-        ``"already_active"`` — у админа уже идёт рассылка;
+        ``"already_active"`` — уже идёт рассылка;
         ``"no_recipients"`` — получателей нет (cooldown/заблокированы/админы);
     :param recipients: сколько получателей в снапшоте;
     :param skipped: сколько пользователей исключено (cooldown/блокировки/админы).
@@ -40,7 +40,7 @@ class BroadcastCreateResult:
 
 
 class BroadcastService:
-    """Создание/отмена рассылки и выдача результата последней."""
+    """Создание рассылки и выдача результата последней."""
 
     def __init__(self, admin_repo: AdminRepository, cooldown_hours: float = 24.0):
         self.admin_repo = admin_repo
@@ -61,7 +61,7 @@ class BroadcastService:
         if not text:
             return BroadcastCreateResult(None, "empty_text")
 
-        if await self.admin_repo.get_active_broadcast(admin_id):
+        if await self.admin_repo.get_active_broadcast():
             return BroadcastCreateResult(None, "already_active")
 
         cooldown_since: datetime | None = None
@@ -84,33 +84,6 @@ class BroadcastService:
             f"recipients={len(user_ids)} skipped={skipped}"
         )
         return BroadcastCreateResult(broadcast, None, len(user_ids), skipped)
-
-    async def cancel(self, admin_id: int, broadcast_id: int) -> str:
-        """Отменить рассылку.
-
-        :return: ``"cancelled"`` — остановка запрошена (или уже завершена),
-            ``"not_found"`` — рассылка не найдена или не принадлежит админу.
-        """
-        broadcast = await self.admin_repo.get_broadcast(broadcast_id)
-        if not broadcast or broadcast.admin_id != admin_id:
-            return "not_found"
-        if broadcast.status in (BroadcastStatus.PENDING.value, BroadcastStatus.RUNNING.value):
-            await self.admin_repo.request_cancel(broadcast_id)
-            logger.info(f"Broadcast cancel requested: id={broadcast_id} admin={admin_id}")
-            return "cancelled"
-        # Уже завершена/останавливается — делать нечего
-        return "cancelled"
-
-    async def delete_pending(self, admin_id: int, broadcast_id: int) -> bool:
-        """Удалить рассылку до запуска (отмена на экране подтверждения)."""
-        broadcast = await self.admin_repo.get_broadcast(broadcast_id)
-        if not broadcast or broadcast.admin_id != admin_id:
-            return False
-        if broadcast.status != BroadcastStatus.PENDING.value:
-            return False
-        await self.admin_repo.delete_broadcast(broadcast_id)
-        logger.info(f"Broadcast deleted before start: id={broadcast_id} admin={admin_id}")
-        return True
 
     async def get_last_result(self, admin_id: int) -> Broadcast | None:
         """Последняя рассылка админа (для экрана «результат»)."""
