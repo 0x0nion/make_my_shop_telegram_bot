@@ -1,6 +1,6 @@
 # /database/models/__init__.py
 from shopcrm_core.db.models.base import Base
-from shopcrm_core.db.models.broadcast import Broadcast, BroadcastRecipient, BroadcastStatus, RecipientStatus
+from shopcrm_core.db.models.broadcast import Broadcast, BroadcastRecipient, BroadcastStatus
 from shopcrm_core.db.models.cart import CartItem
 from shopcrm_core.db.models.category import Category
 from shopcrm_core.db.models.locales import LocaleText

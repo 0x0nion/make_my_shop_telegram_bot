@@ -265,7 +265,7 @@ class TestBroadcastSender:
         # Админ в тесте с language="ru" — текст на русском, с итогами
         assert "Рассылка завершена" in notifications[0]
         assert "отправлено 1" in notifications[0]
-        assert "заблокировано 1" in notifications[0]
+        assert "недоступно 1" in notifications[0]
 
     async def test_blocked_user_marked_and_no_repeat(self, session_factory):
         """403 (пользователь заблокировал бота) — метка «недоступен», без повторов."""

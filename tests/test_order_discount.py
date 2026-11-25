@@ -26,7 +26,6 @@ from shopcrm_core.services.order_calc import (
 from shopcrm_core.services.order_service import build_order_detail_text
 from shopcrm_core.utils import format_price
 
-
 # ---------------------------------------------------------------------
 # 1. Чистые функции расчёта (order_calc)
 # ---------------------------------------------------------------------

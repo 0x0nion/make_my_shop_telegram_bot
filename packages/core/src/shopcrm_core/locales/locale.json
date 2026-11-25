@@ -986,9 +986,9 @@
           "ru": "📢 Идёт рассылка"
         },
         "progress_text": {
-          "en": "Sent: {sent}\nFailed: {failed}\nBlocked: {blocked}\nRemaining: {remaining}",
-          "es": "Enviados: {sent}\nErrores: {failed}\nBloqueados: {blocked}\nRestantes: {remaining}",
-          "ru": "Отправлено: {sent}\nОшибок: {failed}\nЗаблокировано: {blocked}\nОсталось: {remaining}"
+          "en": "Sent: {sent}\nFailed: {failed}\nUnavailable: {blocked}\nRemaining: {remaining}",
+          "es": "Enviados: {sent}\nErrores: {failed}\nNo disponibles: {blocked}\nRestantes: {remaining}",
+          "ru": "Отправлено: {sent}\nОшибок: {failed}\nНедоступно: {blocked}\nОсталось: {remaining}"
         },
         "result_completed": {
           "en": "✅ Broadcast completed",
@@ -1006,14 +1006,14 @@
           "ru": "⚠️ Рассылка прервана (бот перезапускался)"
         },
         "result_text": {
-          "en": "Sent: {sent}\nFailed: {failed}\nBlocked: {blocked}\nSkipped: {skipped}",
-          "es": "Enviados: {sent}\nErrores: {failed}\nBloqueados: {blocked}\nOmitidos: {skipped}",
-          "ru": "Отправлено: {sent}\nОшибок: {failed}\nЗаблокировано: {blocked}\nПропущено: {skipped}"
+          "en": "Sent: {sent}\nFailed: {failed}\nUnavailable: {blocked}\nSkipped: {skipped}",
+          "es": "Enviados: {sent}\nErrores: {failed}\nNo disponibles: {blocked}\nOmitidos: {skipped}",
+          "ru": "Отправлено: {sent}\nОшибок: {failed}\nНедоступно: {blocked}\nПропущено: {skipped}"
         },
         "done_notification": {
-          "en": "✅ Broadcast completed: sent {sent}, failed {failed}, blocked {blocked}",
-          "es": "✅ Difusión completada: enviados {sent}, errores {failed}, bloqueados {blocked}",
-          "ru": "✅ Рассылка завершена: отправлено {sent}, ошибок {failed}, заблокировано {blocked}"
+          "en": "✅ Broadcast completed: sent {sent}, failed {failed}, unavailable {blocked}",
+          "es": "✅ Difusión completada: enviados {sent}, errores {failed}, no disponibles {blocked}",
+          "ru": "✅ Рассылка завершена: отправлено {sent}, ошибок {failed}, недоступно {blocked}"
         },
         "error_already_active": {
           "en": "A broadcast is already in progress — please wait for it to finish.",
