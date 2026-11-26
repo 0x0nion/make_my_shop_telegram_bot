@@ -971,9 +971,9 @@
           "ru": "📢 Рассылка"
         },
         "description": {
-          "en": "Send a message to all shop customers. Administrators and users who blocked the bot will not receive it. Repeat broadcasts within {cooldown} h will be skipped.",
-          "es": "Envía un mensaje a todos los clientes de la tienda. Los administradores y los usuarios que bloquearon al bot no lo recibirán. Las difusiones repetidas dentro de {cooldown} h se omitirán.",
-          "ru": "Отправьте сообщение всем клиентам магазина. Администраторы и пользователи, заблокировавшие бота, не получат его. Повторная рассылка в течение {cooldown} ч будет пропущена."
+          "en": "Send a message to all shop customers. Administrators and users who blocked the bot will not receive it. A new broadcast can only be started after the previous one is finished.",
+          "es": "Envía un mensaje a todos los clientes de la tienda. Los administradores y los usuarios que bloquearon al bot no lo recibirán. Una nueva difusión solo se puede iniciar después de que termine la anterior.",
+          "ru": "Отправьте сообщение всем клиентам магазина. Администраторы и пользователи, заблокировавшие бота, не получат его. Новую рассылку можно запустить только после завершения предыдущей."
         },
         "text_prompt": {
           "en": "📝 Send the broadcast text (up to 4096 characters):",

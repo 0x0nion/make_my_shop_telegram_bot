@@ -42,7 +42,7 @@ class BroadcastCreateResult:
 class BroadcastService:
     """Создание рассылки и выдача результата последней."""
 
-    def __init__(self, admin_repo: AdminRepository, cooldown_hours: float = 24.0):
+    def __init__(self, admin_repo: AdminRepository, cooldown_hours: float = 0.0):
         self.admin_repo = admin_repo
         self.cooldown_hours = cooldown_hours
 
@@ -54,8 +54,10 @@ class BroadcastService:
     ) -> BroadcastCreateResult:
         """Создать рассылку со снапшотом получателей.
 
-        Cooldown: пользователи, которым уже отправляли в последние
-        ``cooldown_hours`` часов, в снапшот не попадают (анти-спам).
+        Пока идёт рассылка, новую запустить нельзя (per-shop блокировка).
+        Cooldown (опционально, ``cooldown_hours > 0``): пользователи, которым
+        уже отправляли в последние ``cooldown_hours`` часов, в снапшот не
+        попадают (анти-спам). По умолчанию отключён (``cooldown_hours=0``).
         """
         text = (text or "").strip()
         if not text:

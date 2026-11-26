@@ -27,7 +27,6 @@ class BroadcastUI:
         user: User,
         locale: Locale,
         message_id_to_edit: int | None = None,
-        cooldown_hours: float = 24.0,
     ) -> None:
         """Главный экран раздела: активная рассылка -> прогресс,
         иначе результат последней, иначе стартовый экран."""
@@ -39,21 +38,17 @@ class BroadcastUI:
         if last:
             await BroadcastUI.show_result(event, locale, last, message_id_to_edit)
             return
-        await BroadcastUI.show_start(event, locale, message_id_to_edit, cooldown_hours)
+        await BroadcastUI.show_start(event, locale, message_id_to_edit)
 
     @staticmethod
     async def show_start(
         event: Message | CallbackQuery,
         locale: Locale,
         message_id_to_edit: int | None = None,
-        cooldown_hours: float = 24.0,
     ) -> None:
         """Стартовый экран: описание + «Новая рассылка»."""
         title = locale.get_text("admin.broadcast.title")
-        description = locale.get_text(
-            "admin.broadcast.description",
-            cooldown=int(cooldown_hours) if cooldown_hours and cooldown_hours > 0 else 0,
-        )
+        description = locale.get_text("admin.broadcast.description")
         kb = locale.keyboards.build("admin.broadcast")
         await UIManager.show(
             event=event,

@@ -26,7 +26,6 @@ from shopcrm_core.db.models.user import User
 from shopcrm_core.db.repositories.admin_repo import AdminRepository
 from shopcrm_core.services.broadcast_service import BroadcastService
 
-from shopcrm_bot.config import config
 from shopcrm_bot.handlers.admin.utils import self_destruct
 from shopcrm_bot.locales import Locale
 from shopcrm_bot.services.broadcast_sender import BroadcastSender
@@ -51,7 +50,6 @@ async def _show_screen(
         user=user,
         locale=locale,
         message_id_to_edit=message_id_to_edit,
-        cooldown_hours=config.BROADCAST_COOLDOWN_HOURS,
     )
 
 
